@@ -313,6 +313,92 @@ Agent: Runs the harness commands, edits code, records evidence, and reports the 
 
 However, this only works if the project and the agent are configured to use the harness. The harness is not magic background behavior built into every AI tool.
 
+## Natural Language Experience
+
+The desired user experience is simple:
+
+> The user speaks in natural language. The agent handles the harness mechanics underneath.
+
+In a properly configured project, a non-technical user should not need to know how the state machine, JSON artifact, claims, or CLI commands work. The user can speak normally:
+
+```txt
+Find the bug.
+Create a plan.
+Execute the plan.
+Show me the evidence.
+```
+
+Behind the scenes, the agent should translate those natural-language requests into harness operations:
+
+```txt
+Natural language request
+-> plan validation
+-> run artifact creation or resume
+-> scoped task execution
+-> gate execution
+-> evidence recording
+-> claim verification
+-> final report from artifact
+```
+
+That means the user-facing workflow stays conversational, while the agent-facing workflow becomes structured and auditable.
+
+The correct mental model is:
+
+- the user does not operate the harness directly
+- the agent operates the harness on behalf of the user
+- the project instructions tell the agent when the harness is mandatory
+- the artifact proves what actually happened
+
+## What Installation Should Configure
+
+When this harness is installed into a project, the installation should prepare the environment so the user can work through natural language while the agent uses the harness internally.
+
+A complete installation should configure:
+
+- `AGENTS.md` rules that tell the agent when the harness is required
+- `agent-harness.config.json` with artifact paths, product paths, doctor profile, and command policy
+- package scripts for common harness commands
+- artifact directories ignored by Git
+- plan and checklist templates
+- adapter-specific rules when a project needs them
+- `doctor` validation so the setup can be checked
+
+After installation, the expected interaction is:
+
+```txt
+User: Investigate this bug.
+Agent: Investigates without editing code.
+
+User: Create a plan.
+Agent: Creates a plan with tasks, files, risks, tests, and rollback.
+
+User: Execute the plan using the harness.
+Agent: Runs the harness commands underneath, edits code, records evidence, verifies claims, and reports the final artifact.
+```
+
+The user should not need to manually type `agent-harness run` or understand the JSON payloads during normal use.
+
+## When Is It Automatic?
+
+The harness is automatic only when the surrounding project and agent workflow make it automatic.
+
+It works automatically for the user when all of these are true:
+
+1. the project has the harness installed
+2. the project has clear `AGENTS.md` rules
+3. the agent reads and follows those rules
+4. the agent has permission to run local commands
+5. the task matches the rule that requires the harness, such as approved plans, L2/L3 risk, multi-step work, or delegated work
+
+If those conditions are met, the user can simply ask for a plan and then ask the agent to execute it. The agent should run the harness underneath.
+
+If those conditions are not met, the harness may sit in the repo unused. It is a control system, not a universal background service.
+
+The practical rule is:
+
+> Natural language is the interface for the user. Harness commands are the execution contract for the agent.
+
 There are three possible levels of integration:
 
 ### Level 1: Manual Use
