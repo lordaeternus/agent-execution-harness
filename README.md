@@ -16,6 +16,20 @@ It helps an AI agent execute software plans in a more organized way by forcing t
 
 The goal is not to make the model smarter. The goal is to make the agent's work harder to fake, skip, or hallucinate.
 
+## Table Of Contents
+
+- [Quick Start](#quick-start)
+- [What Problem Does This Solve?](#what-problem-does-this-solve)
+- [For Non-Technical Users](#for-non-technical-users)
+- [Installation Options](#installation-options)
+- [Common Confusions](#common-confusions)
+- [Troubleshooting](#troubleshooting)
+- [Core Concepts For Developers](#core-concepts-for-developers)
+- [CLI Reference](#cli-reference)
+- [Configuration](#configuration)
+- [Safety Model](#safety-model)
+- [Local Development](#local-development)
+
 ## Quick Start
 
 Use this if you only want to install the harness in a project.
@@ -60,6 +74,18 @@ Show me the evidence.
 ```
 
 The agent should use the harness underneath.
+
+### Copy-Paste Prompt For Your Agent
+
+After installing the harness, give your AI coding agent this instruction:
+
+```txt
+Use the agent harness for approved plans, multi-step work, risky changes, and any task where you need to prove completion.
+Before editing, validate the plan.
+During execution, keep the harness artifact updated.
+Do not claim success unless the artifact is completed and includes evidence plus verified claims.
+In the final answer, include run_id, artifact path, status, gates, evidence, verified claims, and rollback notes.
+```
 
 ## What Problem Does This Solve?
 
@@ -167,6 +193,26 @@ evidence: present
 
 If those fields are missing, treat the work as partial.
 
+### Good Final Answer Example
+
+```txt
+run_id: fix-login-20260428
+artifact: .agent-harness/runs/fix-login-20260428.json
+status: completed
+gates: pnpm test:run tests/login.test.ts
+evidence: exit_code 0, affected login tests passed
+verified claims: bug_reproduced_before_fix, bug_fixed_after_fix, acceptance_criteria_met
+rollback: revert commit abc123 or restore files listed in the artifact
+```
+
+### Weak Final Answer Example
+
+```txt
+Done. It should work now.
+```
+
+Do not trust this. It has no artifact, no evidence, and no verified claims.
+
 ## Installation Options
 
 ### Option 1: Use With npx
@@ -271,6 +317,50 @@ Yes, if the surrounding tool lets it ignore project instructions.
 The harness makes correct behavior easier to enforce and audit, but it cannot physically control every possible model or coding tool unless that tool invokes it.
 
 That is why the final answer must include artifact evidence.
+
+## Troubleshooting
+
+### `npx` asks whether to install the package
+
+That is normal. Accept it.
+
+### `doctor` does not return `status: success`
+
+Read the findings. Usually this means one of these is missing:
+
+- `AGENTS.md`
+- `agent-harness.config.json`
+- package scripts
+- ignored artifact folder
+
+Fix the reported item and run doctor again.
+
+### The agent says it used the harness but gives no artifact
+
+Treat the work as incomplete. Ask:
+
+```txt
+Show the run_id, artifact path, final status, evidence, and verified claims.
+```
+
+### The agent refuses or forgets to use the harness
+
+Add a stronger project instruction in `AGENTS.md`:
+
+```txt
+For approved plans, multi-step work, risky changes, and delegated execution, use agent-harness.
+Do not declare success without a completed artifact, evidence, and verified claims.
+```
+
+### I only want to try it without changing my project
+
+Run the init command without `--apply`:
+
+```bash
+npx agent-execution-harness@latest init --adapter generic --cwd .
+```
+
+This is a preview. It should not apply the installation.
 
 ## What Installation Adds To A Project
 
