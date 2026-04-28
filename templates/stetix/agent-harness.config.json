@@ -1,0 +1,11 @@
+{
+  "schema_version": "agent_harness_config_v1",
+  "artifact_dir": ".checks/agent-harness-runs",
+  "product_paths": ["src/", "supabase/"],
+  "required_scripts": ["agent:harness", "agent:plan:lint", "agent:execute", "agent:report", "agent:harness:doctor", "governance:test"],
+  "doctor_profile": "stetix",
+  "command_policy": {
+    "allow": [],
+    "deny": ["DROP", "TRUNCATE", "UPDATE", "DELETE", "git reset --hard", "push --force", "force-with-lease"]
+  }
+}

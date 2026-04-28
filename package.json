@@ -1,0 +1,37 @@
+{
+  "name": "@stetix/agent-execution-harness",
+  "version": "0.1.0-private",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "agent-harness": "./bin/agent-harness.mjs"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "schemas",
+    "templates",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run tests/integration",
+    "benchmark:smoke": "node dist/cli/index.js benchmark --mode smoke",
+    "doctor": "node dist/cli/index.js doctor",
+    "secret-scan": "node scripts/secret-scan.mjs",
+    "pack:dry": "node scripts/pack-check.mjs",
+    "audit:release-readiness": "node scripts/audit-release-readiness.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.2"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": "agent_harness_plan_v1",
+  "plan_id": "example-plan",
+  "risk_level": "L2",
+  "rollback_expectation": "Revert the changed harness files and generated artifacts.",
+  "gates": ["pnpm test"],
+  "tasks": [
+    {
+      "task_id": "example-task",
+      "acceptance_criteria": "A focal test passes and evidence is recorded."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": "agent_harness_plan_v1",
+  "plan_id": "basic-plan",
+  "risk_level": "L2",
+  "rollback_expectation": "Delete generated test files.",
+  "gates": ["node --version"],
+  "tasks": [
+    {
+      "task_id": "basic-task",
+      "acceptance_criteria": "node --version evidence passes."
+    }
+  ]
+}

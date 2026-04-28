@@ -1,0 +1,9 @@
+name: Bug report
+description: Report a harness bug
+body:
+  - type: textarea
+    id: artifact
+    attributes:
+      label: Artifact or reproduction
+    validations:
+      required: true

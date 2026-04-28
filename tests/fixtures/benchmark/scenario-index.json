@@ -1,0 +1,9 @@
+{
+  "scenarios": [
+    {"fixture_path": "tests/fixtures/benchmark/scenarios/happy-path-smoke.json"},
+    {"fixture_path": "tests/fixtures/benchmark/scenarios/fake-gate-smoke.json"},
+    {"fixture_path": "tests/fixtures/benchmark/scenarios/missing-file-claim-smoke.json"},
+    {"fixture_path": "tests/fixtures/benchmark/scenarios/dangerous-command-smoke.json"},
+    {"fixture_path": "tests/fixtures/benchmark/scenarios/constrained-mode-smoke.json"}
+  ]
+}

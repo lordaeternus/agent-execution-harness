@@ -1,0 +1,8 @@
+{
+  "schema_version": "agent_harness_plan_v1",
+  "plan_id": "simulated-bugfix",
+  "risk_level": "L2",
+  "rollback_expectation": "Remove simulated files.",
+  "gates": ["pnpm test"],
+  "tasks": [{"task_id": "red-green", "acceptance_criteria": "RED and GREEN evidence exist."}]
+}
