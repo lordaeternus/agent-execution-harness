@@ -1,1 +1,17 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"agent_harness_run_v1","type":"object","required":["schema_version","run_id","mode","status","phase","plan","tasks","evidence","verified_claims"],"properties":{"schema_version":{"const":"agent_harness_run_v1"},"run_id":{"type":"string"},"mode":{"enum":["strong","standard","constrained"]},"status":{"enum":["in_progress","ready_for_report","completed","halt"]},"phase":{"enum":["init","preflight","task_start","gate","evidence","report","halt","completed"]}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "agent_harness_run_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "run_id", "mode", "status", "phase", "plan", "tasks", "evidence", "verified_claims"],
+  "properties": {
+    "schema_version": { "const": "agent_harness_run_v1" },
+    "run_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+    "mode": { "enum": ["strong", "standard", "constrained"] },
+    "status": { "enum": ["in_progress", "ready_for_report", "completed", "halt"] },
+    "phase": { "enum": ["init", "preflight", "task_start", "gate", "evidence", "report", "halt", "completed"] },
+    "tasks": { "type": "array" },
+    "evidence": { "type": "array" },
+    "verified_claims": { "type": "array" }
+  }
+}

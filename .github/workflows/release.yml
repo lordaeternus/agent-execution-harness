@@ -6,6 +6,9 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -17,6 +20,9 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm test -- --run
+      - run: pnpm test
+      - run: pnpm test:integration
       - run: pnpm build
-      - run: npm publish --provenance --access restricted
+      - run: pnpm benchmark:smoke
+      - run: pnpm pack:dry
+      - run: npm publish --provenance --access public

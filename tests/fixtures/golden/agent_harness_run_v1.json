@@ -1,0 +1,65 @@
+{
+  "schema_version": "agent_harness_run_v1",
+  "run_id": "golden-v1",
+  "mode": "constrained",
+  "status": "completed",
+  "phase": "completed",
+  "plan": {
+    "schema_version": "agent_harness_plan_v1",
+    "plan_id": "golden-plan",
+    "risk_level": "L2",
+    "rollback_expectation": "Delete generated files.",
+    "gates": ["node --version"],
+    "tasks": [
+      {
+        "task_id": "golden-task",
+        "acceptance_criteria": "Gate passed."
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "task_id": "golden-task",
+      "status": "completed",
+      "acceptance_criteria": "Gate passed.",
+      "evidence_ids": ["ev-golden"]
+    }
+  ],
+  "declared_files": ["README.md"],
+  "current_task_id": null,
+  "pending_gate": null,
+  "evidence": [
+    {
+      "evidence_id": "ev-golden",
+      "check": "node --version",
+      "result": "pass",
+      "exit_code": 0,
+      "output_excerpt": "v20",
+      "scope_covered": "test contract"
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "c-golden",
+      "kind": "gate_passed",
+      "value": "node --version",
+      "evidence_id": "ev-golden"
+    }
+  ],
+  "verified_claims": [
+    {
+      "claim_id": "c-golden",
+      "kind": "gate_passed",
+      "value": "node --version",
+      "evidence_id": "ev-golden",
+      "verified": true
+    }
+  ],
+  "errors": [],
+  "final_report": {
+    "summary": "Golden run completed.",
+    "verified_claim_ids": ["c-golden"]
+  },
+  "created_at": "2026-04-28T00:00:00.000Z",
+  "updated_at": "2026-04-28T00:00:00.000Z"
+}

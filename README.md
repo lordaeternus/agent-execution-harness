@@ -1,5 +1,8 @@
 # Agent Execution Harness
 
+[![CI](https://github.com/lordaeternus/agent-execution-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/lordaeternus/agent-execution-harness/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A transactional execution harness for AI agents. It turns implementation plans into a strict state machine, requires evidence for every meaningful claim, blocks dangerous operations, and prevents an agent from declaring success without an auditable run artifact.
 
 The goal is not to make a model smarter. The goal is to make the execution environment harder to misuse. The harness moves critical discipline out of the model's memory and into deterministic files, schemas, commands, and verification gates.
@@ -854,4 +857,4 @@ pnpm audit:release-readiness
 
 ## Current Status
 
-This repository is currently private and versioned as `0.1.0-private`. Treat it as an internal harness foundation until compatibility, installer behavior, and adapter workflows mature further.
+This repository is versioned as `0.1.0`. Treat it as an early public foundation: useful for experimentation and structured agent execution, with public-readiness hardening focused on CI, installer safety, schemas, doctor checks, command policy, and release hygiene.

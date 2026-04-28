@@ -1,0 +1,7 @@
+{
+  "agent:harness": "agent-harness run",
+  "agent:plan:lint": "agent-harness plan-lint",
+  "agent:execute": "agent-harness execute",
+  "agent:report": "agent-harness report",
+  "agent:harness:doctor": "agent-harness doctor"
+}

@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.1.0-private - 2026-04-28
+## 0.1.0 - 2026-04-28
 
 ### Added
 
-- Initial private harness package.
+- Initial public-readiness harness package.
 - Transactional runner, CLI, schemas, templates, benchmark and docs.

@@ -17,7 +17,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm test -- --run
+      - run: pnpm test
       - run: pnpm test:integration
       - run: pnpm build
       - run: pnpm benchmark:smoke

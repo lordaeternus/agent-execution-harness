@@ -1,8 +1,25 @@
 {
-  "name": "@stetix/agent-execution-harness",
-  "version": "0.1.0-private",
-  "private": true,
+  "name": "agent-execution-harness",
+  "version": "0.1.0",
+  "description": "A transactional execution harness for AI coding agents with evidence-backed reports.",
+  "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lordaeternus/agent-execution-harness.git"
+  },
+  "homepage": "https://github.com/lordaeternus/agent-execution-harness#readme",
+  "bugs": {
+    "url": "https://github.com/lordaeternus/agent-execution-harness/issues"
+  },
+  "keywords": [
+    "ai-agent",
+    "coding-agent",
+    "agent-harness",
+    "evidence",
+    "automation",
+    "governance"
+  ],
   "bin": {
     "agent-harness": "./bin/agent-harness.mjs"
   },
