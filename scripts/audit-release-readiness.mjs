@@ -21,6 +21,11 @@ if (String(pkg.version).includes("private")) findings.push({ severity: "P0", fil
 if (pkg.bin?.["agent-harness"] !== "bin/agent-harness.mjs") {
   findings.push({ severity: "P0", file: "package.json", message: "agent-harness bin must point to bin/agent-harness.mjs" });
 }
+for (const packageFile of ["docs", "SECURITY.md", "CONTRIBUTING.md"]) {
+  if (!Array.isArray(pkg.files) || !pkg.files.includes(packageFile)) {
+    findings.push({ severity: "P1", file: "package.json", message: `published package files must include ${packageFile}` });
+  }
+}
 
 const readme = fs.existsSync("README.md") ? fs.readFileSync("README.md", "utf8") : "";
 for (const requiredSection of ["## Quick Start", "## For Non-Technical Users", "## Troubleshooting", "## CLI Reference"]) {

@@ -1,11 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createInstallManifest } from "./install-manifest.js";
 import { createBackup, restoreBackup } from "./install-rollback.js";
 import { parseFlags, stringFlag } from "./args.js";
 import { writeJson } from "./output.js";
 
 const TEMPLATE_FILES = ["agent-harness.config.json", "AGENTS.md", ".gitignore", "package.json"];
+const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 export function initCommand(args: string[], cwd = process.cwd()): void {
   const flags = parseFlags(args);
@@ -24,7 +26,7 @@ export function initCommand(args: string[], cwd = process.cwd()): void {
     });
     return;
   }
-  const templateRoot = path.resolve(cwd, "templates", adapter);
+  const templateRoot = path.resolve(PACKAGE_ROOT, "templates", adapter);
   if (!fs.existsSync(templateRoot)) throw new Error(`unknown adapter: ${adapter}`);
   const files = TEMPLATE_FILES.filter((file) => fs.existsSync(path.join(templateRoot, file)) || file === ".gitignore" || file === "package.json");
   const existing = new Set(files.filter((file) => fs.existsSync(path.join(target, file))));

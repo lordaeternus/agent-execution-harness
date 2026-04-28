@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2 - 2026-04-28
+
+### Fixed
+
+- Fixed npm/npx `init` so templates resolve from the installed package instead of the caller's current directory.
+
+### Changed
+
+- Included docs, security policy, and contributing guide in the published npm package.
+
 ## 0.1.1 - 2026-04-28
 
 ### Changed

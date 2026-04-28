@@ -1,6 +1,6 @@
 {
   "name": "agent-execution-harness",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A transactional execution harness for AI coding agents with evidence-backed reports.",
   "license": "MIT",
   "type": "module",
@@ -28,9 +28,12 @@
     "bin",
     "schemas",
     "templates",
+    "docs",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md"
   ],
   "scripts": {
     "build": "node scripts/build.mjs",

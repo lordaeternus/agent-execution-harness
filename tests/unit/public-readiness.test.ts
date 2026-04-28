@@ -63,4 +63,12 @@ describe("public readiness hardening", () => {
     expect(fs.existsSync(path.join(tmp, "AGENTS.md"))).toBe(true);
     expect(fs.existsSync(path.join(tmp, ".agent-harness", "backups"))).toBe(true);
   });
+
+  it("init resolves templates from the package when called outside the repo", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-npx-like-"));
+    fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", private: true }, null, 2)}\n`);
+    execFileSync("node", [path.resolve("dist/cli/index.js"), "init", "--adapter", "generic", "--cwd", tmp, "--apply"], { cwd: tmp, stdio: "pipe" });
+    expect(fs.existsSync(path.join(tmp, "AGENTS.md"))).toBe(true);
+    expect(fs.existsSync(path.join(tmp, "agent-harness.config.json"))).toBe(true);
+  });
 });

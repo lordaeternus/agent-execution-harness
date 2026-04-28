@@ -24,11 +24,21 @@ The goal is not to make the model smarter. The goal is to make the agent's work 
 - [Installation Options](#installation-options)
 - [Common Confusions](#common-confusions)
 - [Troubleshooting](#troubleshooting)
+- [Why Not Just Prompts?](#why-not-just-prompts)
 - [Core Concepts For Developers](#core-concepts-for-developers)
 - [CLI Reference](#cli-reference)
 - [Configuration](#configuration)
 - [Safety Model](#safety-model)
 - [Local Development](#local-development)
+
+## Useful Links
+
+- [Quickstart](docs/quickstart.md)
+- [Demo workflow](docs/demo.md)
+- [Release notes](docs/release-notes/v0.1.2.md)
+- [Security policy](SECURITY.md)
+- [Contributing guide](CONTRIBUTING.md)
+- [npm package](https://www.npmjs.com/package/agent-execution-harness)
 
 ## Quick Start
 
@@ -361,6 +371,33 @@ npx agent-execution-harness@latest init --adapter generic --cwd .
 ```
 
 This is a preview. It should not apply the installation.
+
+## Why Not Just Prompts?
+
+Prompts are useful, but prompts are memory and intention. They can be ignored, forgotten, or interpreted differently by different models.
+
+Agent Execution Harness turns the most important parts of the workflow into explicit runtime artifacts:
+
+- the plan is structured
+- the current phase is recorded
+- allowed actions are constrained
+- evidence must match a gate
+- claims must be verified
+- final reports are derived from artifacts
+
+The harness does not replace prompts. It gives prompts something harder to drift away from.
+
+Practical difference:
+
+```txt
+Prompt only:
+"Please be careful and run tests."
+
+Harness-backed:
+"Record the gate, record exit_code, attach output excerpt, verify the claim, and only then report completion."
+```
+
+That is why this project focuses on execution evidence, not just better wording.
 
 ## What Installation Adds To A Project
 
