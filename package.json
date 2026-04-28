@@ -21,7 +21,7 @@
     "governance"
   ],
   "bin": {
-    "agent-harness": "./bin/agent-harness.mjs"
+    "agent-harness": "bin/agent-harness.mjs"
   },
   "files": [
     "dist",
