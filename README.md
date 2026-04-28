@@ -298,6 +298,164 @@ If you are using this harness through an AI coding agent, you usually do not nee
 
 If those fields are missing, the work may still be partial even if the agent sounds confident.
 
+## Simple Installation Guide for Non-Technical Users
+
+This section explains the intended installation flow in plain English.
+
+There are two projects involved:
+
+- the **harness repository**, which contains this tool
+- your **target project**, where you want AI agents to use the harness
+
+The harness repository is the toolbox. The target project is the place where the toolbox will be used.
+
+### Step 1: Put the harness on your computer
+
+Clone or download this repository to your machine.
+
+Example location:
+
+```txt
+C:\Projetos\agent-execution-harness
+```
+
+If someone else is setting this up for you, this step means: "make sure the harness repo exists locally."
+
+### Step 2: Install the harness dependencies
+
+Inside the harness repository, run:
+
+```bash
+pnpm install
+```
+
+This downloads the packages needed to build and test the harness.
+
+### Step 3: Build the harness
+
+Still inside the harness repository, run:
+
+```bash
+pnpm build
+```
+
+This creates the compiled files used by the CLI.
+
+### Step 4: Check that the harness itself works
+
+Run:
+
+```bash
+pnpm test
+pnpm benchmark:smoke
+pnpm audit:release-readiness
+```
+
+If these commands pass, the harness repository is healthy.
+
+### Step 5: Choose the project where the harness will be installed
+
+Example target project:
+
+```txt
+C:\Projetos\my-app
+```
+
+This is the project where you want the AI agent to follow the harness rules.
+
+### Step 6: Run a dry-run installation first
+
+From the harness repository, run an installation preview against the target project.
+
+Example:
+
+```bash
+node bin/agent-harness.mjs init --adapter generic --cwd C:\Projetos\my-app
+```
+
+This should show what the harness would configure. A dry run should not blindly overwrite your project files.
+
+For a Stetix-style project, use:
+
+```bash
+node bin/agent-harness.mjs init --adapter stetix --cwd C:\Projetos\my-app
+```
+
+### Step 7: Review what will change
+
+Before applying anything, check whether the installation intends to configure:
+
+- `AGENTS.md`
+- `agent-harness.config.json`
+- package scripts
+- artifact folder ignore rules
+- plan/checklist templates
+
+If something looks wrong, stop and ask for help before applying.
+
+### Step 8: Apply the installation only after review
+
+When the dry-run output looks correct, apply the installation.
+
+Example:
+
+```bash
+node bin/agent-harness.mjs init --adapter generic --cwd C:\Projetos\my-app --apply
+```
+
+The installer should create or update the harness-related files in the target project.
+
+### Step 9: Run doctor in the target project
+
+After installation, validate the setup:
+
+```bash
+node bin/agent-harness.mjs doctor --cwd C:\Projetos\my-app
+```
+
+The expected result is:
+
+```txt
+status: success
+```
+
+If doctor reports errors, fix those before relying on the harness.
+
+### Step 10: Use natural language with the agent
+
+After installation, the user should not need to run harness commands manually during normal work.
+
+The user can say:
+
+```txt
+Find this bug.
+Create a plan.
+Execute the plan using the harness.
+Show me the evidence.
+```
+
+The agent should then run the harness commands underneath.
+
+### Step 11: Check the final answer
+
+At the end of the task, ask the agent for:
+
+- `run_id`
+- artifact path
+- final status
+- evidence
+- verified claims
+- tests or gates executed
+
+The safest final status is:
+
+```txt
+status: completed
+phase: completed
+```
+
+If the run is not completed, treat the work as partial.
+
 ## Do I Need To Run Commands Myself?
 
 Usually, no.
