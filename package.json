@@ -35,12 +35,12 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:integration": "vitest run tests/integration",
-    "benchmark:smoke": "node dist/cli/index.js benchmark --mode smoke",
-    "doctor": "node dist/cli/index.js doctor",
+    "test": "pnpm build && vitest run",
+    "test:integration": "pnpm build && vitest run tests/integration",
+    "benchmark:smoke": "pnpm build && node dist/cli/index.js benchmark --mode smoke",
+    "doctor": "pnpm build && node dist/cli/index.js doctor",
     "secret-scan": "node scripts/secret-scan.mjs",
-    "pack:dry": "node scripts/pack-check.mjs",
+    "pack:dry": "pnpm build && node scripts/pack-check.mjs",
     "audit:release-readiness": "node scripts/audit-release-readiness.mjs"
   },
   "engines": {
