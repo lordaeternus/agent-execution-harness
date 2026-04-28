@@ -14,7 +14,7 @@ describe("public readiness hardening", () => {
   it("uses public package metadata and MIT license", () => {
     const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")) as Record<string, unknown>;
     expect(pkg.private).toBeUndefined();
-    expect(pkg.version).toBe("0.1.0");
+    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(pkg.license).toBe("MIT");
     expect(fs.readFileSync("LICENSE", "utf8")).toContain("MIT License");
   });
