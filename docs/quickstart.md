@@ -30,6 +30,14 @@ If the preview looks correct, run:
 npx agent-execution-harness@latest init --adapter generic --cwd . --apply
 ```
 
+If your project already has `AGENTS.md`, the installer keeps it unchanged by default. For most existing projects, append the harness rules:
+
+```bash
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
+```
+
+Use `--agents-mode overwrite` only when you truly want to replace the current `AGENTS.md`. A backup is created first.
+
 For a Stetix-style project, use:
 
 ```bash

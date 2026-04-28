@@ -17,7 +17,7 @@ try {
   else if (command === "report") reportCommand(args);
   else if (command === "doctor") doctorCommand(args);
   else if (command === "benchmark") benchmarkCommand(args);
-  else if (command === "init") initCommand(args);
+  else if (command === "init") await initCommand(args);
   else throw new Error(`unknown command: ${command}`);
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);

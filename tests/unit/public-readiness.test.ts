@@ -71,4 +71,49 @@ describe("public readiness hardening", () => {
     expect(fs.existsSync(path.join(tmp, "AGENTS.md"))).toBe(true);
     expect(fs.existsSync(path.join(tmp, "agent-harness.config.json"))).toBe(true);
   });
+
+  it("does not overwrite an existing AGENTS.md unless explicitly requested", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-agents-skip-"));
+    fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", private: true }, null, 2)}\n`);
+    fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# Existing Rules\n\n- Keep current project rules.\n");
+
+    execFileSync("node", [path.resolve("dist/cli/index.js"), "init", "--adapter", "generic", "--cwd", tmp, "--apply"], { cwd: tmp, stdio: "pipe" });
+
+    expect(fs.readFileSync(path.join(tmp, "AGENTS.md"), "utf8")).toBe("# Existing Rules\n\n- Keep current project rules.\n");
+  });
+
+  it("can append harness rules to an existing AGENTS.md", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-agents-append-"));
+    fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", private: true }, null, 2)}\n`);
+    fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# Existing Rules\n");
+
+    execFileSync("node", [path.resolve("dist/cli/index.js"), "init", "--adapter", "generic", "--cwd", tmp, "--apply", "--agents-mode", "append"], {
+      cwd: tmp,
+      stdio: "pipe",
+    });
+    execFileSync("node", [path.resolve("dist/cli/index.js"), "init", "--adapter", "generic", "--cwd", tmp, "--apply", "--agents-mode", "append"], {
+      cwd: tmp,
+      stdio: "pipe",
+    });
+
+    const agents = fs.readFileSync(path.join(tmp, "AGENTS.md"), "utf8");
+    expect(agents).toContain("# Existing Rules");
+    expect(agents).toContain("agent-execution-harness:start");
+    expect(agents.match(/agent-execution-harness:start/g)).toHaveLength(1);
+  });
+
+  it("can overwrite AGENTS.md only with explicit agents mode", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-agents-overwrite-"));
+    fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", private: true }, null, 2)}\n`);
+    fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# Existing Rules\n");
+
+    execFileSync("node", [path.resolve("dist/cli/index.js"), "init", "--adapter", "generic", "--cwd", tmp, "--apply", "--agents-mode", "overwrite"], {
+      cwd: tmp,
+      stdio: "pipe",
+    });
+
+    const agents = fs.readFileSync(path.join(tmp, "AGENTS.md"), "utf8");
+    expect(agents).toContain("# Agent Harness Rules");
+    expect(agents).not.toContain("# Existing Rules");
+  });
 });

@@ -9,6 +9,7 @@
 ### Changed
 
 - Included docs, security policy, and contributing guide in the published npm package.
+- Protected existing `AGENTS.md` files with explicit `--agents-mode skip|append|overwrite` install behavior.
 
 ## 0.1.1 - 2026-04-28
 

@@ -62,6 +62,12 @@ If the preview looks correct, apply it:
 npx agent-execution-harness@latest init --adapter generic --cwd . --apply
 ```
 
+If your project already has an `AGENTS.md`, the installer does not overwrite it by default. To add the harness rules to the existing file, use:
+
+```bash
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
+```
+
 Check the installation:
 
 ```bash
@@ -241,6 +247,19 @@ Apply:
 npx agent-execution-harness@latest init --adapter generic --cwd . --apply
 ```
 
+If `AGENTS.md` already exists, choose how to handle it:
+
+```bash
+# safest default: keep the current AGENTS.md unchanged
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode skip
+
+# recommended for most existing projects: append harness rules to the current AGENTS.md
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
+
+# strongest but risky: replace AGENTS.md after backup
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode overwrite
+```
+
 Check:
 
 ```bash
@@ -410,6 +429,12 @@ The installer is designed to configure harness-related files such as:
 - plan/checklist templates
 - adapter-specific rules
 
+If the project already has `AGENTS.md`, the installer is conservative:
+
+- default behavior: keep the existing file unchanged
+- `--agents-mode append`: add a marked harness block once
+- `--agents-mode overwrite`: replace the file, with backup created first
+
 The harness artifact folder is usually:
 
 ```txt
@@ -568,6 +593,16 @@ By default, `init` is a dry run. Applying changes must be explicit:
 ```bash
 agent-harness init --adapter generic --cwd . --apply
 ```
+
+Existing `AGENTS.md` handling:
+
+```bash
+agent-harness init --adapter generic --cwd . --apply --agents-mode skip
+agent-harness init --adapter generic --cwd . --apply --agents-mode append
+agent-harness init --adapter generic --cwd . --apply --agents-mode overwrite
+```
+
+Without `--agents-mode`, interactive terminals ask what to do. Non-interactive runs use `skip` to avoid overwriting user instructions.
 
 ### `doctor`
 
