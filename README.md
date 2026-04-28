@@ -307,12 +307,118 @@ This section explains the intended installation flow in plain English.
 
 There are two projects involved:
 
-- the **harness repository**, which contains this tool
+- the **npm package**, which is the ready-to-install version of this tool
 - your **target project**, where you want AI agents to use the harness
 
-The harness repository is the toolbox. The target project is the place where the toolbox will be used.
+The npm package is the toolbox. The target project is the place where the toolbox will be used.
 
-### Step 1: Put the harness on your computer
+For most users, npm is the recommended path. You do not need to clone this repository just to install the harness in another project.
+
+### Step 1: Open a terminal in your target project
+
+Example target project:
+
+```txt
+C:\Projetos\my-app
+```
+
+This is the project where you want the AI agent to follow the harness rules.
+
+### Step 2: Preview the installation
+
+Run this first:
+
+```bash
+npx agent-execution-harness@latest init --adapter generic --cwd .
+```
+
+This is a dry run. It shows what the harness would configure without applying the full installation.
+
+For a Stetix-style project, use:
+
+```bash
+npx agent-execution-harness@latest init --adapter stetix --cwd .
+```
+
+### Step 3: Review what will change
+
+Before applying anything, check whether the installation intends to configure:
+
+- `AGENTS.md`
+- `agent-harness.config.json`
+- package scripts
+- artifact folder ignore rules
+- plan/checklist templates
+
+If something looks wrong, stop and ask for help before applying.
+
+### Step 4: Apply the installation
+
+When the dry-run output looks correct, run:
+
+```bash
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply
+```
+
+For Stetix-style projects:
+
+```bash
+npx agent-execution-harness@latest init --adapter stetix --cwd . --apply
+```
+
+The installer creates or updates only the harness-related files in the target project.
+
+### Step 5: Check the installation
+
+Run:
+
+```bash
+npx agent-execution-harness@latest doctor --cwd .
+```
+
+The expected result is:
+
+```txt
+status: success
+```
+
+If doctor reports errors, fix those before relying on the harness.
+
+### Step 6: Use natural language with the agent
+
+After installation, the user should not need to run harness commands manually during normal work.
+
+The user can say:
+
+```txt
+Find this bug.
+Create a plan.
+Execute the plan using the harness.
+Show me the evidence.
+```
+
+The agent should then run the harness commands underneath.
+
+### Optional: install as a development dependency
+
+If you want the harness pinned inside the target project, run:
+
+```bash
+npm install --save-dev agent-execution-harness
+```
+
+Then project scripts can call:
+
+```bash
+agent-harness run
+agent-harness doctor
+```
+
+## Local Development Setup
+
+Use this section only if you want to edit or contribute to the harness itself.
+
+### Step 1: Put the harness source code on your computer
 
 Clone or download this repository to your machine.
 
