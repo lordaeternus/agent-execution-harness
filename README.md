@@ -227,6 +227,165 @@ The run is complete. No more actions are allowed.
 
 The run stopped because continuing would be unsafe or invalid. No more actions are allowed until a human or orchestrator decides what to do next.
 
+## Simple Practical Workflow for Non-Technical Users
+
+If you are using this harness through an AI coding agent, you usually do not need to understand every command. The practical workflow is:
+
+1. Ask the agent to investigate the problem.
+
+   Example:
+
+   ```txt
+   Find the bug that breaks the checkout flow. Do not edit code yet.
+   ```
+
+2. Ask the agent to create an implementation plan.
+
+   Example:
+
+   ```txt
+   Create a detailed plan to fix this bug. Include files, risks, tests, and rollback.
+   ```
+
+3. Review the plan at a high level.
+
+   You do not need to understand every technical detail. Check whether the plan says:
+
+   - what problem will be fixed
+   - which area of the project will be changed
+   - how the agent will test the fix
+   - how the change can be rolled back if something goes wrong
+
+4. Ask the agent to execute the approved plan using the harness.
+
+   Example:
+
+   ```txt
+   Execute this approved plan using the agent harness. Do not declare success without the final artifact, evidence, and verified claims.
+   ```
+
+5. The agent should run the harness commands.
+
+   In a properly configured project, the agent should call commands such as:
+
+   ```bash
+   agent-harness plan-lint
+   agent-harness execute
+   agent-harness run
+   agent-harness report
+   ```
+
+   You, as the user, should not need to type every command manually. The agent should use them as part of its execution process.
+
+6. At the end, ask for the evidence.
+
+   Example:
+
+   ```txt
+   Show me the run_id, artifact path, final status, evidence, tests executed, and verified claims.
+   ```
+
+7. Only trust the result if the artifact says the run is complete.
+
+   The strongest completion signal is:
+
+   ```txt
+   status: completed
+   phase: completed
+   verified claims: present
+   evidence: present
+   ```
+
+If those fields are missing, the work may still be partial even if the agent sounds confident.
+
+## Do I Need To Run Commands Myself?
+
+Usually, no.
+
+The intended experience is conversational:
+
+```txt
+User: Create a plan.
+Agent: Here is the plan.
+User: Execute the plan using the harness.
+Agent: Runs the harness commands, edits code, records evidence, and reports the artifact.
+```
+
+However, this only works if the project and the agent are configured to use the harness. The harness is not magic background behavior built into every AI tool.
+
+There are three possible levels of integration:
+
+### Level 1: Manual Use
+
+A human or agent explicitly runs commands like:
+
+```bash
+agent-harness execute --plan plan.json --run-id fix-login
+```
+
+This is the most explicit mode. It is useful for testing and debugging the harness itself.
+
+### Level 2: Agent-Guided Use
+
+The user asks the agent to execute a plan with the harness, and the agent runs the commands.
+
+This is the recommended mode for most coding-agent workflows.
+
+The user says:
+
+```txt
+Execute the approved plan using the harness.
+```
+
+The agent is responsible for:
+
+- validating the plan
+- creating or resuming the artifact
+- recording evidence
+- verifying claims
+- generating the final report
+
+### Level 3: Project-Enforced Use
+
+The project has instructions, scripts, and checks that require the harness for risky or multi-step work.
+
+For example, the project's `AGENTS.md` may say:
+
+```txt
+For approved L2/L3, multi-step, or delegated plans, use the agent harness.
+Do not declare success without a completed artifact, evidence, and verified claims.
+```
+
+In this mode, a well-behaved agent should automatically use the harness when the task requires it.
+
+This is the best long-term setup, but it still depends on the agent obeying the project instructions. The harness makes correct behavior easier to enforce and audit; it does not physically force every possible model or tool to comply unless the surrounding system invokes it.
+
+## What To Ask The Agent
+
+Use prompts like these:
+
+```txt
+Create a plan first. Do not edit files yet.
+```
+
+```txt
+Before executing, validate the plan with the harness.
+```
+
+```txt
+Execute the plan using the harness and keep the artifact updated.
+```
+
+```txt
+Do not say the task is done unless the harness artifact is completed.
+```
+
+```txt
+In your final answer, include the run_id, artifact path, final status, evidence, and verified claims.
+```
+
+These prompts matter because they tell the agent to use the harness as the execution contract, not just as optional documentation.
+
 ## CLI Commands
 
 Build the project first:
