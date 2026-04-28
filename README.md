@@ -3,45 +3,295 @@
 [![CI](https://github.com/lordaeternus/agent-execution-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/lordaeternus/agent-execution-harness/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A transactional execution harness for AI agents. It turns implementation plans into a strict state machine, requires evidence for every meaningful claim, blocks dangerous operations, and prevents an agent from declaring success without an auditable run artifact.
+Agent Execution Harness is a safety and evidence layer for AI coding agents.
 
-The goal is not to make a model smarter. The goal is to make the execution environment harder to misuse. The harness moves critical discipline out of the model's memory and into deterministic files, schemas, commands, and verification gates.
+It helps an AI agent execute software plans in a more organized way by forcing the agent to:
 
-## Why This Exists
+- follow a plan task by task
+- declare which files it expects to touch
+- run explicit checks
+- record evidence
+- verify claims before saying "done"
+- stop instead of guessing when work becomes unsafe
 
-AI coding agents fail in predictable ways:
+The goal is not to make the model smarter. The goal is to make the agent's work harder to fake, skip, or hallucinate.
 
-- they start editing before understanding the plan
-- they skip tasks when the plan is long
-- they claim a test passed without running it
+## Quick Start
+
+Use this if you only want to install the harness in a project.
+
+Open a terminal inside your target project:
+
+```bash
+cd C:\Projetos\my-app
+```
+
+Preview the installation:
+
+```bash
+npx agent-execution-harness@latest init --adapter generic --cwd .
+```
+
+If the preview looks correct, apply it:
+
+```bash
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply
+```
+
+Check the installation:
+
+```bash
+npx agent-execution-harness@latest doctor --cwd .
+```
+
+Expected result:
+
+```txt
+status: success
+```
+
+After that, talk to your AI coding agent in normal language:
+
+```txt
+Find this bug.
+Create a plan.
+Execute the approved plan using the harness.
+Show me the evidence.
+```
+
+The agent should use the harness underneath.
+
+## What Problem Does This Solve?
+
+AI coding agents often fail in predictable ways:
+
+- they edit before understanding the task
+- they skip plan steps
+- they say tests passed without running tests
 - they invent files, commands, APIs, or validations
-- they broaden scope without noticing
-- they continue after dangerous ambiguity
-- they report success with no reproducible proof
+- they expand scope without noticing
+- they keep going after dangerous ambiguity
+- they declare success without proof
 
-This harness reduces those failures by forcing the agent to work through a narrow operational contract:
+This harness reduces those failures by creating an execution contract.
 
-1. read the plan
-2. declare the affected files
-3. work on one task at a time
-4. run an explicit gate
-5. record evidence
-6. verify claims
-7. generate a final report only after the artifact is complete
+The agent can still reason and write code, but the harness requires a structured artifact that records what actually happened.
 
-If any required proof is missing, the correct output is partial progress or `halt`, not success.
+## Explain It Like I Am New To This
 
-## Mental Model
+Think of the harness as a checklist plus flight recorder for AI coding work.
 
-Think of the harness as a flight recorder for autonomous coding work.
+The checklist tells the agent what steps must happen.
 
-The model can still reason, search, edit, and test. But the harness records the execution path in a structured JSON artifact so that a human or another agent can audit what actually happened.
+The flight recorder saves proof of what happened:
 
-The important idea is simple:
+- what task was executed
+- what files were involved
+- what command was run
+- whether the command passed or failed
+- what evidence supports the final answer
 
-> The final report is not trusted because the agent wrote it. It is trusted because it is derived from the run artifact.
+So when the agent says "done", you can ask:
 
-## Core Concepts
+```txt
+Where is the artifact?
+What evidence proves it?
+Which claims were verified?
+```
+
+If the agent cannot answer, the work is not truly complete.
+
+## For Non-Technical Users
+
+### Do I Need To Understand The Commands?
+
+Usually, no.
+
+The intended experience is conversational:
+
+```txt
+User: Create a plan.
+Agent: Here is the plan.
+User: Execute the plan using the harness.
+Agent: Runs the harness, edits code, records evidence, and reports the artifact.
+```
+
+You only need to know the high-level rule:
+
+> Do not trust "done" unless the agent gives evidence from the harness artifact.
+
+### What Should I Ask The Agent?
+
+Use prompts like these:
+
+```txt
+Investigate this bug. Do not edit files yet.
+```
+
+```txt
+Create a plan with files, risks, tests, and rollback.
+```
+
+```txt
+Execute this approved plan using the harness.
+```
+
+```txt
+Do not say it is done unless the harness artifact is completed.
+```
+
+```txt
+Show me the run_id, artifact path, final status, evidence, tests, and verified claims.
+```
+
+### How Do I Know It Worked?
+
+A strong final answer should include:
+
+- `run_id`
+- artifact path
+- final status
+- evidence
+- tests or gates executed
+- verified claims
+- rollback notes when relevant
+
+The safest completion signal is:
+
+```txt
+status: completed
+phase: completed
+verified claims: present
+evidence: present
+```
+
+If those fields are missing, treat the work as partial.
+
+## Installation Options
+
+### Option 1: Use With npx
+
+This is the easiest path.
+
+Preview:
+
+```bash
+npx agent-execution-harness@latest init --adapter generic --cwd .
+```
+
+Apply:
+
+```bash
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply
+```
+
+Check:
+
+```bash
+npx agent-execution-harness@latest doctor --cwd .
+```
+
+### Option 2: Install In The Project
+
+Use this when you want the harness pinned as a project dependency.
+
+```bash
+npm install --save-dev agent-execution-harness
+```
+
+Then commands are available as:
+
+```bash
+agent-harness doctor --cwd .
+agent-harness run
+agent-harness report
+```
+
+### Stetix-Style Project
+
+For projects that want the Stetix adapter:
+
+```bash
+npx agent-execution-harness@latest init --adapter stetix --cwd .
+```
+
+Apply:
+
+```bash
+npx agent-execution-harness@latest init --adapter stetix --cwd . --apply
+```
+
+## Common Confusions
+
+### What Is npm?
+
+npm is the package registry where this tool is published.
+
+GitHub stores the source code. npm distributes the installable package.
+
+### What Is npx?
+
+`npx` runs a package from npm without requiring you to install it manually first.
+
+This command:
+
+```bash
+npx agent-execution-harness@latest doctor --cwd .
+```
+
+means:
+
+```txt
+Download the latest harness package, run its doctor command, and check this project.
+```
+
+### Is The Harness Automatic?
+
+Only when the project and agent are configured to use it.
+
+The harness is not magic background behavior inside every AI tool. It works when:
+
+1. the project has harness files installed
+2. the project has clear `AGENTS.md` rules
+3. the agent reads and follows those rules
+4. the agent can run local commands
+5. the task matches a rule requiring the harness
+
+For example:
+
+```txt
+For approved multi-step plans, use the agent harness.
+Do not declare success without a completed artifact, evidence, and verified claims.
+```
+
+### Can A Bad Agent Ignore It?
+
+Yes, if the surrounding tool lets it ignore project instructions.
+
+The harness makes correct behavior easier to enforce and audit, but it cannot physically control every possible model or coding tool unless that tool invokes it.
+
+That is why the final answer must include artifact evidence.
+
+## What Installation Adds To A Project
+
+The installer is designed to configure harness-related files such as:
+
+- `AGENTS.md`
+- `agent-harness.config.json`
+- package scripts
+- ignored artifact folders
+- plan/checklist templates
+- adapter-specific rules
+
+The harness artifact folder is usually:
+
+```txt
+.agent-harness/runs/
+```
+
+Those artifacts prove what the agent actually did.
+
+## Core Concepts For Developers
 
 ### Plan
 
@@ -54,7 +304,7 @@ A plan is a JSON document with:
 - `gates`
 - `tasks`
 
-Each task must have:
+Each task must include:
 
 - `task_id`
 - `acceptance_criteria`
@@ -77,11 +327,11 @@ Example:
 }
 ```
 
-A valid plan must be specific enough that an agent does not need to invent success criteria while executing.
-
 ### Action
 
-An action is one state transition requested by the agent. The supported action space is intentionally small:
+An action is one state transition requested by the agent.
+
+Supported actions:
 
 - `read_context`
 - `declare_files`
@@ -92,38 +342,21 @@ An action is one state transition requested by the agent. The supported action s
 - `final_report`
 - `halt_for_risk`
 
-In constrained mode, the agent should perform one action at a time. This makes the process easier for weaker models and easier to audit.
-
 ### Artifact
 
 The artifact is the source of truth for execution.
 
-By default, run artifacts are stored in:
+Default path:
 
 ```txt
 .agent-harness/runs/<run_id>.json
 ```
 
-A run artifact records:
-
-- run id
-- mode
-- phase
-- plan
-- task statuses
-- declared files
-- pending gates
-- evidence
-- claims
-- verified claims
-- errors
-- final report metadata
-
-If the artifact is not `completed`, the work is not complete.
+If the artifact is not completed, the work is not complete.
 
 ### Evidence
 
-Evidence is the proof that a gate or check actually happened.
+Evidence records proof that a gate or check happened.
 
 Each evidence item records:
 
@@ -134,8 +367,6 @@ Each evidence item records:
 - `output_excerpt`
 - `scope_covered`
 - optional `residual_gap`
-
-The harness treats evidence as stronger than narrative. A sentence like "tests passed" is not enough. The agent must record which command ran, what the exit code was, and what output proves the result.
 
 ### Claims
 
@@ -156,7 +387,7 @@ Supported claim kinds include:
 - `rollback_defined`
 - `no_product_code_changed`
 
-A final report can only be produced after claims are verified. This prevents the agent from making unsupported success statements.
+Final reports should be derived from verified claims, not from agent confidence.
 
 ## State Machine
 
@@ -172,586 +403,51 @@ A run may also enter:
 halt
 ```
 
-### `init`
-
-The run has been created but no context has been recorded yet.
-
-Allowed next action:
-
-- `read_context`
-
-### `preflight`
-
-The agent has summarized the task context and must declare likely files before editing.
-
-Allowed next action:
-
-- `declare_files`
-
-### `task_start`
-
-The agent can begin a specific task or verify claims if all tasks are reconciled.
-
-Allowed next actions:
-
-- `edit_file_ready`
-- `verify_claims`
-
-### `gate`
-
-The agent has identified the task and files. It must now declare the validation command.
-
-Allowed next action:
-
-- `run_gate`
-
-### `evidence`
-
-A gate has been declared. The agent must record the actual result.
-
-Allowed next action:
-
-- `record_evidence`
-
-### `report`
-
-All tasks are reconciled. The agent must verify claims before producing the final report.
-
-Allowed next actions:
-
-- `verify_claims`
-- `final_report`
-
-### `completed`
-
-The run is complete. No more actions are allowed.
-
-### `halt`
-
-The run stopped because continuing would be unsafe or invalid. No more actions are allowed until a human or orchestrator decides what to do next.
-
-## Simple Practical Workflow for Non-Technical Users
-
-If you are using this harness through an AI coding agent, you usually do not need to understand every command. The practical workflow is:
-
-1. Ask the agent to investigate the problem.
-
-   Example:
-
-   ```txt
-   Find the bug that breaks the checkout flow. Do not edit code yet.
-   ```
-
-2. Ask the agent to create an implementation plan.
-
-   Example:
-
-   ```txt
-   Create a detailed plan to fix this bug. Include files, risks, tests, and rollback.
-   ```
-
-3. Review the plan at a high level.
-
-   You do not need to understand every technical detail. Check whether the plan says:
-
-   - what problem will be fixed
-   - which area of the project will be changed
-   - how the agent will test the fix
-   - how the change can be rolled back if something goes wrong
-
-4. Ask the agent to execute the approved plan using the harness.
-
-   Example:
-
-   ```txt
-   Execute this approved plan using the agent harness. Do not declare success without the final artifact, evidence, and verified claims.
-   ```
-
-5. The agent should run the harness commands.
-
-   In a properly configured project, the agent should call commands such as:
-
-   ```bash
-   agent-harness plan-lint
-   agent-harness execute
-   agent-harness run
-   agent-harness report
-   ```
-
-   You, as the user, should not need to type every command manually. The agent should use them as part of its execution process.
-
-6. At the end, ask for the evidence.
-
-   Example:
-
-   ```txt
-   Show me the run_id, artifact path, final status, evidence, tests executed, and verified claims.
-   ```
-
-7. Only trust the result if the artifact says the run is complete.
-
-   The strongest completion signal is:
-
-   ```txt
-   status: completed
-   phase: completed
-   verified claims: present
-   evidence: present
-   ```
-
-If those fields are missing, the work may still be partial even if the agent sounds confident.
-
-## Simple Installation Guide for Non-Technical Users
-
-This section explains the intended installation flow in plain English.
-
-There are two projects involved:
-
-- the **npm package**, which is the ready-to-install version of this tool
-- your **target project**, where you want AI agents to use the harness
-
-The npm package is the toolbox. The target project is the place where the toolbox will be used.
-
-For most users, npm is the recommended path. You do not need to clone this repository just to install the harness in another project.
-
-### Step 1: Open a terminal in your target project
-
-Example target project:
-
-```txt
-C:\Projetos\my-app
-```
-
-This is the project where you want the AI agent to follow the harness rules.
-
-### Step 2: Preview the installation
-
-Run this first:
+Meaning:
+
+- `init`: run created
+- `preflight`: context read, files must be declared
+- `task_start`: task execution can begin
+- `gate`: validation command must be declared
+- `evidence`: validation result must be recorded
+- `report`: claims must be verified and final report produced
+- `completed`: run is complete
+- `halt`: execution stopped for safety or invalid state
+
+## CLI Reference
+
+When installed from npm, use:
 
 ```bash
-npx agent-execution-harness@latest init --adapter generic --cwd .
+agent-harness <command>
 ```
 
-This is a dry run. It shows what the harness would configure without applying the full installation.
-
-For a Stetix-style project, use:
-
-```bash
-npx agent-execution-harness@latest init --adapter stetix --cwd .
-```
-
-### Step 3: Review what will change
-
-Before applying anything, check whether the installation intends to configure:
-
-- `AGENTS.md`
-- `agent-harness.config.json`
-- package scripts
-- artifact folder ignore rules
-- plan/checklist templates
-
-If something looks wrong, stop and ask for help before applying.
-
-### Step 4: Apply the installation
-
-When the dry-run output looks correct, run:
-
-```bash
-npx agent-execution-harness@latest init --adapter generic --cwd . --apply
-```
-
-For Stetix-style projects:
-
-```bash
-npx agent-execution-harness@latest init --adapter stetix --cwd . --apply
-```
-
-The installer creates or updates only the harness-related files in the target project.
-
-### Step 5: Check the installation
-
-Run:
-
-```bash
-npx agent-execution-harness@latest doctor --cwd .
-```
-
-The expected result is:
-
-```txt
-status: success
-```
-
-If doctor reports errors, fix those before relying on the harness.
-
-### Step 6: Use natural language with the agent
-
-After installation, the user should not need to run harness commands manually during normal work.
-
-The user can say:
-
-```txt
-Find this bug.
-Create a plan.
-Execute the plan using the harness.
-Show me the evidence.
-```
-
-The agent should then run the harness commands underneath.
-
-### Optional: install as a development dependency
-
-If you want the harness pinned inside the target project, run:
-
-```bash
-npm install --save-dev agent-execution-harness
-```
-
-Then project scripts can call:
-
-```bash
-agent-harness run
-agent-harness doctor
-```
-
-## Local Development Setup
-
-Use this section only if you want to edit or contribute to the harness itself.
-
-### Step 1: Put the harness source code on your computer
-
-Clone or download this repository to your machine.
-
-Example location:
-
-```txt
-C:\Projetos\agent-execution-harness
-```
-
-If someone else is setting this up for you, this step means: "make sure the harness repo exists locally."
-
-### Step 2: Install the harness dependencies
-
-Inside the harness repository, run:
-
-```bash
-pnpm install
-```
-
-This downloads the packages needed to build and test the harness.
-
-### Step 3: Build the harness
-
-Still inside the harness repository, run:
-
-```bash
-pnpm build
-```
-
-This creates the compiled files used by the CLI.
-
-### Step 4: Check that the harness itself works
-
-Run:
-
-```bash
-pnpm test
-pnpm benchmark:smoke
-pnpm audit:release-readiness
-```
-
-If these commands pass, the harness repository is healthy.
-
-### Step 5: Choose the project where the harness will be installed
-
-Example target project:
-
-```txt
-C:\Projetos\my-app
-```
-
-This is the project where you want the AI agent to follow the harness rules.
-
-### Step 6: Run a dry-run installation first
-
-From the harness repository, run an installation preview against the target project.
-
-Example:
-
-```bash
-node bin/agent-harness.mjs init --adapter generic --cwd C:\Projetos\my-app
-```
-
-This should show what the harness would configure. A dry run should not blindly overwrite your project files.
-
-For a Stetix-style project, use:
-
-```bash
-node bin/agent-harness.mjs init --adapter stetix --cwd C:\Projetos\my-app
-```
-
-### Step 7: Review what will change
-
-Before applying anything, check whether the installation intends to configure:
-
-- `AGENTS.md`
-- `agent-harness.config.json`
-- package scripts
-- artifact folder ignore rules
-- plan/checklist templates
-
-If something looks wrong, stop and ask for help before applying.
-
-### Step 8: Apply the installation only after review
-
-When the dry-run output looks correct, apply the installation.
-
-Example:
-
-```bash
-node bin/agent-harness.mjs init --adapter generic --cwd C:\Projetos\my-app --apply
-```
-
-The installer should create or update the harness-related files in the target project.
-
-### Step 9: Run doctor in the target project
-
-After installation, validate the setup:
-
-```bash
-node bin/agent-harness.mjs doctor --cwd C:\Projetos\my-app
-```
-
-The expected result is:
-
-```txt
-status: success
-```
-
-If doctor reports errors, fix those before relying on the harness.
-
-### Step 10: Use natural language with the agent
-
-After installation, the user should not need to run harness commands manually during normal work.
-
-The user can say:
-
-```txt
-Find this bug.
-Create a plan.
-Execute the plan using the harness.
-Show me the evidence.
-```
-
-The agent should then run the harness commands underneath.
-
-### Step 11: Check the final answer
-
-At the end of the task, ask the agent for:
-
-- `run_id`
-- artifact path
-- final status
-- evidence
-- verified claims
-- tests or gates executed
-
-The safest final status is:
-
-```txt
-status: completed
-phase: completed
-```
-
-If the run is not completed, treat the work as partial.
-
-## Do I Need To Run Commands Myself?
-
-Usually, no.
-
-The intended experience is conversational:
-
-```txt
-User: Create a plan.
-Agent: Here is the plan.
-User: Execute the plan using the harness.
-Agent: Runs the harness commands, edits code, records evidence, and reports the artifact.
-```
-
-However, this only works if the project and the agent are configured to use the harness. The harness is not magic background behavior built into every AI tool.
-
-## Natural Language Experience
-
-The desired user experience is simple:
-
-> The user speaks in natural language. The agent handles the harness mechanics underneath.
-
-In a properly configured project, a non-technical user should not need to know how the state machine, JSON artifact, claims, or CLI commands work. The user can speak normally:
-
-```txt
-Find the bug.
-Create a plan.
-Execute the plan.
-Show me the evidence.
-```
-
-Behind the scenes, the agent should translate those natural-language requests into harness operations:
-
-```txt
-Natural language request
--> plan validation
--> run artifact creation or resume
--> scoped task execution
--> gate execution
--> evidence recording
--> claim verification
--> final report from artifact
-```
-
-That means the user-facing workflow stays conversational, while the agent-facing workflow becomes structured and auditable.
-
-The correct mental model is:
-
-- the user does not operate the harness directly
-- the agent operates the harness on behalf of the user
-- the project instructions tell the agent when the harness is mandatory
-- the artifact proves what actually happened
-
-## What Installation Should Configure
-
-When this harness is installed into a project, the installation should prepare the environment so the user can work through natural language while the agent uses the harness internally.
-
-A complete installation should configure:
-
-- `AGENTS.md` rules that tell the agent when the harness is required
-- `agent-harness.config.json` with artifact paths, product paths, doctor profile, and command policy
-- package scripts for common harness commands
-- artifact directories ignored by Git
-- plan and checklist templates
-- adapter-specific rules when a project needs them
-- `doctor` validation so the setup can be checked
-
-After installation, the expected interaction is:
-
-```txt
-User: Investigate this bug.
-Agent: Investigates without editing code.
-
-User: Create a plan.
-Agent: Creates a plan with tasks, files, risks, tests, and rollback.
-
-User: Execute the plan using the harness.
-Agent: Runs the harness commands underneath, edits code, records evidence, verifies claims, and reports the final artifact.
-```
-
-The user should not need to manually type `agent-harness run` or understand the JSON payloads during normal use.
-
-## When Is It Automatic?
-
-The harness is automatic only when the surrounding project and agent workflow make it automatic.
-
-It works automatically for the user when all of these are true:
-
-1. the project has the harness installed
-2. the project has clear `AGENTS.md` rules
-3. the agent reads and follows those rules
-4. the agent has permission to run local commands
-5. the task matches the rule that requires the harness, such as approved plans, L2/L3 risk, multi-step work, or delegated work
-
-If those conditions are met, the user can simply ask for a plan and then ask the agent to execute it. The agent should run the harness underneath.
-
-If those conditions are not met, the harness may sit in the repo unused. It is a control system, not a universal background service.
-
-The practical rule is:
-
-> Natural language is the interface for the user. Harness commands are the execution contract for the agent.
-
-There are three possible levels of integration:
-
-### Level 1: Manual Use
-
-A human or agent explicitly runs commands like:
-
-```bash
-agent-harness execute --plan plan.json --run-id fix-login
-```
-
-This is the most explicit mode. It is useful for testing and debugging the harness itself.
-
-### Level 2: Agent-Guided Use
-
-The user asks the agent to execute a plan with the harness, and the agent runs the commands.
-
-This is the recommended mode for most coding-agent workflows.
-
-The user says:
-
-```txt
-Execute the approved plan using the harness.
-```
-
-The agent is responsible for:
-
-- validating the plan
-- creating or resuming the artifact
-- recording evidence
-- verifying claims
-- generating the final report
-
-### Level 3: Project-Enforced Use
-
-The project has instructions, scripts, and checks that require the harness for risky or multi-step work.
-
-For example, the project's `AGENTS.md` may say:
-
-```txt
-For approved L2/L3, multi-step, or delegated plans, use the agent harness.
-Do not declare success without a completed artifact, evidence, and verified claims.
-```
-
-In this mode, a well-behaved agent should automatically use the harness when the task requires it.
-
-This is the best long-term setup, but it still depends on the agent obeying the project instructions. The harness makes correct behavior easier to enforce and audit; it does not physically force every possible model or tool to comply unless the surrounding system invokes it.
-
-## What To Ask The Agent
-
-Use prompts like these:
-
-```txt
-Create a plan first. Do not edit files yet.
-```
-
-```txt
-Before executing, validate the plan with the harness.
-```
-
-```txt
-Execute the plan using the harness and keep the artifact updated.
-```
-
-```txt
-Do not say the task is done unless the harness artifact is completed.
-```
-
-```txt
-In your final answer, include the run_id, artifact path, final status, evidence, and verified claims.
-```
-
-These prompts matter because they tell the agent to use the harness as the execution contract, not just as optional documentation.
-
-## CLI Commands
-
-Build the project first:
-
-```bash
-pnpm install
-pnpm build
-```
-
-Then use the CLI through:
+When developing from this repository, use:
 
 ```bash
 node bin/agent-harness.mjs <command>
+```
+
+### `init`
+
+Prepares a target project using templates.
+
+```bash
+agent-harness init --adapter generic --cwd .
+```
+
+By default, `init` is a dry run. Applying changes must be explicit:
+
+```bash
+agent-harness init --adapter generic --cwd . --apply
+```
+
+### `doctor`
+
+Checks whether a project is configured correctly.
+
+```bash
+agent-harness doctor --cwd .
 ```
 
 ### `plan-lint`
@@ -759,29 +455,25 @@ node bin/agent-harness.mjs <command>
 Validates a plan before execution.
 
 ```bash
-node bin/agent-harness.mjs plan-lint --plan tests/fixtures/plans/basic-plan.json
+agent-harness plan-lint --plan plan.json
 ```
-
-Use this before starting any approved multi-step implementation.
 
 ### `execute`
 
 Initializes or resumes a run.
 
 ```bash
-node bin/agent-harness.mjs execute --plan tests/fixtures/plans/basic-plan.json --run-id demo
+agent-harness execute --plan plan.json --run-id fix-login
 ```
-
-If the artifact does not exist, this creates the first run state. If it exists, the command reports the current phase and next action.
 
 ### `run`
 
 Applies one low-level action to the run state.
 
 ```bash
-node bin/agent-harness.mjs run \
-  --plan tests/fixtures/plans/basic-plan.json \
-  --run-id demo \
+agent-harness run \
+  --plan plan.json \
+  --run-id fix-login \
   --action '{"schema_version":"agent_harness_action_v1","type":"read_context","summary":"Read plan and repo context."}'
 ```
 
@@ -792,46 +484,18 @@ This is the transactional command used by autonomous agents.
 Generates a final report from a completed artifact.
 
 ```bash
-node bin/agent-harness.mjs report --run-id demo
+agent-harness report --run-id fix-login
 ```
-
-The report command should not invent a result. It reads the artifact and renders what was actually recorded.
-
-### `doctor`
-
-Checks whether a project is configured correctly for the harness.
-
-```bash
-node bin/agent-harness.mjs doctor --cwd examples/minimal-js-project
-```
-
-Doctor checks include:
-
-- `package.json` presence
-- `AGENTS.md` presence
-- config presence
-- artifact directory ignored by Git
-- basic profile compatibility
 
 ### `benchmark`
 
 Runs an offline benchmark over captured scenarios.
 
 ```bash
-node bin/agent-harness.mjs benchmark --mode smoke
+agent-harness benchmark --mode smoke
 ```
 
-The benchmark does not call model APIs. It scores captured runs and scenarios so changes to the harness can be compared deterministically.
-
-### `init`
-
-Prepares a target project using templates.
-
-```bash
-node bin/agent-harness.mjs init --adapter generic --cwd ../some-project
-```
-
-By default, init behaves as a dry run. It reports what would be created or changed. Applying changes should be explicit.
+The benchmark does not call model APIs.
 
 ## Configuration
 
@@ -860,7 +524,7 @@ Example:
 Important fields:
 
 - `artifact_dir`: where run artifacts are stored
-- `product_paths`: paths treated as product code for scope checks
+- `product_paths`: paths treated as product code
 - `required_scripts`: scripts expected by doctor
 - `doctor_profile`: validation profile for the project
 - `command_policy`: allow/deny rules for commands
@@ -881,23 +545,6 @@ The harness blocks or halts when it sees unsafe behavior, including:
 
 This does not replace human judgment. It creates mechanical pressure against unsafe automation.
 
-## How An Agent Should Use It
-
-A well-behaved agent should follow this loop:
-
-1. Run `plan-lint`.
-2. Run `execute` to create or resume an artifact.
-3. Read the current phase and allowed next actions.
-4. Apply exactly one action with `run`.
-5. Perform the actual implementation or validation outside the artifact.
-6. Record evidence with command, exit code, and output excerpt.
-7. Repeat until all tasks are completed, blocked, deferred, or cancelled.
-8. Verify claims.
-9. Generate report.
-10. Only then claim success.
-
-The agent should enter `halt_for_risk` if it detects unsafe ambiguity, destructive work, missing evidence, scope conflict, or a plan/runtime mismatch.
-
 ## What This Harness Does Not Promise
 
 This harness does not guarantee that:
@@ -908,7 +555,7 @@ This harness does not guarantee that:
 - every architectural decision is correct
 - no human review is needed
 
-It does guarantee a stronger operating discipline:
+It does provide stronger operating discipline:
 
 - work is decomposed into tasks
 - state is recorded
@@ -917,7 +564,9 @@ It does guarantee a stronger operating discipline:
 - dangerous operations are blocked or halted
 - final reports are derived from artifacts
 
-## Development
+## Local Development
+
+Use this section only if you want to edit or contribute to the harness itself.
 
 Install dependencies:
 
@@ -961,6 +610,18 @@ Run release readiness audit:
 pnpm audit:release-readiness
 ```
 
-## Current Status
+## Project Status
 
-This repository is versioned as `0.1.0`. Treat it as an early public foundation: useful for experimentation and structured agent execution, with public-readiness hardening focused on CI, installer safety, schemas, doctor checks, command policy, and release hygiene.
+Current version:
+
+```txt
+0.1.0
+```
+
+Package:
+
+```txt
+agent-execution-harness
+```
+
+Treat this as an early public foundation. It is useful for experimentation and structured agent execution, with hardening focused on CI, installer safety, schemas, doctor checks, command policy, and release hygiene.
