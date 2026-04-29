@@ -1,7 +1,7 @@
 import type { AgentHarnessRunState } from "./run-types.js";
 
 export function buildReport(state: AgentHarnessRunState): string {
-  if (state.status !== "completed") throw new Error("report requires completed run");
+  if (!["completed", "partial_validated"].includes(state.status)) throw new Error("report requires completed or partial_validated run");
   if (!state.verified_claims.length) throw new Error("report requires verified claims");
   return [
     "# Agent Harness Final Report",
@@ -20,8 +20,15 @@ export function buildReport(state: AgentHarnessRunState): string {
     "## Verified Claims",
     ...state.verified_claims.map((claim) => `- ${claim.claim_id}: ${claim.kind} -> ${claim.value}`),
     "",
+    "## Evidence Policy",
+    `- status: ${state.evidence_policy?.status ?? "not_evaluated"}`,
+    `- score: ${state.evidence_policy?.score ?? "n/a"}`,
+    `- required: ${state.evidence_policy?.required.join(", ") || "none"}`,
+    `- satisfied: ${state.evidence_policy?.satisfied.join(", ") || "none"}`,
+    `- missing: ${state.evidence_policy?.missing.join(", ") || "none"}`,
+    "",
     "## Result",
-    `- completed: ${state.final_report?.summary ?? "no summary"}`,
+    `- ${state.status}: ${state.final_report?.summary ?? "no summary"}`,
     "",
   ].join("\n");
 }

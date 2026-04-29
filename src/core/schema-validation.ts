@@ -24,7 +24,7 @@ export function validateRunState(state: unknown): asserts state is AgentHarnessR
   requireString(value, "schema_version", RUN_SCHEMA_VERSION);
   requireString(value, "run_id");
   requireEnum(value, "mode", ["strong", "standard", "constrained"]);
-  requireEnum(value, "status", ["in_progress", "ready_for_report", "completed", "halt"]);
+  requireEnum(value, "status", ["in_progress", "ready_for_report", "completed", "partial_validated", "halt"]);
   requireEnum(value, "phase", ["init", "preflight", "task_start", "gate", "evidence", "report", "halt", "completed"]);
   if (!value.plan || typeof value.plan !== "object") throw new Error("run.plan is required");
   if (!Array.isArray(value.tasks)) throw new Error("run.tasks must be an array");
@@ -67,6 +67,9 @@ function collectPlanErrors(plan: unknown): string[] {
       requireString(record, "task_id");
       requireSafeId(record, "task_id");
       requireString(record, "acceptance_criteria");
+      if (record.surface !== undefined) requireEnum(record, "surface", ["ui_layout", "ui", "backend", "api", "auth", "db", "ai", "docs", "generic"]);
+      if (record.files !== undefined) requireArray(record, "files");
+      if (record.required_evidence !== undefined) requireArray(record, "required_evidence");
       if (seenTasks.has(record.task_id as string)) throw new Error(`duplicate task_id: ${String(record.task_id)}`);
       seenTasks.add(record.task_id as string);
     }

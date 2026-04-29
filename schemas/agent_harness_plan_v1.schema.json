@@ -19,7 +19,10 @@
         "required": ["task_id", "acceptance_criteria"],
         "properties": {
           "task_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$", "minLength": 1 },
-          "acceptance_criteria": { "type": "string", "minLength": 1 }
+          "acceptance_criteria": { "type": "string", "minLength": 1 },
+          "surface": { "enum": ["ui_layout", "ui", "backend", "api", "auth", "db", "ai", "docs", "generic"] },
+          "files": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "required_evidence": { "type": "array", "items": { "type": "string", "minLength": 1 } }
         }
       }
     }

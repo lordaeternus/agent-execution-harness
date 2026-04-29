@@ -12,6 +12,13 @@
     "summary": { "type": "string" },
     "task_id": { "type": "string" },
     "files": { "type": "array", "items": { "type": "string" } },
-    "command": { "type": "string" }
+    "command": { "type": "string" },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "evidence_type": { "type": "string" },
+        "evidence_types": { "type": "array", "items": { "type": "string" } }
+      }
+    }
   }
 }

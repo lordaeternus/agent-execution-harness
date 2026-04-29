@@ -22,6 +22,24 @@ function plan(): AgentHarnessPlan {
   };
 }
 
+function uiPlan(): AgentHarnessPlan {
+  return {
+    schema_version: "agent_harness_plan_v1",
+    plan_id: "ui-plan",
+    risk_level: "L2",
+    rollback_expectation: "Revert UI files.",
+    gates: ["pnpm agent:verify:ui"],
+    tasks: [
+      {
+        task_id: "ui-task",
+        surface: "ui_layout",
+        files: ["src/components/AppLayout.tsx"],
+        acceptance_criteria: "Sidebar layout has no visual overlap.",
+      },
+    ],
+  };
+}
+
 describe("core harness", () => {
   it("blocks dangerous commands", () => {
     expect(classifyDangerousCommand("git reset --hard HEAD")).toContain("git reset");
@@ -116,6 +134,172 @@ describe("core harness", () => {
     } finally {
       process.chdir(oldCwd);
     }
+  });
+
+  it("marks UI work partial_validated when required visual evidence is missing", () => {
+    const config = defaultConfig();
+    let state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: null,
+      runId: "ui-run",
+      mode: "standard",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "read_context", summary: "ctx" },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run",
+      mode: "standard",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "declare_files", files: ["src/components/AppLayout.tsx"] },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run",
+      mode: "standard",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "edit_file_ready", task_id: "ui-task", files: ["src/components/AppLayout.tsx"] },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run",
+      mode: "standard",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "run_gate", command: "pnpm agent:verify:ui" },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run",
+      mode: "standard",
+      config,
+      action: {
+        schema_version: ACTION_SCHEMA_VERSION,
+        type: "record_evidence",
+        evidence: {
+          evidence_id: "ui-ev-partial",
+          evidence_types: ["focused_tests", "scoped_lint", "scoped_typecheck"],
+          check: "pnpm agent:verify:ui",
+          result: "pass",
+          exit_code: 0,
+          output_excerpt: "Focused tests, lint and scoped typecheck passed. Browser smoke not run.",
+          scope_covered: "focused tests, scoped lint, scoped typecheck",
+          residual_gap: "browser smoke not run",
+        },
+      },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run",
+      mode: "standard",
+      config,
+      action: {
+        schema_version: ACTION_SCHEMA_VERSION,
+        type: "verify_claims",
+        claims: [
+          { claim_id: "c-ui-gate", kind: "gate_passed", value: "pnpm agent:verify:ui", evidence_id: "ui-ev-partial" },
+          { claim_id: "c-ui-accept", kind: "acceptance_criteria_met", value: "ui-task", evidence_id: "ui-ev-partial" },
+          { claim_id: "c-ui-rollback", kind: "rollback_defined", value: "rollback", evidence_id: "ui-ev-partial" },
+        ],
+      },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run",
+      mode: "standard",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "final_report", summary: "implemented but visual smoke missing" },
+    }).state;
+    expect(state.status).toBe("partial_validated");
+    expect(state.evidence_policy?.missing).toEqual(["browser_smoke|visual_assertion"]);
+    expect(buildReport(state)).toContain("partial_validated");
+  });
+
+  it("completes UI work when all required evidence types are present", () => {
+    const config = defaultConfig();
+    let state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: null,
+      runId: "ui-run-complete",
+      mode: "standard",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "read_context", summary: "ctx" },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run-complete",
+      mode: "standard",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "declare_files", files: ["src/components/AppLayout.tsx"] },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run-complete",
+      mode: "standard",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "edit_file_ready", task_id: "ui-task", files: ["src/components/AppLayout.tsx"] },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run-complete",
+      mode: "standard",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "run_gate", command: "pnpm agent:verify:ui" },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run-complete",
+      mode: "standard",
+      config,
+      action: {
+        schema_version: ACTION_SCHEMA_VERSION,
+        type: "record_evidence",
+        evidence: {
+          evidence_id: "ui-ev-complete",
+          evidence_types: ["focused_tests", "scoped_lint", "scoped_typecheck", "visual_assertion"],
+          check: "pnpm agent:verify:ui",
+          result: "pass",
+          exit_code: 0,
+          output_excerpt: "All UI gates passed.",
+          scope_covered: "focused tests, scoped lint, scoped typecheck, visual assertion",
+        },
+      },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run-complete",
+      mode: "standard",
+      config,
+      action: {
+        schema_version: ACTION_SCHEMA_VERSION,
+        type: "verify_claims",
+        claims: [
+          { claim_id: "c-ui-gate", kind: "gate_passed", value: "pnpm agent:verify:ui", evidence_id: "ui-ev-complete" },
+          { claim_id: "c-ui-accept", kind: "acceptance_criteria_met", value: "ui-task", evidence_id: "ui-ev-complete" },
+          { claim_id: "c-ui-rollback", kind: "rollback_defined", value: "rollback", evidence_id: "ui-ev-complete" },
+        ],
+      },
+    }).state;
+    state = processHarnessAction({
+      plan: uiPlan(),
+      previousState: state,
+      runId: "ui-run-complete",
+      mode: "standard",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "final_report", summary: "validated" },
+    }).state;
+    expect(state.status).toBe("completed");
+    expect(state.evidence_policy?.score).toBe(100);
   });
 
   it("calculates deterministic benchmark metrics", () => {

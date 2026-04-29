@@ -31,7 +31,7 @@ export function processHarnessAction(input: {
   return {
     state,
     observation: {
-      status: state.status === "halt" ? "halt" : "success",
+      status: state.status === "halt" ? "halt" : state.status === "partial_validated" ? "warning" : "success",
       summary: `${state.phase}: ${state.tasks.filter((task) => task.status === "completed").length}/${state.tasks.length} tasks completed`,
       next_actions: nextActions(state.phase),
       artifacts: [{ type: "run_state", run_id: state.run_id }],

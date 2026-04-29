@@ -7,6 +7,9 @@
   "tasks": [
     {
       "task_id": "example-task",
+      "surface": "generic",
+      "files": [],
+      "required_evidence": ["focused_tests"],
       "acceptance_criteria": "A focal test passes and evidence is recorded."
     }
   ]

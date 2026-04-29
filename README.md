@@ -35,7 +35,7 @@ The goal is not to make the model smarter. The goal is to make the agent's work 
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.1.2.md)
+- [Release notes](docs/release-notes/v0.1.3.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -513,12 +513,51 @@ Evidence records proof that a gate or check happened.
 Each evidence item records:
 
 - `evidence_id`
+- optional `evidence_type`
+- optional `evidence_types`
 - `check`
 - `result`
 - `exit_code`
 - `output_excerpt`
 - `scope_covered`
 - optional `residual_gap`
+
+Evidence types let the harness compare proof against the plan:
+
+```json
+{
+  "evidence_id": "ui-verification",
+  "evidence_types": ["focused_tests", "scoped_lint", "scoped_typecheck", "visual_assertion"],
+  "check": "pnpm agent:verify:ui",
+  "result": "pass",
+  "exit_code": 0,
+  "output_excerpt": "Focused tests, lint, typecheck and visual assertion passed.",
+  "scope_covered": "sidebar UI verification"
+}
+```
+
+### Evidence Policy
+
+Plans may declare required evidence per task:
+
+```json
+{
+  "task_id": "verify-sidebar-layout",
+  "surface": "ui_layout",
+  "files": ["src/components/AppLayout.tsx"],
+  "required_evidence": [
+    "focused_tests",
+    "scoped_lint",
+    "scoped_typecheck",
+    "browser_smoke|visual_assertion"
+  ],
+  "acceptance_criteria": "Sidebar layout has no overlap."
+}
+```
+
+If `required_evidence` is not provided, the harness infers requirements from the task `surface` and files. UI/layout work requires focused tests, scoped lint, scoped typecheck and browser smoke or visual assertion before a run can be `completed`.
+
+If required proof is missing, the run becomes `partial_validated` instead of `completed`, and the report shows the evidence score plus missing requirements.
 
 ### Claims
 
@@ -777,7 +816,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.1.0
+0.1.3
 ```
 
 Package:

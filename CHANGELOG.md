@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.3 - 2026-04-29
+
+### Added
+
+- Added evidence policy enforcement with required evidence by task surface and files.
+- Added `partial_validated` run status when required evidence is missing.
+- Added evidence quality score and missing/satisfied evidence details to final reports.
+- Added `evidence_type` and `evidence_types` support for structured proof records.
+
+### Changed
+
+- UI/layout tasks now require focused tests, scoped lint, scoped typecheck and browser smoke or visual assertion before `completed`.
+- Updated GitHub Actions to Node 24-era action versions.
+
 ## 0.1.2 - 2026-04-28
 
 ### Fixed

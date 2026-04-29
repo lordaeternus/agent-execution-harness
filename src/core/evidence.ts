@@ -11,5 +11,11 @@ export function normalizeEvidence(input: unknown): Evidence {
   assertNonEmptyString(evidence.scope_covered, "evidence.scope_covered");
   if (!["pass", "fail", "halt"].includes(evidence.result)) throw new Error("evidence.result is invalid");
   if (typeof evidence.exit_code !== "number") throw new Error("evidence.exit_code must be a number");
+  if (evidence.evidence_type !== undefined) assertNonEmptyString(evidence.evidence_type, "evidence.evidence_type");
+  if (evidence.evidence_types !== undefined) {
+    if (!Array.isArray(evidence.evidence_types) || evidence.evidence_types.some((item) => typeof item !== "string" || item.trim().length === 0)) {
+      throw new Error("evidence.evidence_types must be a non-empty string array");
+    }
+  }
   return evidence as Evidence;
 }

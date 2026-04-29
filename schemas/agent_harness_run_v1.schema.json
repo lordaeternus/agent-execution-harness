@@ -8,7 +8,7 @@
     "schema_version": { "const": "agent_harness_run_v1" },
     "run_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
     "mode": { "enum": ["strong", "standard", "constrained"] },
-    "status": { "enum": ["in_progress", "ready_for_report", "completed", "halt"] },
+    "status": { "enum": ["in_progress", "ready_for_report", "completed", "partial_validated", "halt"] },
     "phase": { "enum": ["init", "preflight", "task_start", "gate", "evidence", "report", "halt", "completed"] },
     "tasks": { "type": "array" },
     "evidence": { "type": "array" },

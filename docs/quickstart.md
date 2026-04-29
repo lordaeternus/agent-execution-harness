@@ -69,6 +69,7 @@ Use the agent harness for approved plans, multi-step work, risky changes, and an
 Before editing, validate the plan.
 During execution, keep the harness artifact updated.
 Do not claim success unless the artifact is completed and includes evidence plus verified claims.
+For UI/layout work, do not claim completed unless browser smoke or visual assertion evidence exists; otherwise report partial_validated.
 In the final answer, include run_id, artifact path, status, gates, evidence, verified claims, and rollback notes.
 ```
 
@@ -80,8 +81,9 @@ artifact: .agent-harness/runs/fix-login-20260428.json
 status: completed
 gates: pnpm test:run tests/login.test.ts
 evidence: exit_code 0, affected login tests passed
+evidence_policy: score 100, no missing required evidence
 verified claims: bug_reproduced_before_fix, bug_fixed_after_fix, acceptance_criteria_met
 rollback: revert commit abc123 or restore files listed in the artifact
 ```
 
-If the final answer does not include artifact, evidence, and verified claims, treat the work as partial.
+If the final answer does not include artifact, evidence policy score, evidence, and verified claims, treat the work as partial.

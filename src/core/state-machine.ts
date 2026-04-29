@@ -7,6 +7,7 @@ import { normalizeEvidence } from "./evidence.js";
 import { verifyClaim } from "./claims.js";
 import { assertNonEmptyString, assertSafeId, assertSafeRelativePath } from "./utils.js";
 import type { AgentHarnessConfig } from "./config-types.js";
+import { evaluateEvidencePolicy } from "./evidence-policy.js";
 
 const ALLOWED: Record<string, string[]> = {
   init: ["read_context", "halt_for_risk"],
@@ -129,8 +130,9 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
     if (next.verified_claims.some((claim) => !claim.verified)) throw new Error("final_report requires all claims verified");
     if (next.tasks.some((task) => ["not_started", "in_progress"].includes(task.status))) throw new Error("final_report requires all tasks reconciled");
     next.final_report = { summary: action.summary, verified_claim_ids: next.verified_claims.map((claim) => claim.claim_id) };
+    next.evidence_policy = evaluateEvidencePolicy(next);
     next.phase = "completed";
-    next.status = "completed";
+    next.status = next.evidence_policy.status === "satisfied" ? "completed" : "partial_validated";
     return next;
   }
   return next;
