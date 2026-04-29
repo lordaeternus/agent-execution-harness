@@ -1,5 +1,5 @@
 import type { Evidence } from "./run-types.js";
-import { assertNonEmptyString } from "./utils.js";
+import { assertNonEmptyString, assertSafeRelativePath } from "./utils.js";
 
 export function normalizeEvidence(input: unknown): Evidence {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("evidence must be an object");
@@ -16,6 +16,11 @@ export function normalizeEvidence(input: unknown): Evidence {
     if (!Array.isArray(evidence.evidence_types) || evidence.evidence_types.some((item) => typeof item !== "string" || item.trim().length === 0)) {
       throw new Error("evidence.evidence_types must be a non-empty string array");
     }
+  }
+  if (evidence.output_ref !== undefined) {
+    assertSafeRelativePath(evidence.output_ref, "evidence.output_ref");
+    assertNonEmptyString(evidence.sha256, "evidence.sha256");
+    if (!/^[a-f0-9]{64}$/i.test(evidence.sha256)) throw new Error("evidence.sha256 must be a sha256 hex digest");
   }
   return evidence as Evidence;
 }

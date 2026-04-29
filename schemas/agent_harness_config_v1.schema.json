@@ -17,6 +17,16 @@
         "allow": { "type": "array", "items": { "type": "string" } },
         "deny": { "type": "array", "items": { "type": "string" } }
       }
+    },
+    "token_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "observation_format": { "enum": ["compact", "standard", "full"] },
+        "summary_max_chars": { "type": "number", "exclusiveMinimum": 0 },
+        "output_excerpt_max_chars": { "type": "number", "exclusiveMinimum": 0 },
+        "report_compact_max_chars": { "type": "number", "exclusiveMinimum": 0 }
+      }
     }
   }
 }

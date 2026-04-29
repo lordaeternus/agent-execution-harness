@@ -7,4 +7,5 @@ export * from "./core/config.js";
 export * from "./core/runner.js";
 export * from "./core/report.js";
 export * from "./core/benchmark.js";
+export * from "./core/auto-claims.js";
 export * from "./core/evidence-policy.js";

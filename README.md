@@ -35,7 +35,7 @@ The goal is not to make the model smarter. The goal is to make the agent's work 
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.1.3.md)
+- [Release notes](docs/release-notes/v0.2.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -43,6 +43,7 @@ The goal is not to make the model smarter. The goal is to make the agent's work 
 ## Quick Start
 
 Use this if you only want to install the harness in a project.
+AI agents should read [`docs/agent-runtime.md`](docs/agent-runtime.md) for the short runtime protocol. This README is intentionally detailed for humans.
 
 Open a terminal inside your target project:
 
@@ -91,14 +92,28 @@ Show me the evidence.
 
 The agent should use the harness underneath.
 
+Token-light flow for agents:
+
+```bash
+agent-harness start --plan plan.json --run-id fix-id --summary "ctx"
+agent-harness files declare --plan plan.json --run-id fix-id --files src/file.ts
+agent-harness task start --plan plan.json --run-id fix-id --task-id task-id --files src/file.ts
+agent-harness gate pass --plan plan.json --run-id fix-id --type focused_tests --check "pnpm test"
+agent-harness claim auto --plan plan.json --run-id fix-id
+agent-harness finish --plan plan.json --run-id fix-id --summary "Validated."
+agent-harness report --run-id fix-id --format compact
+```
+
 ### Copy-Paste Prompt For Your Agent
 
 After installing the harness, give your AI coding agent this instruction:
 
 ```txt
 Use the agent harness for approved plans, multi-step work, risky changes, and any task where you need to prove completion.
+Read docs/agent-runtime.md first; do not load the full README for routine execution.
 Before editing, validate the plan.
 During execution, keep the harness artifact updated.
+Prefer token-light commands: start, files declare, task start, gate pass/fail, claim auto, finish.
 Do not claim success unless the artifact is completed and includes evidence plus verified claims.
 In the final answer, include run_id, artifact path, status, gates, evidence, verified claims, and rollback notes.
 ```

@@ -42,6 +42,13 @@ export function validateConfig(config: unknown): asserts config is AgentHarnessC
   const policy = asRecord(value.command_policy, "config.command_policy");
   if (policy.allow !== undefined && !Array.isArray(policy.allow)) throw new Error("config.command_policy.allow must be an array");
   if (policy.deny !== undefined && !Array.isArray(policy.deny)) throw new Error("config.command_policy.deny must be an array");
+  if (value.token_budget !== undefined) {
+    const budget = asRecord(value.token_budget, "config.token_budget");
+    requireEnum(budget, "observation_format", ["compact", "standard", "full"]);
+    requirePositiveNumber(budget, "summary_max_chars");
+    requirePositiveNumber(budget, "output_excerpt_max_chars");
+    requirePositiveNumber(budget, "report_compact_max_chars");
+  }
 }
 
 export function lintPlan(plan: unknown): ValidationResult {
@@ -114,4 +121,10 @@ function requireEnum(value: Record<string, unknown>, field: string, allowed: str
 function requireSafeId(value: Record<string, unknown>, field: string): void {
   requireString(value, field);
   if (!/^[a-zA-Z0-9._-]+$/.test(value[field] as string)) throw new Error(`${field} contains unsafe characters`);
+}
+
+function requirePositiveNumber(value: Record<string, unknown>, field: string): void {
+  if (typeof value[field] !== "number" || !Number.isFinite(value[field]) || (value[field] as number) <= 0) {
+    throw new Error(`${field} must be a positive number`);
+  }
 }

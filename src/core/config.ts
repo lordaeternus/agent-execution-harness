@@ -16,6 +16,12 @@ export function defaultConfig(): AgentHarnessConfig {
       allow: [],
       deny: ["DROP", "TRUNCATE", "git reset --hard", "push --force", "force-with-lease"],
     },
+    token_budget: {
+      observation_format: "standard",
+      summary_max_chars: 240,
+      output_excerpt_max_chars: 600,
+      report_compact_max_chars: 1600,
+    },
   };
 }
 
@@ -23,7 +29,14 @@ export function loadConfig(cwd = process.cwd(), configPath = "agent-harness.conf
   const resolved = path.resolve(cwd, configPath);
   if (!fs.existsSync(resolved)) return defaultConfig();
   const config = JSON.parse(fs.readFileSync(resolved, "utf8")) as AgentHarnessConfig;
-  validateConfig(config);
-  assertSafeRelativePath(config.artifact_dir, "artifact_dir");
-  return config;
+  const defaults = defaultConfig();
+  const merged = {
+    ...defaults,
+    ...config,
+    command_policy: { ...defaults.command_policy, ...(config.command_policy ?? {}) },
+    token_budget: { ...defaults.token_budget, ...(config.token_budget ?? {}) },
+  };
+  validateConfig(merged);
+  assertSafeRelativePath(merged.artifact_dir, "artifact_dir");
+  return merged;
 }

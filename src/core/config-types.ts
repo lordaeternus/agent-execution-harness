@@ -5,6 +5,15 @@ export interface CommandPolicy {
   deny?: string[];
 }
 
+export type ObservationFormat = "compact" | "standard" | "full";
+
+export interface TokenBudget {
+  observation_format: ObservationFormat;
+  summary_max_chars: number;
+  output_excerpt_max_chars: number;
+  report_compact_max_chars: number;
+}
+
 export interface AgentHarnessConfig {
   schema_version: typeof CONFIG_SCHEMA_VERSION;
   artifact_dir: string;
@@ -12,4 +21,5 @@ export interface AgentHarnessConfig {
   required_scripts: string[];
   doctor_profile: "generic" | "stetix" | "strict" | "ci";
   command_policy: CommandPolicy;
+  token_budget: TokenBudget;
 }

@@ -16,6 +16,8 @@ export function runCommand(args: string[], cwd = process.cwd()): void {
   const mode = stringFlag(flags, "mode") ?? "standard";
   const actionRaw = stringFlag(flags, "action", true)!;
   const config = loadConfig(cwd, stringFlag(flags, "config") ?? "agent-harness.config.json");
+  const output = stringFlag(flags, "output");
+  if (output === "compact" || output === "standard" || output === "full") config.token_budget.observation_format = output;
   const artifactDir = stringFlag(flags, "artifact-dir") ?? config.artifact_dir;
   const plan = readJson<AgentHarnessPlan>(path.resolve(cwd, planPath));
   const action = JSON.parse(actionRaw) as AgentHarnessAction;

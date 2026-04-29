@@ -48,6 +48,9 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
   if (action.schema_version !== ACTION_SCHEMA_VERSION) throw new Error("invalid action schema_version");
   if (!ALLOWED[state.phase]?.includes(action.type)) throw new Error(`action ${action.type} not allowed in phase ${state.phase}`);
   if (state.mode === "constrained" && Array.isArray(action.claims) && action.claims.length > 20) throw new Error("too many claims for constrained mode");
+  if (state.mode === "constrained" && action.summary && action.summary.length > config.token_budget.summary_max_chars) {
+    throw new Error(`summary exceeds constrained limit ${config.token_budget.summary_max_chars}`);
+  }
 
   const next = structuredClone(state) as AgentHarnessRunState;
   next.updated_at = new Date().toISOString();
@@ -102,10 +105,16 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
   if (action.type === "record_evidence") {
     if (!next.pending_gate) throw new Error("record_evidence requires pending gate");
     const evidence = normalizeEvidence(action.evidence);
+    const task = next.tasks.find((item) => item.task_id === next.pending_gate?.task_id);
+    if (state.mode === "constrained" && task?.required_evidence?.length && !evidence.evidence_type && !evidence.evidence_types?.length) {
+      throw new Error("constrained mode requires evidence_type or evidence_types");
+    }
+    if (evidence.output_excerpt.length > config.token_budget.output_excerpt_max_chars) {
+      throw new Error(`evidence.output_excerpt exceeds limit ${config.token_budget.output_excerpt_max_chars}`);
+    }
     if (evidence.check !== next.pending_gate.command) throw new Error("evidence.check must match pending gate");
     if (next.evidence.some((item) => item.evidence_id === evidence.evidence_id)) throw new Error("duplicate evidence_id");
     next.evidence.push(evidence);
-    const task = next.tasks.find((item) => item.task_id === next.pending_gate?.task_id);
     if (task) {
       task.evidence_ids.push(evidence.evidence_id);
       task.status = evidence.result === "pass" ? "completed" : "blocked";

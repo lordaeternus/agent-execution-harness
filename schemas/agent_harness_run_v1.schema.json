@@ -11,7 +11,16 @@
     "status": { "enum": ["in_progress", "ready_for_report", "completed", "partial_validated", "halt"] },
     "phase": { "enum": ["init", "preflight", "task_start", "gate", "evidence", "report", "halt", "completed"] },
     "tasks": { "type": "array" },
-    "evidence": { "type": "array" },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "output_ref": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" }
+        }
+      }
+    },
     "verified_claims": { "type": "array" }
   }
 }

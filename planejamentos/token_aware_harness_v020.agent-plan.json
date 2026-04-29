@@ -1,0 +1,100 @@
+{
+  "schema_version": "agent_harness_plan_v1",
+  "plan_id": "token-aware-harness-v020",
+  "risk_level": "L2",
+  "rollback_expectation": "Rollback by reverting token-aware harness commits and restoring package version before publish.",
+  "gates": [
+    "pnpm typecheck",
+    "pnpm test",
+    "pnpm test:integration",
+    "pnpm benchmark:smoke",
+    "pnpm benchmark:tokens",
+    "pnpm token-budget",
+    "pnpm pack:dry",
+    "pnpm audit:release-readiness",
+    "pnpm secret-scan",
+    "pnpm audit --audit-level moderate"
+  ],
+  "tasks": [
+    {
+      "task_id": "token-budget-foundation",
+      "surface": "backend",
+      "files": [
+        "src/core/config-types.ts",
+        "src/core/config.ts",
+        "docs/agent-runtime.md",
+        "scripts/token-budget.mjs",
+        "package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "required_evidence": ["focused_tests", "scoped_typecheck"],
+      "acceptance_criteria": "Token budget config, runtime doc, script and CI gate exist and pass."
+    },
+    {
+      "task_id": "compact-report-observation",
+      "surface": "backend",
+      "files": [
+        "src/core/report.ts",
+        "src/core/runner.ts",
+        "src/cli/report.ts",
+        "src/cli/run.ts",
+        "src/cli/execute.ts"
+      ],
+      "required_evidence": ["focused_tests", "scoped_typecheck"],
+      "acceptance_criteria": "Compact/standard/full/json output modes preserve governance fields and reduce chat output."
+    },
+    {
+      "task_id": "evidence-ref-dual-artifacts",
+      "surface": "backend",
+      "files": [
+        "src/core/run-types.ts",
+        "src/core/evidence.ts",
+        "src/core/artifact-store.ts",
+        "schemas/agent_harness_action_v1.schema.json",
+        "schemas/agent_harness_run_v1.schema.json"
+      ],
+      "required_evidence": ["focused_tests", "scoped_typecheck"],
+      "acceptance_criteria": "Evidence supports output_ref+sha256 and runs persist full/current artifacts while loading legacy artifacts."
+    },
+    {
+      "task_id": "macro-cli-constrained-benchmark",
+      "surface": "backend",
+      "files": [
+        "src/cli/index.ts",
+        "src/cli/macro.ts",
+        "src/core/auto-claims.ts",
+        "src/core/state-machine.ts",
+        "src/core/benchmark.ts",
+        "scripts/token-benchmark.mjs"
+      ],
+      "required_evidence": ["focused_tests", "scoped_typecheck"],
+      "acceptance_criteria": "Macro commands call the same state machine, constrained mode is stricter, and token benchmark proves reduction."
+    },
+    {
+      "task_id": "docs-templates-release",
+      "surface": "docs",
+      "files": [
+        "README.md",
+        "docs/quickstart.md",
+        "docs/schemas.md",
+        "templates/generic/AGENTS.md",
+        "templates/stetix/AGENTS.patch.md",
+        "CHANGELOG.md",
+        "docs/release-notes/v0.2.0.md"
+      ],
+      "required_evidence": ["focused_tests"],
+      "acceptance_criteria": "Docs and templates direct agents to runtime-short flow while keeping human documentation complete."
+    },
+    {
+      "task_id": "stetix-application",
+      "surface": "docs",
+      "files": [
+        "templates/stetix/AGENTS.patch.md",
+        "templates/stetix/docs/process/agent-runtime.md",
+        "docs/stetix-adapter.md"
+      ],
+      "required_evidence": ["focused_tests"],
+      "acceptance_criteria": "Stetix harness mirrors token-aware runtime behavior without changing product code."
+    }
+  ]
+}

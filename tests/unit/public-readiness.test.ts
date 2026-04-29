@@ -45,6 +45,8 @@ describe("public readiness hardening", () => {
     const state = JSON.parse(fs.readFileSync("tests/fixtures/golden/agent_harness_run_v1.json", "utf8"));
     expect(() => validateRunState(state)).not.toThrow();
     expect(buildReport(state)).toContain("golden-v1");
+    expect(buildReport(state, "compact")).toContain("Agent Harness Compact Report");
+    expect(buildReport(state, "json")).toContain("\"run_id\"");
   });
 
   it("doctor returns coded findings", () => {
@@ -61,6 +63,7 @@ describe("public readiness hardening", () => {
     execFileSync("node", ["dist/cli/index.js", "init", "--adapter", "generic", "--cwd", tmp, "--apply"], { stdio: "pipe" });
     expect(fs.existsSync(path.join(tmp, "agent-harness.config.json"))).toBe(true);
     expect(fs.existsSync(path.join(tmp, "AGENTS.md"))).toBe(true);
+    expect(fs.existsSync(path.join(tmp, "docs", "agent-runtime.md"))).toBe(true);
     expect(fs.existsSync(path.join(tmp, ".agent-harness", "backups"))).toBe(true);
   });
 

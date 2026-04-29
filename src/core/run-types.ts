@@ -14,6 +14,8 @@ export interface Evidence {
   result: "pass" | "fail" | "halt";
   exit_code: number;
   output_excerpt: string;
+  output_ref?: string;
+  sha256?: string;
   scope_covered: string;
   residual_gap?: string;
 }

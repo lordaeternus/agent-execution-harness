@@ -1,7 +1,7 @@
 import path from "node:path";
 import { ACTION_SCHEMA_VERSION } from "../core/constants.js";
 import { loadConfig } from "../core/config.js";
-import { loadRun, saveRun } from "../core/artifact-store.js";
+import { fullArtifactPath, loadRun, saveRun } from "../core/artifact-store.js";
 import { processHarnessAction } from "../core/runner.js";
 import { readJson } from "../core/utils.js";
 import type { AgentHarnessPlan } from "../core/plan-types.js";
@@ -14,13 +14,15 @@ export function executeCommand(args: string[], cwd = process.cwd()): void {
   const runId = stringFlag(flags, "run-id", true)!;
   const mode = stringFlag(flags, "mode") ?? "constrained";
   const config = loadConfig(cwd, stringFlag(flags, "config") ?? "agent-harness.config.json");
+  const output = stringFlag(flags, "output");
+  if (output === "compact" || output === "standard" || output === "full") config.token_budget.observation_format = output;
   const artifactDir = stringFlag(flags, "artifact-dir") ?? config.artifact_dir;
   const previous = loadRun(cwd, artifactDir, runId);
   if (previous) {
     writeJson({
       status: previous.status === "halt" ? "halt" : "success",
       summary: `${previous.phase}: resume existing run`,
-      artifacts: [{ type: "run_state", path: path.resolve(cwd, artifactDir, `${runId}.json`) }],
+      artifacts: [{ type: "run_state", path: fullArtifactPath(cwd, artifactDir, runId) }],
       next_actions: previous.phase === "completed" ? [] : ["continue_with_run"],
       errors: previous.errors,
     });

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 - 2026-04-29
+
+### Added
+
+- Added token-aware runtime guidance for agents.
+- Added compact/full/json report formats and compact observations.
+- Added evidence `output_ref` and `sha256` fields for referenced logs.
+- Added dual full/current artifacts for audit plus low-token continuation.
+- Added macro CLI commands and conservative auto-claims.
+- Added token budget and token benchmark checks.
+
 ## 0.1.3 - 2026-04-29
 
 ### Added

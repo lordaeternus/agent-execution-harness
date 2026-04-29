@@ -19,5 +19,14 @@ Breaking schema changes require golden artifact compatibility tests.
 
 - `evidence_type`: one proof type
 - `evidence_types`: multiple proof types from one gate
+- `output_ref`: relative path to a long captured log/artifact
+- `sha256`: digest required when `output_ref` is present
 
 `agent_harness_run_v1` supports `partial_validated` when verified claims exist but required evidence is missing.
+
+`agent_harness_config_v1` supports `token_budget` with:
+
+- `observation_format`: `compact`, `standard`, or `full`
+- `summary_max_chars`
+- `output_excerpt_max_chars`
+- `report_compact_max_chars`

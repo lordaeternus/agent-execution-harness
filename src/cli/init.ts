@@ -7,7 +7,7 @@ import { createBackup, restoreBackup } from "./install-rollback.js";
 import { parseFlags, stringFlag } from "./args.js";
 import { writeJson } from "./output.js";
 
-const TEMPLATE_FILES = ["agent-harness.config.json", "AGENTS.md", ".gitignore", "package.json"];
+const TEMPLATE_FILES = ["agent-harness.config.json", "AGENTS.md", "docs/agent-runtime.md", "docs/process/agent-runtime.md", ".gitignore", "package.json"];
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const AGENTS_SENTINEL_START = "<!-- agent-execution-harness:start -->";
 const AGENTS_SENTINEL_END = "<!-- agent-execution-harness:end -->";

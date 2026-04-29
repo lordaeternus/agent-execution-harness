@@ -14,3 +14,7 @@ export function envelope(input: CliEnvelope): CliEnvelope {
 export function writeJson(input: CliEnvelope): void {
   process.stdout.write(`${JSON.stringify(input, null, 2)}\n`);
 }
+
+export function writeCompactJson(input: CliEnvelope): void {
+  process.stdout.write(`${JSON.stringify(input)}\n`);
+}

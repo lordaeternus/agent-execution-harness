@@ -22,8 +22,10 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm test:integration
+      - run: pnpm token-budget
       - run: pnpm build
       - run: pnpm benchmark:smoke
+      - run: pnpm benchmark:tokens
       - run: pnpm pack:dry
       - name: Check npm version
         id: npm_version
