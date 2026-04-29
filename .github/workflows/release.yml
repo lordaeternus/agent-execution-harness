@@ -38,4 +38,7 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
       - if: steps.npm_version.outputs.exists == 'false'
-        run: npm publish --provenance --access public
+        run: |
+          echo "Package version is not on npm yet."
+          echo "Publish manually with: npm publish --access public"
+          echo "Then rerun this workflow or create the GitHub release."
