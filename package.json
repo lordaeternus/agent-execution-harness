@@ -1,6 +1,6 @@
 {
   "name": "agent-execution-harness",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A transactional execution harness for AI coding agents with evidence-backed reports.",
   "license": "MIT",
   "type": "module",

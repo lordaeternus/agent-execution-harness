@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 - 2026-04-29
+
+### Fixed
+
+- Made the token benchmark measure agent-facing protocol text instead of environment-specific executable paths.
+
 ## 0.2.0 - 2026-04-29
 
 ### Added

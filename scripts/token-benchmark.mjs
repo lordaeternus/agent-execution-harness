@@ -18,7 +18,7 @@ const cli = path.join(root, "dist", "cli", "index.js");
 
 function run(args) {
   const output = execFileSync(process.execPath, [cli, ...args], { cwd: tmp, encoding: "utf8" });
-  return { output, totalChars: [process.execPath, cli, ...args].join(" ").length + output.length };
+  return { output, totalChars: args.join(" ").length + output.length };
 }
 
 const oldAction = JSON.stringify({ schema_version: "agent_harness_action_v1", type: "read_context", summary: "Read plan and repo context." });
