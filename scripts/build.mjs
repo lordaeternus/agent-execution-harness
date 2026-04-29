@@ -1,7 +1,8 @@
 import { spawnSync } from "node:child_process";
 
-const pnpmCli = process.env.npm_execpath;
-const result = pnpmCli
-  ? spawnSync(process.execPath, [pnpmCli, "exec", "tsc"], { stdio: "inherit" })
-  : spawnSync("pnpm", ["exec", "tsc"], { stdio: "inherit" });
+const result =
+  process.platform === "win32"
+    ? spawnSync("cmd.exe", ["/d", "/s", "/c", "pnpm exec tsc"], { stdio: "inherit" })
+    : spawnSync("pnpm", ["exec", "tsc"], { stdio: "inherit" });
+if (result.error) console.error(result.error.message);
 process.exitCode = result.status ?? 1;
