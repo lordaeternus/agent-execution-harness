@@ -33,4 +33,42 @@ describe("cli integration", () => {
     expect(report).toContain("Agent Harness Compact Report");
     expect(report).toContain("status: completed");
   });
+
+  it("runs session, next and verify without repeating plan and run id", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-session-"));
+    fs.copyFileSync("tests/fixtures/plans/basic-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "session-smoke"], { cwd: tmp });
+    execFileSync("node", [bin, "files", "declare", "--files", "created.txt"], { cwd: tmp });
+    const next = execFileSync("node", [bin, "next"], { cwd: tmp, encoding: "utf8" });
+    expect(next).toContain("basic-task");
+    execFileSync("node", [bin, "task", "start", "--task-id", "basic-task", "--files", "created.txt"], { cwd: tmp });
+    const verified = execFileSync("node", [bin, "verify", "--task-id", "basic-task", "--types", "focused_tests,scoped_typecheck", "--cmd", "node --version"], {
+      cwd: tmp,
+      encoding: "utf8",
+    });
+    const verifiedJson = JSON.parse(verified) as { data: { output_ref: string; sha256: string } };
+    expect(verifiedJson.data.output_ref).toContain(".agent-harness/runs/logs/session-smoke/");
+    expect(verifiedJson.data.sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(fs.existsSync(path.join(tmp, verifiedJson.data.output_ref))).toBe(true);
+    execFileSync("node", [bin, "claim", "auto"], { cwd: tmp });
+    execFileSync("node", [bin, "finish", "--summary", "validated"], { cwd: tmp });
+    const report = execFileSync("node", [bin, "report", "--run-id", "session-smoke", "--format", "compact"], { cwd: tmp, encoding: "utf8" });
+    expect(report).toContain("status: completed");
+  });
+
+  it("blocks dangerous verify commands before execution", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-verify-block-"));
+    fs.copyFileSync("tests/fixtures/plans/basic-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "blocked-smoke"], { cwd: tmp });
+    execFileSync("node", [bin, "files", "declare", "--files", "created.txt"], { cwd: tmp });
+    execFileSync("node", [bin, "task", "start", "--task-id", "basic-task", "--files", "created.txt"], { cwd: tmp });
+    expect(() =>
+      execFileSync("node", [bin, "verify", "--task-id", "basic-task", "--type", "focused_tests", "--cmd", "git reset --hard HEAD"], {
+        cwd: tmp,
+        stdio: "pipe",
+      }),
+    ).toThrow();
+  });
 });

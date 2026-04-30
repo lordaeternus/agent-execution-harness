@@ -44,7 +44,7 @@ export function validateConfig(config: unknown): asserts config is AgentHarnessC
   if (policy.deny !== undefined && !Array.isArray(policy.deny)) throw new Error("config.command_policy.deny must be an array");
   if (value.token_budget !== undefined) {
     const budget = asRecord(value.token_budget, "config.token_budget");
-    requireEnum(budget, "observation_format", ["compact", "standard", "full"]);
+    requireEnum(budget, "observation_format", ["ultra_compact", "compact", "standard", "full"]);
     requirePositiveNumber(budget, "summary_max_chars");
     requirePositiveNumber(budget, "output_excerpt_max_chars");
     requirePositiveNumber(budget, "report_compact_max_chars");

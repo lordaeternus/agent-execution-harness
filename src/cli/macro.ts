@@ -10,18 +10,21 @@ import type { AgentHarnessPlan } from "../core/plan-types.js";
 import type { AgentHarnessRunState } from "../core/run-types.js";
 import { parseFlags, stringFlag } from "./args.js";
 import { writeCompactJson } from "./output.js";
+import { loadActiveSession } from "./session-store.js";
 
 export function macroCommand(args: string[], cwd = process.cwd()): void {
   const [resource, maybeVerb] = args;
   const hasVerb = maybeVerb !== undefined && !maybeVerb.startsWith("--");
   const verb = hasVerb ? maybeVerb : undefined;
   const flags = parseFlags(args.slice(hasVerb ? 2 : 1));
-  const planPath = stringFlag(flags, "plan") ?? "plan.json";
-  const runId = stringFlag(flags, "run-id", true)!;
-  const mode = stringFlag(flags, "mode") ?? "constrained";
   const config = loadConfig(cwd, stringFlag(flags, "config") ?? "agent-harness.config.json");
-  config.token_budget.observation_format = "compact";
+  config.token_budget.observation_format = config.token_budget.observation_format === "ultra_compact" ? "ultra_compact" : "compact";
   const artifactDir = stringFlag(flags, "artifact-dir") ?? config.artifact_dir;
+  const session = loadActiveSession(cwd, artifactDir);
+  const planPath = stringFlag(flags, "plan") ?? session?.plan_path ?? "plan.json";
+  const runId = stringFlag(flags, "run-id") ?? session?.run_id;
+  const mode = stringFlag(flags, "mode") ?? session?.mode ?? "constrained";
+  if (!runId) throw new Error("--run-id is required when no active session exists");
   const plan = readJson<AgentHarnessPlan>(path.resolve(cwd, planPath));
   const previousState = loadRun(cwd, artifactDir, runId);
   if (resource === "gate" && (verb === "pass" || verb === "fail") && !previousState?.pending_gate) {

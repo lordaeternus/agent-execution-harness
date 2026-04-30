@@ -5,7 +5,7 @@
   "required_scripts": ["agent:harness", "agent:plan:lint", "agent:execute", "agent:report", "agent:harness:doctor", "governance:test"],
   "doctor_profile": "stetix",
   "token_budget": {
-    "observation_format": "compact",
+    "observation_format": "ultra_compact",
     "summary_max_chars": 240,
     "output_excerpt_max_chars": 600,
     "report_compact_max_chars": 1600

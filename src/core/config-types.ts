@@ -5,7 +5,7 @@ export interface CommandPolicy {
   deny?: string[];
 }
 
-export type ObservationFormat = "compact" | "standard" | "full";
+export type ObservationFormat = "ultra_compact" | "compact" | "standard" | "full";
 
 export interface TokenBudget {
   observation_format: ObservationFormat;

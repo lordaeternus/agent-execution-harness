@@ -2,7 +2,7 @@
 
 - Require `pnpm agent:harness` for approved L2/L3, multi-step or delegated work.
 - Read `docs/process/agent-runtime.md` before routine harness execution; avoid loading long docs unless needed.
-- Prefer token-light macros when available: start, files declare, task start, gate pass/fail, claim auto, finish.
+- Prefer low-token flow when available: session start, next, verify, claim auto, finish.
 - Keep canonical memory in `docs/historico.md`.
 - Do not declare success without artifact `completed`.
 - For UI/layout work, success requires browser smoke or visual assertion; missing auth/session means `partial_validated`, not `completed`.

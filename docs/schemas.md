@@ -26,7 +26,7 @@ Breaking schema changes require golden artifact compatibility tests.
 
 `agent_harness_config_v1` supports `token_budget` with:
 
-- `observation_format`: `compact`, `standard`, or `full`
+- `observation_format`: `ultra_compact`, `compact`, `standard`, or `full`
 - `summary_max_chars`
 - `output_excerpt_max_chars`
 - `report_compact_max_chars`

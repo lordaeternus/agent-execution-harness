@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 - 2026-04-30
+
+### Added
+
+- Added active sessions so agents can stop repeating `--plan`, `--run-id` and `--mode`.
+- Added `next` for low-token continuation.
+- Added `verify` to run policy-checked gates, store long logs by `output_ref`, hash them with `sha256`, and record evidence automatically.
+- Added `ultra_compact` observation mode.
+
+### Changed
+
+- Strengthened token benchmarks to cover repeated flags and long evidence output.
+
 ## 0.2.1 - 2026-04-29
 
 ### Fixed

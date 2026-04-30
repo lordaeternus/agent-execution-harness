@@ -33,7 +33,7 @@ export function processHarnessAction(input: {
   const missing = state.evidence_policy?.missing ?? [];
   const format = input.config.token_budget.observation_format;
   const summary =
-    format === "compact"
+    format === "ultra_compact" || format === "compact"
       ? `${state.phase} ${completed}/${state.tasks.length}`
       : `${state.phase}: ${completed}/${state.tasks.length} tasks completed`;
   return {
@@ -44,7 +44,13 @@ export function processHarnessAction(input: {
       next_actions: nextActions(state.phase),
       artifacts: [{ type: "run_state", run_id: state.run_id }],
       errors: state.errors,
-      ...(format !== "standard" ? { data: { missing_evidence: missing, current_task_id: state.current_task_id } } : {}),
+      ...(format === "ultra_compact"
+        ? missing.length || state.current_task_id
+          ? { data: { missing_evidence: missing, current_task_id: state.current_task_id } }
+          : {}
+        : format !== "standard"
+          ? { data: { missing_evidence: missing, current_task_id: state.current_task_id } }
+          : {}),
     },
   };
 }

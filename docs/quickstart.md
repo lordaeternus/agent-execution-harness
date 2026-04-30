@@ -69,7 +69,7 @@ Use the agent harness for approved plans, multi-step work, risky changes, and an
 Read docs/agent-runtime.md first; do not load the full README for routine execution.
 Before editing, validate the plan.
 During execution, keep the harness artifact updated.
-Prefer token-light commands: start, files declare, task start, gate pass/fail, claim auto, finish.
+Prefer token-light commands: session start, next, verify, claim auto, finish.
 Do not claim success unless the artifact is completed and includes evidence plus verified claims.
 For UI/layout work, do not claim completed unless browser smoke or visual assertion evidence exists; otherwise report partial_validated.
 In the final answer, include run_id, artifact path, status, gates, evidence, verified claims, and rollback notes.
@@ -78,12 +78,13 @@ In the final answer, include run_id, artifact path, status, gates, evidence, ver
 Compact flow:
 
 ```bash
-agent-harness start --plan plan.json --run-id fix-login --summary "ctx"
-agent-harness files declare --plan plan.json --run-id fix-login --files src/login.ts
-agent-harness task start --plan plan.json --run-id fix-login --task-id login-fix --files src/login.ts
-agent-harness gate pass --plan plan.json --run-id fix-login --type focused_tests --check "pnpm test"
-agent-harness claim auto --plan plan.json --run-id fix-login
-agent-harness finish --plan plan.json --run-id fix-login --summary "Login fix validated."
+agent-harness session start --plan plan.json --run-id fix-login --summary "ctx"
+agent-harness next
+agent-harness files declare --files src/login.ts
+agent-harness task start --task-id login-fix --files src/login.ts
+agent-harness verify --task-id login-fix --type focused_tests --cmd "pnpm test"
+agent-harness claim auto
+agent-harness finish --summary "Login fix validated."
 agent-harness report --run-id fix-login --format compact
 ```
 

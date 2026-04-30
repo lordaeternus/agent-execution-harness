@@ -35,7 +35,7 @@ The goal is not to make the model smarter. The goal is to make the agent's work 
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.2.0.md)
+- [Release notes](docs/release-notes/v0.3.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -95,12 +95,13 @@ The agent should use the harness underneath.
 Token-light flow for agents:
 
 ```bash
-agent-harness start --plan plan.json --run-id fix-id --summary "ctx"
-agent-harness files declare --plan plan.json --run-id fix-id --files src/file.ts
-agent-harness task start --plan plan.json --run-id fix-id --task-id task-id --files src/file.ts
-agent-harness gate pass --plan plan.json --run-id fix-id --type focused_tests --check "pnpm test"
-agent-harness claim auto --plan plan.json --run-id fix-id
-agent-harness finish --plan plan.json --run-id fix-id --summary "Validated."
+agent-harness session start --plan plan.json --run-id fix-id --summary "ctx"
+agent-harness next
+agent-harness files declare --files src/file.ts
+agent-harness task start --task-id task-id --files src/file.ts
+agent-harness verify --task-id task-id --type focused_tests --cmd "pnpm test"
+agent-harness claim auto
+agent-harness finish --summary "Validated."
 agent-harness report --run-id fix-id --format compact
 ```
 
@@ -113,7 +114,7 @@ Use the agent harness for approved plans, multi-step work, risky changes, and an
 Read docs/agent-runtime.md first; do not load the full README for routine execution.
 Before editing, validate the plan.
 During execution, keep the harness artifact updated.
-Prefer token-light commands: start, files declare, task start, gate pass/fail, claim auto, finish.
+Prefer token-light commands: session start, next, verify, claim auto, finish.
 Do not claim success unless the artifact is completed and includes evidence plus verified claims.
 In the final answer, include run_id, artifact path, status, gates, evidence, verified claims, and rollback notes.
 ```
@@ -536,6 +537,7 @@ Each evidence item records:
 - `output_excerpt`
 - `scope_covered`
 - optional `residual_gap`
+- optional `output_ref` and `sha256` for long logs stored outside chat
 
 Evidence types let the harness compare proof against the plan:
 
@@ -682,6 +684,30 @@ Initializes or resumes a run.
 agent-harness execute --plan plan.json --run-id fix-login
 ```
 
+### `session start`
+
+Starts an active low-token session so later commands do not need to repeat `--plan`, `--run-id` and `--mode`.
+
+```bash
+agent-harness session start --plan plan.json --run-id fix-login
+```
+
+### `next`
+
+Returns only the next actionable step from the current artifact.
+
+```bash
+agent-harness next
+```
+
+### `verify`
+
+Runs a policy-checked command, stores long output as a referenced log, records `sha256`, and creates evidence automatically.
+
+```bash
+agent-harness verify --task-id fix-login --type focused_tests --cmd "pnpm test"
+```
+
 ### `run`
 
 Applies one low-level action to the run state.
@@ -733,6 +759,12 @@ Example:
   "command_policy": {
     "allow": [],
     "deny": ["DROP", "TRUNCATE", "git reset --hard", "push --force"]
+  },
+  "token_budget": {
+    "observation_format": "ultra_compact",
+    "summary_max_chars": 240,
+    "output_excerpt_max_chars": 600,
+    "report_compact_max_chars": 1600
   }
 }
 ```
@@ -744,6 +776,7 @@ Important fields:
 - `required_scripts`: scripts expected by doctor
 - `doctor_profile`: validation profile for the project
 - `command_policy`: allow/deny rules for commands
+- `token_budget`: controls compact output and log excerpt limits
 
 Deny rules take priority over allow rules.
 
@@ -831,7 +864,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.1.3
+0.3.0
 ```
 
 Package:

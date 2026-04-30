@@ -14,8 +14,10 @@ for (const [file, max] of limits) {
 
 const compactReportBudget = 1600;
 const observationBudget = 700;
+const ultraObservationBudget = 420;
 if (compactReportBudget > 1600) failures.push("compact report budget exceeds 1600 chars");
 if (observationBudget > 700) failures.push("compact observation budget exceeds 700 chars");
+if (ultraObservationBudget > 420) failures.push("ultra compact observation budget exceeds 420 chars");
 
 if (failures.length) {
   console.error(failures.join("\n"));

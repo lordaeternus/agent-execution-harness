@@ -22,7 +22,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "observation_format": { "enum": ["compact", "standard", "full"] },
+        "observation_format": { "enum": ["ultra_compact", "compact", "standard", "full"] },
         "summary_max_chars": { "type": "number", "exclusiveMinimum": 0 },
         "output_excerpt_max_chars": { "type": "number", "exclusiveMinimum": 0 },
         "report_compact_max_chars": { "type": "number", "exclusiveMinimum": 0 }
