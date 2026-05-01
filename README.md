@@ -3,7 +3,21 @@
 [![CI](https://github.com/lordaeternus/agent-execution-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/lordaeternus/agent-execution-harness/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Agent Execution Harness is a safety and evidence layer for AI coding agents.
+Agent Execution Harness helps AI coding agents work like disciplined software engineers instead of improvising through your codebase.
+
+AI agents are useful, but they often fail in the same ways:
+
+- they change files before understanding the task
+- they skip steps from the plan
+- they say tests passed when no test was run
+- they invent files, commands, APIs, or validations
+- they declare "done" without proof
+
+This project adds a small execution system around the agent.
+
+It does not try to make the model smarter. It makes the agent easier to guide, audit, and stop when the work becomes unsafe.
+
+In plain language: **it is a checklist, memory, and flight recorder for AI-assisted software development.**
 
 It helps an AI agent execute software plans in a more organized way by forcing the agent to:
 
@@ -14,10 +28,57 @@ It helps an AI agent execute software plans in a more organized way by forcing t
 - verify claims before saying "done"
 - stop instead of guessing when work becomes unsafe
 
-The goal is not to make the model smarter. The goal is to make the agent's work harder to fake, skip, or hallucinate.
+## Why Use This?
+
+Use this repo when you want an AI coding agent to:
+
+- create a clear plan before risky work
+- execute that plan step by step
+- keep a record of what happened
+- run checks and attach evidence
+- remember useful codebase context for future tasks
+- avoid rereading the whole project every time
+- avoid claiming success without proof
+
+The harness is especially useful for:
+
+- bug fixes
+- refactors
+- multi-step features
+- AI-assisted code review
+- teams experimenting with autonomous coding agents
+- projects where "trust me, it works" is not good enough
+
+## What You Get
+
+After installation, your project gets:
+
+- `AGENTS.md` rules that tell the AI agent how to behave
+- `agent-harness.config.json` for local policy and artifact settings
+- plan validation
+- execution artifacts
+- evidence-backed final reports
+- codebase memory commands
+- safety checks for risky commands
+- compact output modes to reduce token usage
+
+The intended day-to-day experience is simple:
+
+```txt
+You: Find this bug.
+Agent: Investigates and proposes a plan.
+You: Execute the plan using the harness.
+Agent: Executes step by step, records evidence, and reports the artifact.
+You: Show me proof.
+Agent: Shows run_id, artifact, checks, evidence, claims, and rollback.
+```
+
+If the agent cannot show evidence, the work is not complete.
 
 ## Table Of Contents
 
+- [Why Use This?](#why-use-this)
+- [What You Get](#what-you-get)
 - [Quick Start](#quick-start)
 - [Codebase Memory Diagram](#codebase-memory-diagram)
 - [What Problem Does This Solve?](#what-problem-does-this-solve)
@@ -43,8 +104,9 @@ The goal is not to make the model smarter. The goal is to make the agent's work 
 
 ## Quick Start
 
-Use this if you only want to install the harness in a project.
-AI agents should read [`docs/agent-runtime.md`](docs/agent-runtime.md) for the short runtime protocol. This README is intentionally detailed for humans.
+Use this if you want to try the harness in an existing project.
+
+AI agents should read [`docs/agent-runtime.md`](docs/agent-runtime.md) for the short runtime protocol. This README is for humans.
 
 Open a terminal inside your target project:
 
@@ -82,7 +144,7 @@ Expected result:
 status: success
 ```
 
-After that, talk to your AI coding agent in normal language:
+After that, talk to your AI coding agent normally:
 
 ```txt
 Find this bug.
@@ -92,6 +154,8 @@ Show me the evidence.
 ```
 
 The agent should use the harness underneath.
+
+You do not need to memorize the commands below. They show what the agent should run behind the scenes.
 
 Token-light flow for agents:
 
@@ -120,6 +184,13 @@ Use this selectively. Simple one-file work does not need a full map. Risky or un
 ## Codebase Memory Diagram
 
 This feature gives the agent a compact memory of the project without forcing it to reread the whole codebase on every request.
+
+The idea is practical:
+
+- first, build a small map of the project
+- then, query only the area related to the task
+- after a real change, update the memory
+- next time, the agent starts with better context
 
 ```mermaid
 flowchart TD
@@ -161,6 +232,20 @@ real source code > canonical docs > harness memory > chat history
 
 The memory is a cache. It helps the agent move faster, but it never replaces reading the real code when the risk is high.
 
+Good memory entry:
+
+```txt
+Auth session owns login state contracts and must be checked before authorization edits.
+```
+
+Bad memory entry:
+
+```txt
+Code updated.
+```
+
+The harness rejects vague memory because vague memory makes future agents worse.
+
 ### Copy-Paste Prompt For Your Agent
 
 After installing the harness, give your AI coding agent this instruction:
@@ -178,27 +263,43 @@ In the final answer, include run_id, artifact path, status, gates, evidence, ver
 
 ## What Problem Does This Solve?
 
-AI coding agents often fail in predictable ways:
+AI coding agents can write code quickly, but speed is not the same as reliable delivery.
 
-- they edit before understanding the task
-- they skip plan steps
-- they say tests passed without running tests
-- they invent files, commands, APIs, or validations
-- they expand scope without noticing
-- they keep going after dangerous ambiguity
-- they declare success without proof
+Without a harness, an agent can:
+
+- edit before understanding the task
+- skip plan steps
+- say tests passed without running tests
+- invent files, commands, APIs, or validations
+- expand scope without noticing
+- keep going after dangerous ambiguity
+- declare success without proof
 
 This harness reduces those failures by creating an execution contract.
 
 The agent can still reason and write code, but the harness requires a structured artifact that records what actually happened.
 
+That artifact becomes the difference between:
+
+```txt
+"I think it is fixed."
+```
+
+and:
+
+```txt
+"This run completed. Here is the plan, the changed files, the checks, the evidence, the verified claims, and the rollback path."
+```
+
 ## Explain It Like I Am New To This
 
-Think of the harness as a checklist plus flight recorder for AI coding work.
+Think of the harness as three things:
 
-The checklist tells the agent what steps must happen.
+- a checklist: what the agent must do
+- a flight recorder: what the agent actually did
+- a memory notebook: what the agent should remember next time
 
-The flight recorder saves proof of what happened:
+The flight recorder saves proof:
 
 - what task was executed
 - what files were involved
@@ -304,6 +405,10 @@ Do not trust this. It has no artifact, no evidence, and no verified claims.
 
 ## Installation Options
 
+You can use the harness without becoming an npm expert.
+
+If you are new, use `npx`. It downloads and runs the latest package for you.
+
 ### Option 1: Use With npx
 
 This is the easiest path.
@@ -371,6 +476,8 @@ npx agent-execution-harness@latest init --adapter stetix --cwd . --apply
 
 ## Common Confusions
 
+This section explains the common terms without assuming you are a developer.
+
 ### What Is npm?
 
 npm is the package registry where this tool is published.
@@ -397,7 +504,7 @@ Download the latest harness package, run its doctor command, and check this proj
 
 Only when the project and agent are configured to use it.
 
-The harness is not magic background behavior inside every AI tool. It works when:
+The harness is not hidden magic inside every AI tool. It works when:
 
 1. the project has harness files installed
 2. the project has clear `AGENTS.md` rules
@@ -419,6 +526,12 @@ Yes, if the surrounding tool lets it ignore project instructions.
 The harness makes correct behavior easier to enforce and audit, but it cannot physically control every possible model or coding tool unless that tool invokes it.
 
 That is why the final answer must include artifact evidence.
+
+Practical rule:
+
+```txt
+No artifact, no evidence, no trust.
+```
 
 ## Troubleshooting
 
@@ -954,7 +1067,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.3.0
+0.4.0
 ```
 
 Package:
@@ -963,4 +1076,6 @@ Package:
 agent-execution-harness
 ```
 
-Treat this as an early public foundation. It is useful for experimentation and structured agent execution, with hardening focused on CI, installer safety, schemas, doctor checks, command policy, and release hygiene.
+Treat this as an early public foundation for structured AI-assisted development.
+
+It is useful today if you want agents to work with plans, evidence, safety stops, compact memory, and audit-friendly reports.
