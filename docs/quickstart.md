@@ -88,6 +88,17 @@ agent-harness finish --summary "Login fix validated."
 agent-harness report --run-id fix-login --format compact
 ```
 
+Optional codebase memory flow for risky or unclear work:
+
+```bash
+agent-harness map init
+agent-harness map query --surface auth
+agent-harness map update --files src/auth/session.ts
+agent-harness map record --surface auth --files src/auth/session.ts --summary "Auth session owns login state contracts and must be checked before authorization edits."
+```
+
+Do not run a full map for every tiny change. Query the affected surface when the work is broad, risky, or not obvious. Update memory after structural changes so the next agent starts with better context.
+
 ## 6. What A Good Final Answer Looks Like
 
 ```txt

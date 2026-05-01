@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 - 2026-04-30
+
+### Added
+
+- Added codebase memory commands: `map init`, `map status`, `map query`, `map update`, and `map record`.
+- Added file-hash freshness tracking so changed files mark affected surfaces as `stale` until durable memory is recorded.
+- Added summary quality checks to reject generic memory notes and require validated subagent memory contracts.
+
+### Changed
+
+- High-risk task surfaces can now require `codebase_memory_fresh` evidence before completed status.
+- Documented selective mapping so agents avoid remapping the full codebase on every task.
+
 ## 0.3.0 - 2026-04-30
 
 ### Added

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { CONFIG_SCHEMA_VERSION, DEFAULT_ARTIFACT_DIR } from "./constants.js";
+import { defaultCodebaseMemoryConfig } from "./codebase-memory.js";
 import type { AgentHarnessConfig } from "./config-types.js";
 import { validateConfig } from "./schema-validation.js";
 import { assertSafeRelativePath } from "./utils.js";
@@ -22,6 +23,7 @@ export function defaultConfig(): AgentHarnessConfig {
       output_excerpt_max_chars: 600,
       report_compact_max_chars: 1600,
     },
+    codebase_memory: defaultCodebaseMemoryConfig(),
   };
 }
 
@@ -35,6 +37,7 @@ export function loadConfig(cwd = process.cwd(), configPath = "agent-harness.conf
     ...config,
     command_policy: { ...defaults.command_policy, ...(config.command_policy ?? {}) },
     token_budget: { ...defaults.token_budget, ...(config.token_budget ?? {}) },
+    codebase_memory: { ...defaults.codebase_memory, ...(config.codebase_memory ?? {}) },
   };
   validateConfig(merged);
   assertSafeRelativePath(merged.artifact_dir, "artifact_dir");

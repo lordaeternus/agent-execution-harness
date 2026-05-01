@@ -10,6 +10,25 @@
     "output_excerpt_max_chars": 600,
     "report_compact_max_chars": 1600
   },
+  "codebase_memory": {
+    "enabled": true,
+    "memory_dir": ".checks/agent-harness-memory",
+    "default_strategy": "query",
+    "stale_after_days": 14,
+    "max_summary_chars": 1200,
+    "surface_budgets": {
+      "auth": 1800,
+      "db": 1800,
+      "api": 1400,
+      "ai": 1400,
+      "ui": 900,
+      "ui_layout": 900,
+      "docs": 500,
+      "generic": 700,
+      "backend": 900
+    },
+    "high_risk_surfaces": ["auth", "db", "api", "ai"]
+  },
   "command_policy": {
     "allow": [],
     "deny": ["DROP", "TRUNCATE", "UPDATE", "DELETE", "git reset --hard", "push --force", "force-with-lease"]

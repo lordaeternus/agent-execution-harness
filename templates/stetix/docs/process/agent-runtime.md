@@ -4,6 +4,9 @@ Use this file for routine harness execution in Stetix. Do not load long docs unl
 
 - Use `pnpm agent:harness` or token-light commands for approved L2/L3, multi-step or delegated work.
 - Start with `pnpm agent:harness session start`, then use `pnpm agent:harness next`.
+- For L2 unclear or L3 high-risk work, run `pnpm agent:harness map query --surface <surface>` before editing.
+- After durable structural code changes, run `pnpm agent:harness map update --files <files>` and `pnpm agent:harness map record --surface <surface> --files <files> --summary "<durable fact>"`.
+- `docs/agent-map.md` and `docs/historico.md` remain canonical; harness memory is compact cache.
 - Prefer `pnpm agent:harness verify --task-id <id> --type <evidence_type> --cmd "<command>"`.
 - Use `--types a,b` when one command proves multiple evidence types.
 - Declare files before editing. Keep task scope local.

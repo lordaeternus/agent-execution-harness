@@ -71,4 +71,36 @@ describe("cli integration", () => {
       }),
     ).toThrow();
   });
+
+  it("runs codebase memory map commands", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-map-"));
+    fs.mkdirSync(path.join(tmp, "src/auth"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, "src/auth/session.ts"), "export const session = true;\n");
+    const init = execFileSync("node", [bin, "map", "init"], { cwd: tmp, encoding: "utf8" });
+    expect(init).toContain("memory init");
+    const query = execFileSync("node", [bin, "map", "query", "--surface", "auth"], { cwd: tmp, encoding: "utf8" });
+    expect(query).toContain("auth memory");
+    fs.writeFileSync(path.join(tmp, "src/auth/session.ts"), "export const session = 'changed';\n");
+    const update = execFileSync("node", [bin, "map", "update", "--files", "src/auth/session.ts"], { cwd: tmp, encoding: "utf8" });
+    expect(update).toContain("auth");
+    const record = execFileSync(
+      "node",
+      [
+        bin,
+        "map",
+        "record",
+        "--surface",
+        "auth",
+        "--files",
+        "src/auth/session.ts",
+        "--summary",
+        "Auth session surface owns login state contracts and must be checked before authorization-related edits.",
+        "--confidence",
+        "high",
+      ],
+      { cwd: tmp, encoding: "utf8" },
+    );
+    expect(record).toContain("memory recorded");
+    expect(fs.existsSync(path.join(tmp, ".agent-harness/memory/surfaces/auth.json"))).toBe(true);
+  });
 });

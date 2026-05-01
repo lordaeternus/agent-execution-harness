@@ -14,6 +14,16 @@ export interface TokenBudget {
   report_compact_max_chars: number;
 }
 
+export interface CodebaseMemoryConfig {
+  enabled: boolean;
+  memory_dir: string;
+  default_strategy: "off" | "query" | "refresh";
+  stale_after_days: number;
+  max_summary_chars: number;
+  surface_budgets: Record<string, number>;
+  high_risk_surfaces: string[];
+}
+
 export interface AgentHarnessConfig {
   schema_version: typeof CONFIG_SCHEMA_VERSION;
   artifact_dir: string;
@@ -22,4 +32,5 @@ export interface AgentHarnessConfig {
   doctor_profile: "generic" | "stetix" | "strict" | "ci";
   command_policy: CommandPolicy;
   token_budget: TokenBudget;
+  codebase_memory?: CodebaseMemoryConfig;
 }

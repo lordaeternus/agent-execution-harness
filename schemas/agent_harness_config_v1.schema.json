@@ -27,6 +27,23 @@
         "output_excerpt_max_chars": { "type": "number", "exclusiveMinimum": 0 },
         "report_compact_max_chars": { "type": "number", "exclusiveMinimum": 0 }
       }
+    },
+    "codebase_memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "memory_dir", "default_strategy", "stale_after_days", "max_summary_chars", "surface_budgets", "high_risk_surfaces"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "memory_dir": { "type": "string", "minLength": 1 },
+        "default_strategy": { "enum": ["off", "query", "refresh"] },
+        "stale_after_days": { "type": "number", "exclusiveMinimum": 0 },
+        "max_summary_chars": { "type": "number", "exclusiveMinimum": 0 },
+        "surface_budgets": {
+          "type": "object",
+          "additionalProperties": { "type": "number", "exclusiveMinimum": 0 }
+        },
+        "high_risk_surfaces": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
     }
   }
 }

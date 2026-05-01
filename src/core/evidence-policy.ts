@@ -45,7 +45,14 @@ function requiredEvidenceForTask(task: RunTask, planTask: AgentHarnessTask | und
   if (planTask?.required_evidence?.length) return unique(planTask.required_evidence);
   if (task.required_evidence?.length) return unique(task.required_evidence);
   const surface = planTask?.surface ?? inferSurface([...(planTask?.files ?? []), ...(task.files ?? [])]);
-  return unique(SURFACE_REQUIREMENTS[surface] ?? []);
+  const baseRequirements = SURFACE_REQUIREMENTS[surface] ?? [];
+  const memoryRequirements = taskNeedsFreshCodebaseMemory(task, surface) ? ["codebase_memory_fresh"] : [];
+  return unique([...baseRequirements, ...memoryRequirements]);
+}
+
+function taskNeedsFreshCodebaseMemory(task: RunTask, surface: TaskSurface): boolean {
+  const highRiskSurfaces: TaskSurface[] = ["auth", "db", "api", "ai"];
+  return highRiskSurfaces.includes(surface) && task.status !== "not_started";
 }
 
 function inferSurface(files: string[]): TaskSurface {

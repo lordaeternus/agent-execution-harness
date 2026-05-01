@@ -1,11 +1,14 @@
 # Stetix Adapter Patch
 
-- Require `pnpm agent:harness` for approved L2/L3, multi-step or delegated work.
-- Read `docs/process/agent-runtime.md` before routine harness execution; avoid loading long docs unless needed.
-- Prefer low-token flow when available: session start, next, verify, claim auto, finish.
-- Keep canonical memory in `docs/historico.md`.
-- Do not declare success without artifact `completed`.
-- For UI/layout work, success requires browser smoke or visual assertion; missing auth/session means `partial_validated`, not `completed`.
-- Harness evidence must include `evidence_type` or `evidence_types` matching required evidence in the plan.
-- Store long logs by reference/hash instead of pasting long excerpts.
-- For simulations, verify no product paths such as `src/` or `supabase/` were changed.
+- Approved L2/L3, multi-step or delegated work: require `pnpm agent:harness`.
+- Routine execution: read `docs/process/agent-runtime.md`; avoid long docs.
+- Prefer: session start, next, verify, claim auto, finish.
+- Canonical memory: `docs/historico.md`.
+- Risky/unclear: query harness codebase memory before edit.
+- Durable structural change: update harness memory after edit.
+- Harness memory is cache; source, `docs/agent-map.md`, `docs/historico.md` stay canonical.
+- No success claim without artifact `completed`.
+- UI/layout needs browser smoke or visual assertion; else `partial_validated`.
+- Evidence must include evidence_type/evidence_types matching required evidence.
+- Long logs by reference/hash.
+- Simulations: verify no product paths like `src/` or `supabase/` changed.

@@ -35,7 +35,7 @@ The goal is not to make the model smarter. The goal is to make the agent's work 
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.3.0.md)
+- [Release notes](docs/release-notes/v0.4.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -105,6 +105,17 @@ agent-harness finish --summary "Validated."
 agent-harness report --run-id fix-id --format compact
 ```
 
+Codebase memory flow for agents:
+
+```bash
+agent-harness map init
+agent-harness map query --surface auth
+agent-harness map update --files src/auth/session.ts
+agent-harness map record --surface auth --files src/auth/session.ts --summary "Auth session owns login state contracts and must be checked before authorization edits."
+```
+
+Use this selectively. Simple one-file work does not need a full map. Risky or unclear work should query the affected surface first, then update memory after code changes.
+
 ### Copy-Paste Prompt For Your Agent
 
 After installing the harness, give your AI coding agent this instruction:
@@ -115,6 +126,7 @@ Read docs/agent-runtime.md first; do not load the full README for routine execut
 Before editing, validate the plan.
 During execution, keep the harness artifact updated.
 Prefer token-light commands: session start, next, verify, claim auto, finish.
+For risky or unclear work, query codebase memory before editing and update it after changing durable structure.
 Do not claim success unless the artifact is completed and includes evidence plus verified claims.
 In the final answer, include run_id, artifact path, status, gates, evidence, verified claims, and rollback notes.
 ```
@@ -708,6 +720,20 @@ Runs a policy-checked command, stores long output as a referenced log, records `
 agent-harness verify --task-id fix-login --type focused_tests --cmd "pnpm test"
 ```
 
+### `map`
+
+Maintains compact codebase memory for selective reuse.
+
+```bash
+agent-harness map init
+agent-harness map status
+agent-harness map query --surface auth
+agent-harness map update --files src/auth/session.ts
+agent-harness map record --surface auth --files src/auth/session.ts --summary "Auth session owns login state contracts and must be checked before authorization edits."
+```
+
+Use `map query` before risky or unclear work. Use `map update` after changed files. Use `map record` only for durable facts: contracts, flows, invariants, known traps, and key files.
+
 ### `run`
 
 Applies one low-level action to the run state.
@@ -765,6 +791,24 @@ Example:
     "summary_max_chars": 240,
     "output_excerpt_max_chars": 600,
     "report_compact_max_chars": 1600
+  },
+  "codebase_memory": {
+    "enabled": true,
+    "memory_dir": ".agent-harness/memory",
+    "default_strategy": "query",
+    "stale_after_days": 14,
+    "max_summary_chars": 1200,
+    "surface_budgets": {
+      "auth": 1800,
+      "db": 1800,
+      "api": 1400,
+      "ai": 1400,
+      "ui": 900,
+      "ui_layout": 900,
+      "docs": 500,
+      "generic": 700
+    },
+    "high_risk_surfaces": ["auth", "db", "api", "ai"]
   }
 }
 ```
@@ -777,6 +821,7 @@ Important fields:
 - `doctor_profile`: validation profile for the project
 - `command_policy`: allow/deny rules for commands
 - `token_budget`: controls compact output and log excerpt limits
+- `codebase_memory`: controls selective repository mapping and memory freshness
 
 Deny rules take priority over allow rules.
 

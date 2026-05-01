@@ -9,3 +9,4 @@ export * from "./core/report.js";
 export * from "./core/benchmark.js";
 export * from "./core/auto-claims.js";
 export * from "./core/evidence-policy.js";
+export * from "./core/codebase-memory.js";

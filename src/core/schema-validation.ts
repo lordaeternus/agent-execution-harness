@@ -49,6 +49,16 @@ export function validateConfig(config: unknown): asserts config is AgentHarnessC
     requirePositiveNumber(budget, "output_excerpt_max_chars");
     requirePositiveNumber(budget, "report_compact_max_chars");
   }
+  if (value.codebase_memory !== undefined) {
+    const memory = asRecord(value.codebase_memory, "config.codebase_memory");
+    requireBoolean(memory, "enabled");
+    requireString(memory, "memory_dir");
+    requireEnum(memory, "default_strategy", ["off", "query", "refresh"]);
+    requirePositiveNumber(memory, "stale_after_days");
+    requirePositiveNumber(memory, "max_summary_chars");
+    requireObject(memory, "surface_budgets");
+    requireArray(memory, "high_risk_surfaces");
+  }
 }
 
 export function lintPlan(plan: unknown): ValidationResult {
@@ -127,4 +137,12 @@ function requirePositiveNumber(value: Record<string, unknown>, field: string): v
   if (typeof value[field] !== "number" || !Number.isFinite(value[field]) || (value[field] as number) <= 0) {
     throw new Error(`${field} must be a positive number`);
   }
+}
+
+function requireBoolean(value: Record<string, unknown>, field: string): void {
+  if (typeof value[field] !== "boolean") throw new Error(`${field} must be a boolean`);
+}
+
+function requireObject(value: Record<string, unknown>, field: string): void {
+  if (!value[field] || typeof value[field] !== "object" || Array.isArray(value[field])) throw new Error(`${field} must be an object`);
 }
