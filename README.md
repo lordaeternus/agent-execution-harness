@@ -108,31 +108,35 @@ Use this if you want to try the harness in an existing project.
 
 AI agents should read [`docs/agent-runtime.md`](docs/agent-runtime.md) for the short runtime protocol. This README is for humans.
 
-Open a terminal inside your target project:
+### The Simple Path
+
+Copy and paste these commands inside the project where you want to use the harness.
+
+Step 1: open your project folder:
 
 ```bash
 cd C:\Projetos\my-app
 ```
 
-Preview the installation:
+Step 2: preview what will be installed:
 
 ```bash
 npx agent-execution-harness@latest init --adapter generic --cwd .
 ```
 
-If the preview looks correct, apply it:
+This preview should not change your project.
 
-```bash
-npx agent-execution-harness@latest init --adapter generic --cwd . --apply
-```
-
-If your project already has an `AGENTS.md`, the installer does not overwrite it by default. To add the harness rules to the existing file, use:
+Step 3: install the harness:
 
 ```bash
 npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
 ```
 
-Check the installation:
+This is the recommended command for most projects.
+
+It adds harness rules to `AGENTS.md` without replacing your current instructions.
+
+Step 4: check that installation worked:
 
 ```bash
 npx agent-execution-harness@latest doctor --cwd .
@@ -144,7 +148,15 @@ Expected result:
 status: success
 ```
 
-After that, talk to your AI coding agent normally:
+Step 5: tell your AI coding agent to use it:
+
+```txt
+Use the agent harness for approved plans, multi-step work, risky changes, and any task where you need to prove completion.
+Read docs/agent-runtime.md first.
+Do not claim success unless the harness artifact is completed and includes evidence plus verified claims.
+```
+
+Then talk normally:
 
 ```txt
 Find this bug.
@@ -152,6 +164,18 @@ Create a plan.
 Execute the approved plan using the harness.
 Show me the evidence.
 ```
+
+### What Files Get Added?
+
+The installer may add or update harness setup files such as:
+
+- `AGENTS.md`
+- `agent-harness.config.json`
+- package scripts
+- harness artifact folders
+- runtime docs for the agent
+
+If your project already has `AGENTS.md`, the recommended command uses `--agents-mode append`, so it adds a harness block instead of replacing the file.
 
 The agent should use the harness underneath.
 
@@ -409,44 +433,70 @@ You can use the harness without becoming an npm expert.
 
 If you are new, use `npx`. It downloads and runs the latest package for you.
 
-### Option 1: Use With npx
+### Recommended Install
 
-This is the easiest path.
+Use this for most projects:
 
-Preview:
+```bash
+cd C:\Projetos\my-app
+npx agent-execution-harness@latest init --adapter generic --cwd .
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
+npx agent-execution-harness@latest doctor --cwd .
+```
+
+What each command does:
+
+- `cd C:\Projetos\my-app`: opens your project folder
+- `init --adapter generic --cwd .`: previews the installation
+- `init --adapter generic --cwd . --apply --agents-mode append`: installs the harness and appends rules to `AGENTS.md`
+- `doctor --cwd .`: checks if everything is configured
+
+Expected doctor result:
+
+```txt
+status: success
+```
+
+### AGENTS.md Options
+
+`AGENTS.md` is the instruction file your coding agent reads.
+
+Choose one mode:
+
+```bash
+# safest: keep your existing AGENTS.md unchanged
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode skip
+
+# recommended: add harness rules to your existing AGENTS.md
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
+
+# advanced: replace AGENTS.md after creating a backup
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode overwrite
+```
+
+Use `append` if you are not sure.
+
+### Preview Only
+
+Run this when you only want to see what would happen:
 
 ```bash
 npx agent-execution-harness@latest init --adapter generic --cwd .
 ```
 
-Apply:
+Preview mode does not apply the installation.
+
+### Stetix-Style Project
+
+For projects that want the Stetix adapter:
 
 ```bash
-npx agent-execution-harness@latest init --adapter generic --cwd . --apply
+npx agent-execution-harness@latest init --adapter stetix --cwd . --apply --agents-mode append
 ```
 
-If `AGENTS.md` already exists, choose how to handle it:
+### Install As A Dev Dependency
 
-```bash
-# safest default: keep the current AGENTS.md unchanged
-npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode skip
-
-# recommended for most existing projects: append harness rules to the current AGENTS.md
-npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
-
-# strongest but risky: replace AGENTS.md after backup
-npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode overwrite
-```
-
-Check:
-
-```bash
-npx agent-execution-harness@latest doctor --cwd .
-```
-
-### Option 2: Install In The Project
-
-Use this when you want the harness pinned as a project dependency.
+Use this when you want the harness pinned in `package.json`:
 
 ```bash
 npm install --save-dev agent-execution-harness
@@ -460,18 +510,28 @@ agent-harness run
 agent-harness report
 ```
 
-### Stetix-Style Project
+### After Installing
 
-For projects that want the Stetix adapter:
+Use natural language with your AI coding agent:
 
-```bash
-npx agent-execution-harness@latest init --adapter stetix --cwd .
+```txt
+Create a plan for this bug.
+Execute the plan using the harness.
+Show the run_id, artifact path, status, evidence, verified claims, and rollback.
 ```
 
-Apply:
+Good final signal:
 
-```bash
-npx agent-execution-harness@latest init --adapter stetix --cwd . --apply
+```txt
+status: completed
+evidence: present
+verified claims: present
+```
+
+Weak final signal:
+
+```txt
+Done. It should work.
 ```
 
 ## Common Confusions

@@ -2,9 +2,11 @@
 
 This guide is for someone who wants to install Agent Execution Harness in an existing project and start using it with an AI coding agent.
 
-## 1. Open Your Project
+## Simple Installation
 
-Open a terminal in the project where you want the harness installed.
+Copy and paste these commands inside your project.
+
+## 1. Open Your Project Folder
 
 Example:
 
@@ -12,37 +14,27 @@ Example:
 cd C:\Projetos\my-app
 ```
 
-## 2. Preview The Installation
+Replace `C:\Projetos\my-app` with your real project path.
 
-Run:
+## 2. Preview First
 
 ```bash
 npx agent-execution-harness@latest init --adapter generic --cwd .
 ```
 
-This is a preview. It shows what the harness would configure.
+This shows what the harness would install.
 
-## 3. Apply The Installation
+Preview mode should not change your project.
 
-If the preview looks correct, run:
-
-```bash
-npx agent-execution-harness@latest init --adapter generic --cwd . --apply
-```
-
-If your project already has `AGENTS.md`, the installer keeps it unchanged by default. For most existing projects, append the harness rules:
+## 3. Install
 
 ```bash
 npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
 ```
 
-Use `--agents-mode overwrite` only when you truly want to replace the current `AGENTS.md`. A backup is created first.
+This is the recommended install command.
 
-For a Stetix-style project, use:
-
-```bash
-npx agent-execution-harness@latest init --adapter stetix --cwd . --apply
-```
+It appends harness rules to `AGENTS.md` instead of replacing your current file.
 
 ## 4. Check The Setup
 
@@ -66,16 +58,53 @@ Use this prompt:
 
 ```txt
 Use the agent harness for approved plans, multi-step work, risky changes, and any task where you need to prove completion.
-Read docs/agent-runtime.md first; do not load the full README for routine execution.
-Before editing, validate the plan.
-During execution, keep the harness artifact updated.
-Prefer token-light commands: session start, next, verify, claim auto, finish.
+Read docs/agent-runtime.md first.
 Do not claim success unless the artifact is completed and includes evidence plus verified claims.
-For UI/layout work, do not claim completed unless browser smoke or visual assertion evidence exists; otherwise report partial_validated.
 In the final answer, include run_id, artifact path, status, gates, evidence, verified claims, and rollback notes.
 ```
 
-Compact flow:
+## AGENTS.md Modes
+
+If your project already has `AGENTS.md`, choose one:
+
+```bash
+# safest: do not change AGENTS.md
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode skip
+
+# recommended: add harness rules to AGENTS.md
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
+
+# advanced: replace AGENTS.md after backup
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode overwrite
+```
+
+Use `append` if you are not sure.
+
+## Stetix-Style Project
+
+For a Stetix-style project, use:
+
+```bash
+npx agent-execution-harness@latest init --adapter stetix --cwd . --apply --agents-mode append
+```
+
+## What To Ask The Agent
+
+```txt
+Create a plan for this bug.
+```
+
+```txt
+Execute the approved plan using the harness.
+```
+
+```txt
+Show the run_id, artifact path, status, evidence, verified claims, and rollback.
+```
+
+## Compact Agent Flow
+
+You do not need to memorize this. It shows what the agent should run behind the scenes:
 
 ```bash
 agent-harness session start --plan plan.json --run-id fix-login --summary "ctx"
