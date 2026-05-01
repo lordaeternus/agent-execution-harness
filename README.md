@@ -19,6 +19,7 @@ The goal is not to make the model smarter. The goal is to make the agent's work 
 ## Table Of Contents
 
 - [Quick Start](#quick-start)
+- [Codebase Memory Diagram](#codebase-memory-diagram)
 - [What Problem Does This Solve?](#what-problem-does-this-solve)
 - [For Non-Technical Users](#for-non-technical-users)
 - [Installation Options](#installation-options)
@@ -115,6 +116,50 @@ agent-harness map record --surface auth --files src/auth/session.ts --summary "A
 ```
 
 Use this selectively. Simple one-file work does not need a full map. Risky or unclear work should query the affected surface first, then update memory after code changes.
+
+## Codebase Memory Diagram
+
+This feature gives the agent a compact memory of the project without forcing it to reread the whole codebase on every request.
+
+```mermaid
+flowchart TD
+  A["First setup in a project"] --> B["agent-harness map init"]
+  B --> C["Creates compact file and surface index"]
+  C --> D["User asks for bugfix or feature"]
+  D --> E{"Simple low-risk change?"}
+  E -->|Yes| F["Read touched file directly"]
+  E -->|No: risky or unclear| G["agent-harness map query --surface <surface>"]
+  G --> H{"Memory fresh?"}
+  H -->|Yes| I["Use compact memory + read changed files"]
+  H -->|No: stale or unknown| J["Read real source code and canonical docs"]
+  I --> K["Implement with harness plan and evidence"]
+  J --> K
+  F --> K
+  K --> L["agent-harness verify records evidence"]
+  L --> M["agent-harness map update --files <files>"]
+  M --> N["agent-harness map record --surface <surface> --summary <durable fact>"]
+  N --> O["Next agent starts with better context and fewer tokens"]
+```
+
+Step by step:
+
+1. `map init` creates the first compact index of important project files.
+2. For simple work, the agent should read the touched file directly and skip extra mapping.
+3. For risky or unclear work, the agent runs `map query --surface <surface>` before editing.
+4. If memory is `fresh`, it uses the compact summary plus the real files it is changing.
+5. If memory is `stale` or `unknown`, it must read the real source code and canonical docs before trusting the cache.
+6. After implementation, `verify` records evidence that checks actually ran.
+7. `map update --files <files>` refreshes file hashes.
+8. `map record` saves only durable facts: contracts, flows, invariants, known traps, and key files.
+9. The next agent spends fewer tokens because it can start from compact memory instead of rediscovering the same context.
+
+Truth priority:
+
+```txt
+real source code > canonical docs > harness memory > chat history
+```
+
+The memory is a cache. It helps the agent move faster, but it never replaces reading the real code when the risk is high.
 
 ### Copy-Paste Prompt For Your Agent
 
