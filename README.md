@@ -5,6 +5,14 @@
 
 Agent Execution Harness helps AI coding agents work like disciplined software engineers instead of improvising through your codebase.
 
+It gives the agent a repeatable operating system for software work:
+
+```txt
+understand -> plan -> read relevant context -> execute one task -> verify -> record evidence -> report honestly -> remember useful lessons
+```
+
+The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
+
 AI agents are useful, but they often fail in the same ways:
 
 - they change files before understanding the task
@@ -17,7 +25,7 @@ This project adds a small execution system around the agent.
 
 It does not try to make the model smarter. It makes the agent easier to guide, audit, and stop when the work becomes unsafe.
 
-In plain language: **it is a checklist, memory, and flight recorder for AI-assisted software development.**
+In plain language: **it is a checklist, memory, learning notebook, and flight recorder for AI-assisted software development.**
 
 It helps an AI agent execute software plans in a more organized way by forcing the agent to:
 
@@ -48,6 +56,61 @@ The harness is especially useful for:
 - AI-assisted code review
 - teams experimenting with autonomous coding agents
 - projects where "trust me, it works" is not good enough
+
+The most important benefit is not speed. It is **controlled speed**.
+
+Without a harness, an agent can move fast and still leave you unsure whether it understood the task, ran the right checks, or changed the right files. With the harness, every important step leaves an artifact: the plan, touched files, commands, evidence, verified claims, and rollback notes.
+
+That turns AI coding from a chat conversation into an engineering workflow you can inspect.
+
+## The Full Harness Flow
+
+This is the day-to-day flow the harness tries to enforce:
+
+```mermaid
+flowchart TD
+  A["User asks for a bugfix, feature, or review"] --> B["Agent classifies risk and creates or reads a plan"]
+  B --> C{"Simple low-risk work?"}
+  C -->|Yes| D["Read the touched file directly"]
+  C -->|No: broad, risky, or unclear| E["Query codebase memory with map"]
+  E --> F["Query learned lessons with learn"]
+  D --> G["Declare expected files"]
+  F --> G
+  G --> H["Execute one task at a time"]
+  H --> I["Run a real gate: test, typecheck, lint, build, smoke, or custom command"]
+  I --> J["Store evidence: command, exit code, output excerpt, log ref, sha256"]
+  J --> K["Verify claims before final report"]
+  K --> L{"Required evidence complete?"}
+  L -->|Yes| M["Status: completed"]
+  L -->|No| N["Status: partial_validated or halt"]
+  M --> O["Update map and capture useful lessons"]
+  N --> O
+  O --> P["Next agent starts with better context and fewer repeated mistakes"]
+```
+
+The important part: the agent does not get to say "done" just because it feels confident.
+
+It must prove the work.
+
+## The Three Memory Layers
+
+The harness now separates memory into three practical layers:
+
+| Layer | What it answers | Example |
+|---|---|---|
+| Plan artifact | What was supposed to happen? | "Fix login bug, touch `src/auth/session.ts`, run focused auth tests." |
+| Codebase memory | Where does this logic live? | "Auth session contracts live in `src/auth` and affect guards." |
+| Learning memory | What did we learn from previous failures? | "When session state changes, also test authorization guards." |
+
+This matters because agents waste tokens and make mistakes when they rediscover the same project structure or repeat the same bug pattern. The harness stores compact, evidence-backed context so the next run starts from better information without loading the whole repository.
+
+Truth still has a strict order:
+
+```txt
+source code > current tests/runtime > canonical docs > evidence > promoted lessons > old chat
+```
+
+Memory helps the agent. It never replaces checking the real code.
 
 ## What You Get
 
