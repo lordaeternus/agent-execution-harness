@@ -116,7 +116,19 @@ describe("public readiness hardening", () => {
     });
 
     const agents = fs.readFileSync(path.join(tmp, "AGENTS.md"), "utf8");
-    expect(agents).toContain("# Agent Harness Rules");
+    expect(agents).toContain("# Agent Harness");
     expect(agents).not.toContain("# Existing Rules");
+  });
+
+  it("documents installation, quickstart and governed learning loop", () => {
+    const readme = fs.readFileSync("README.md", "utf8");
+    const quickstart = fs.readFileSync("docs/quickstart.md", "utf8");
+    expect(readme).toContain("npx agent-execution-harness@latest init");
+    expect(readme).toContain("learning loop");
+    expect(readme).toContain("does not train");
+    expect(readme).toContain("evidence-backed lessons");
+    expect(quickstart).toContain("agent-harness learn query");
+    expect(quickstart).toContain("agent-harness learn capture");
+    expect(quickstart).toContain("agent-harness learn promote");
   });
 });

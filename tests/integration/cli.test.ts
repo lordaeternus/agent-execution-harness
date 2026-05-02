@@ -103,4 +103,40 @@ describe("cli integration", () => {
     expect(record).toContain("memory recorded");
     expect(fs.existsSync(path.join(tmp, ".agent-harness/memory/surfaces/auth.json"))).toBe(true);
   });
+
+  it("runs governed learning memory commands", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-learn-"));
+    fs.mkdirSync(path.join(tmp, "src/auth"), { recursive: true });
+    fs.mkdirSync(path.join(tmp, ".agent-harness/runs"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, "src/auth/session.ts"), "export const session = true;\n");
+    fs.writeFileSync(path.join(tmp, ".agent-harness/runs/auth.full.json"), "{}\n");
+    const capture = execFileSync(
+      "node",
+      [
+        bin,
+        "learn",
+        "capture",
+        "--lesson-id",
+        "auth-cli-lesson",
+        "--surface",
+        "auth",
+        "--kind",
+        "failure_pattern",
+        "--summary",
+        "Auth CLI lesson proves that future session edits should verify authorization guards before final report.",
+        "--files",
+        "src/auth/session.ts",
+        "--evidence-ref",
+        ".agent-harness/runs/auth.full.json",
+      ],
+      { cwd: tmp, encoding: "utf8" },
+    );
+    expect(capture).toContain("lesson captured");
+    expect(execFileSync("node", [bin, "learn", "promote", "--lesson-id", "auth-cli-lesson"], { cwd: tmp, encoding: "utf8" })).toContain("lesson promoted");
+    const query = execFileSync("node", [bin, "learn", "query", "--surface", "auth", "--top-k", "3"], { cwd: tmp, encoding: "utf8" });
+    expect(query).toContain("learning query");
+    expect(query).toContain("auth-cli-lesson");
+    expect(execFileSync("node", [bin, "learn", "prune"], { cwd: tmp, encoding: "utf8" })).toContain("learning prune");
+    expect(fs.existsSync(path.join(tmp, ".agent-harness/learning/lessons/auth-cli-lesson.json"))).toBe(true);
+  });
 });

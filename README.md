@@ -61,6 +61,7 @@ After installation, your project gets:
 - codebase memory commands
 - safety checks for risky commands
 - compact output modes to reduce token usage
+- governed learning loop for evidence-backed lessons
 
 The intended day-to-day experience is simple:
 
@@ -81,6 +82,7 @@ If the agent cannot show evidence, the work is not complete.
 - [What You Get](#what-you-get)
 - [Quick Start](#quick-start)
 - [Codebase Memory Diagram](#codebase-memory-diagram)
+- [Learning Loop](#learning-loop)
 - [What Problem Does This Solve?](#what-problem-does-this-solve)
 - [For Non-Technical Users](#for-non-technical-users)
 - [Installation Options](#installation-options)
@@ -97,7 +99,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.4.0.md)
+- [Release notes](docs/release-notes/v0.5.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -205,6 +207,16 @@ agent-harness map record --surface auth --files src/auth/session.ts --summary "A
 
 Use this selectively. Simple one-file work does not need a full map. Risky or unclear work should query the affected surface first, then update memory after code changes.
 
+Learning loop for repeated bugs or known-risk areas:
+
+```bash
+agent-harness learn query --surface auth --top-k 3
+agent-harness learn capture --surface auth --kind failure_pattern --summary "Auth fixes must verify authorization guards after session edits." --files src/auth/session.ts --evidence-ref .agent-harness/runs/fix.full.json
+agent-harness learn promote --lesson-id auth-failure-pattern-20260502
+```
+
+This does not train the model. It stores short, evidence-backed lessons that future agents can query without loading the whole history.
+
 ## Codebase Memory Diagram
 
 This feature gives the agent a compact memory of the project without forcing it to reread the whole codebase on every request.
@@ -269,6 +281,34 @@ Code updated.
 ```
 
 The harness rejects vague memory because vague memory makes future agents worse.
+
+## Learning Loop
+
+The learning loop is a governed notebook for hard-won lessons.
+
+It is useful when the agent finds a recurring bug, fixes a fragile area, or discovers a verification rule that should not be rediscovered next time.
+
+Flow:
+
+```txt
+capture -> review -> promote -> query -> prune
+```
+
+- `capture`: save a candidate lesson from evidence.
+- `review`: inspect candidates and stale records.
+- `promote`: allow a specific lesson to appear in future queries.
+- `query`: return only the most relevant lessons for one surface.
+- `prune`: retire expired or noisy lessons.
+
+Lessons are intentionally small. The default query returns only `top_k = 3`, so the agent gets useful context without spending tokens on old history.
+
+Truth priority:
+
+```txt
+source code > current tests/runtime > canonical docs > evidence > promoted lessons > old chat
+```
+
+The learning loop improves reuse, but it does not replace reading real code for risky work.
 
 ### Copy-Paste Prompt For Your Agent
 
@@ -952,6 +992,20 @@ agent-harness map record --surface auth --files src/auth/session.ts --summary "A
 
 Use `map query` before risky or unclear work. Use `map update` after changed files. Use `map record` only for durable facts: contracts, flows, invariants, known traps, and key files.
 
+### `learn`
+
+Maintains governed lessons from real evidence.
+
+```bash
+agent-harness learn capture --surface auth --kind failure_pattern --summary "Auth fixes must verify authorization guards after session edits." --files src/auth/session.ts --evidence-ref .agent-harness/runs/fix.full.json
+agent-harness learn review --surface auth
+agent-harness learn promote --lesson-id auth-failure-pattern-20260502
+agent-harness learn query --surface auth --top-k 3
+agent-harness learn prune
+```
+
+Use `learn query` for repeated failures or known-risk surfaces. Use `learn capture` only after evidence exists. Do not store secrets or generic notes.
+
 ### `run`
 
 Applies one low-level action to the run state.
@@ -1027,6 +1081,14 @@ Example:
       "generic": 700
     },
     "high_risk_surfaces": ["auth", "db", "api", "ai"]
+  },
+  "learning_memory": {
+    "enabled": true,
+    "memory_dir": ".agent-harness/learning",
+    "top_k": 3,
+    "ttl_days": 60,
+    "max_summary_chars": 500,
+    "max_lessons_per_surface": 20
   }
 }
 ```
@@ -1040,6 +1102,7 @@ Important fields:
 - `command_policy`: allow/deny rules for commands
 - `token_budget`: controls compact output and log excerpt limits
 - `codebase_memory`: controls selective repository mapping and memory freshness
+- `learning_memory`: controls evidence-backed lessons from fixes and failures
 
 Deny rules take priority over allow rules.
 
@@ -1127,7 +1190,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.4.0
+0.5.0
 ```
 
 Package:

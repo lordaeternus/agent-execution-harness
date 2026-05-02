@@ -44,6 +44,19 @@
         },
         "high_risk_surfaces": { "type": "array", "items": { "type": "string", "minLength": 1 } }
       }
+    },
+    "learning_memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "memory_dir", "top_k", "ttl_days", "max_summary_chars", "max_lessons_per_surface"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "memory_dir": { "type": "string", "minLength": 1 },
+        "top_k": { "type": "number", "exclusiveMinimum": 0 },
+        "ttl_days": { "type": "number", "exclusiveMinimum": 0 },
+        "max_summary_chars": { "type": "number", "exclusiveMinimum": 0 },
+        "max_lessons_per_surface": { "type": "number", "exclusiveMinimum": 0 }
+      }
     }
   }
 }

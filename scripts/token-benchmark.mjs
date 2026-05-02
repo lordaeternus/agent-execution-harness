@@ -15,6 +15,8 @@ const plan = {
 };
 fs.writeFileSync(path.join(tmp, "plan.json"), JSON.stringify(plan));
 fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+fs.mkdirSync(path.join(tmp, ".agent-harness/runs"), { recursive: true });
+fs.writeFileSync(path.join(tmp, ".agent-harness/runs/bench.full.json"), "{}\n");
 const cli = path.join(root, "dist", "cli", "index.js");
 
 function run(args) {
@@ -70,6 +72,24 @@ const oldRun = total([
 ]);
 
 const verifyCommand = `${JSON.stringify(process.execPath)} --version`;
+run([
+  "learn",
+  "capture",
+  "--lesson-id",
+  "bench-lesson",
+  "--surface",
+  "generic",
+  "--kind",
+  "verification_rule",
+  "--summary",
+  "Benchmark lesson proves query output stays compact while preserving evidence-backed operational context.",
+  "--files",
+  "created.txt",
+  "--evidence-ref",
+  ".agent-harness/runs/bench.full.json",
+]);
+run(["learn", "promote", "--lesson-id", "bench-lesson"]);
+const learnQuery = run(["learn", "query", "--surface", "generic", "--top-k", "3"]);
 const compactRun = total([
   run(["session", "start", "--plan", "plan.json", "--run-id", "new", "--mode", "constrained"]),
   run(["files", "declare", "--files", "created.txt"]),
@@ -80,7 +100,7 @@ const compactRun = total([
 ]);
 const reduction = Math.round(((oldRun - compactRun) / oldRun) * 100);
 
-console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction}`);
+console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} learn_query_chars=${learnQuery.totalChars}`);
 if (reduction < 55) {
   console.error("token benchmark requires at least 55% output reduction");
   process.exitCode = 1;

@@ -59,6 +59,15 @@ export function validateConfig(config: unknown): asserts config is AgentHarnessC
     requireObject(memory, "surface_budgets");
     requireArray(memory, "high_risk_surfaces");
   }
+  if (value.learning_memory !== undefined) {
+    const memory = asRecord(value.learning_memory, "config.learning_memory");
+    requireBoolean(memory, "enabled");
+    requireString(memory, "memory_dir");
+    requirePositiveNumber(memory, "top_k");
+    requirePositiveNumber(memory, "ttl_days");
+    requirePositiveNumber(memory, "max_summary_chars");
+    requirePositiveNumber(memory, "max_lessons_per_surface");
+  }
 }
 
 export function lintPlan(plan: unknown): ValidationResult {

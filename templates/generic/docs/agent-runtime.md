@@ -5,7 +5,9 @@ Use this file for execution. Use `README.md` only for human learning.
 - Use the harness for approved L2/L3, multi-step or risky work.
 - Start with `agent-harness session start`, then use `agent-harness next`.
 - For L2 unclear or L3 high-risk work, run `agent-harness map query --surface <surface>` before editing.
+- For repeated failures or known-risk surfaces, run `agent-harness learn query --surface <surface> --top-k 3`.
 - After durable structural code changes, run `agent-harness map update --files <files>` and `agent-harness map record --surface <surface> --files <files> --summary "<durable fact>"`.
+- After durable fixes or incidents, use `agent-harness learn capture`; promote only specific lessons with evidence.
 - Prefer `agent-harness verify --task-id <id> --type <evidence_type> --cmd "<command>"`.
 - Use `--types a,b` when one command proves multiple evidence types.
 - `verify` stores long logs by `output_ref` + `sha256` and records evidence.
@@ -13,6 +15,7 @@ Use this file for execution. Use `README.md` only for human learning.
 - UI/layout needs `browser_smoke` or `visual_assertion`; otherwise report `partial_validated`.
 - Evidence needs `evidence_type` or `evidence_types`.
 - Keep summaries short. Do not paste long logs when `output_ref` exists.
+- Lessons are hints, not truth. Source code and current tests win.
 - HALT on destructive risk, unsafe ambiguity or repeated failure.
 
 Final answer: run_id, artifact, status, evidence policy score, missing evidence, verified claims, rollback.

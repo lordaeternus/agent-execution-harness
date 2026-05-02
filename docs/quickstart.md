@@ -128,6 +128,16 @@ agent-harness map record --surface auth --files src/auth/session.ts --summary "A
 
 Do not run a full map for every tiny change. Query the affected surface when the work is broad, risky, or not obvious. Update memory after structural changes so the next agent starts with better context.
 
+Optional learning loop for repeated bugs or known-risk areas:
+
+```bash
+agent-harness learn query --surface auth --top-k 3
+agent-harness learn capture --surface auth --kind failure_pattern --summary "Auth fixes must verify authorization guards after session edits." --files src/auth/session.ts --evidence-ref .agent-harness/runs/fix.full.json
+agent-harness learn promote --lesson-id auth-failure-pattern-20260502
+```
+
+Use `learn query` before risky work when prior lessons may help. Use `learn capture` only after real evidence exists, then `learn promote` only for specific lessons worth reusing.
+
 ## 6. What A Good Final Answer Looks Like
 
 ```txt

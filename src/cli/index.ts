@@ -10,17 +10,19 @@ import { mapCommand } from "./map.js";
 import { sessionCommand } from "./session.js";
 import { nextCommand } from "./next.js";
 import { verifyCommand } from "./verify.js";
+import { learnCommand } from "./learn.js";
 
 const [command, ...args] = process.argv.slice(2);
 
 try {
   if (!command || command === "--help" || command === "help") {
-    process.stdout.write("agent-harness commands: run, session, next, verify, map, start, files, task, gate, claim, finish, plan-lint, execute, report, doctor, benchmark, init\n");
+    process.stdout.write("agent-harness commands: run, session, next, verify, map, learn, start, files, task, gate, claim, finish, plan-lint, execute, report, doctor, benchmark, init\n");
   } else if (command === "run") runCommand(args);
   else if (command === "session") sessionCommand(args);
   else if (command === "next") nextCommand(args);
   else if (command === "verify") verifyCommand(args);
   else if (command === "map") mapCommand(args);
+  else if (command === "learn") learnCommand(args);
   else if (["start", "files", "task", "gate", "claim", "finish"].includes(command)) macroCommand([command, ...args]);
   else if (command === "plan-lint") planLintCommand(args);
   else if (command === "execute") executeCommand(args);

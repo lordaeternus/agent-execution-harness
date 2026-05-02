@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0 - 2026-05-02
+
+### Added
+
+- Added governed Learning Loop commands: `learn capture`, `learn review`, `learn promote`, `learn reject`, `learn retire`, `learn query`, and `learn prune`.
+- Added `learning_memory` config and `agent_harness_lesson_v1` schema for evidence-backed lessons.
+- Added stale detection, TTL pruning, per-surface caps, top-k querying, and secret redaction for lessons.
+
+### Changed
+
+- Documented how lessons complement codebase memory without replacing source code, tests, or runtime evidence.
+- Token benchmark now reports `learn query` cost separately from the compact execution path.
+
 ## 0.4.0 - 2026-04-30
 
 ### Added

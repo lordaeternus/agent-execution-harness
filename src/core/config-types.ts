@@ -1,4 +1,5 @@
 import type { CONFIG_SCHEMA_VERSION } from "./constants.js";
+import type { LearningMemoryConfig } from "./learning-types.js";
 
 export interface CommandPolicy {
   allow?: string[];
@@ -33,4 +34,5 @@ export interface AgentHarnessConfig {
   command_policy: CommandPolicy;
   token_budget: TokenBudget;
   codebase_memory?: CodebaseMemoryConfig;
+  learning_memory?: LearningMemoryConfig;
 }

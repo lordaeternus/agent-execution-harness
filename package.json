@@ -1,6 +1,6 @@
 {
   "name": "agent-execution-harness",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "A transactional execution harness for AI coding agents with evidence-backed reports.",
   "license": "MIT",
   "type": "module",
@@ -39,6 +39,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "pnpm build && vitest run",
+    "test:run": "pnpm build && vitest run",
     "test:integration": "pnpm build && vitest run tests/integration",
     "benchmark:smoke": "pnpm build && node dist/cli/index.js benchmark --mode smoke",
     "benchmark:tokens": "pnpm build && node scripts/token-benchmark.mjs",

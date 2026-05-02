@@ -29,6 +29,14 @@
     },
     "high_risk_surfaces": ["auth", "db", "api", "ai"]
   },
+  "learning_memory": {
+    "enabled": true,
+    "memory_dir": ".agent-harness/learning",
+    "top_k": 3,
+    "ttl_days": 60,
+    "max_summary_chars": 500,
+    "max_lessons_per_surface": 20
+  },
   "command_policy": {
     "allow": [],
     "deny": ["DROP", "TRUNCATE", "git reset --hard", "push --force", "force-with-lease"]
