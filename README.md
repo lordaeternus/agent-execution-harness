@@ -613,6 +613,40 @@ agent-harness run
 agent-harness report
 ```
 
+### Updating An Existing Installation
+
+Use this when you already installed the harness and want the newest version.
+
+If you used `npx`, run the same installer with `@latest`:
+
+```bash
+cd C:\Projetos\my-app
+npx agent-execution-harness@latest init --adapter generic --cwd .
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
+npx agent-execution-harness@latest doctor --cwd .
+```
+
+If you installed it in `package.json`, update the package first:
+
+```bash
+cd C:\Projetos\my-app
+npm install --save-dev agent-execution-harness@latest
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
+npx agent-execution-harness@latest doctor --cwd .
+```
+
+For projects using pnpm:
+
+```bash
+pnpm add -D agent-execution-harness@latest
+npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
+npx agent-execution-harness@latest doctor --cwd .
+```
+
+Simple explanation: updating means downloading the new harness package, running the installer again, and checking the project with `doctor`.
+
+Use `--agents-mode append` unless you are sure you want to replace your existing `AGENTS.md`.
+
 ### After Installing
 
 Use natural language with your AI coding agent:
@@ -1253,7 +1287,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.5.0
+0.6.0
 ```
 
 Package:
