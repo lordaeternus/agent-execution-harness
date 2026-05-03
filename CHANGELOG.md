@@ -1,3 +1,10 @@
+## 0.6.0
+
+- Added semantic plan compiler checks for autonomous execution.
+- Added weak model execution profile with compact next actions and stricter evidence.
+- Added repair hints for failed verification gates.
+- Added explicit file-scope evidence support and token benchmarks for weak mode.
+
 # Changelog
 
 ## 0.5.0 - 2026-05-02

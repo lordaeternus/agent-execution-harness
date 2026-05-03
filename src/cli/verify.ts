@@ -9,6 +9,8 @@ import { saveRun } from "../core/artifact-store.js";
 import { parseFlags, stringFlag } from "./args.js";
 import { writeCompactJson } from "./output.js";
 import { resolveCliRunContext } from "./context.js";
+import { classifyRepair } from "../core/repair-playbooks.js";
+import { effectiveExecutionProfile } from "../core/execution-profile.js";
 
 export function verifyCommand(args: string[], cwd = process.cwd()): void {
   const flags = parseFlags(args);
@@ -67,6 +69,8 @@ export function verifyCommand(args: string[], cwd = process.cwd()): void {
     },
   }).state;
   const artifactPath = saveRun(cwd, context.artifactDir, state);
+  const profile = effectiveExecutionProfile(context.mode, context.config);
+  const repair = exitCode === 0 ? undefined : classifyRepair(command, output, profile.repairHintMaxChars);
   writeCompactJson({
     status: exitCode === 0 ? "success" : "warning",
     summary: `${state.phase} evidence=${evidenceId} exit=${exitCode}`,
@@ -76,7 +80,7 @@ export function verifyCommand(args: string[], cwd = process.cwd()): void {
     ],
     next_actions: state.phase === "report" ? ["claim auto", "finish"] : ["next"],
     errors: state.errors,
-    data: { evidence_id: evidenceId, output_ref: outputRef, sha256 },
+    data: { evidence_id: evidenceId, output_ref: outputRef, sha256, ...(repair ? { repair_hint: repair } : {}) },
   });
 }
 

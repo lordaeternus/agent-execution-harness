@@ -3,59 +3,218 @@
   "title": "agent_harness_config_v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "artifact_dir", "product_paths", "required_scripts", "doctor_profile", "command_policy"],
+  "required": [
+    "schema_version",
+    "artifact_dir",
+    "product_paths",
+    "required_scripts",
+    "doctor_profile",
+    "command_policy"
+  ],
   "properties": {
-    "schema_version": { "const": "agent_harness_config_v1" },
-    "artifact_dir": { "type": "string", "minLength": 1 },
-    "product_paths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-    "required_scripts": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-    "doctor_profile": { "enum": ["generic", "stetix", "strict", "ci"] },
+    "schema_version": {
+      "const": "agent_harness_config_v1"
+    },
+    "artifact_dir": {
+      "type": "string",
+      "minLength": 1
+    },
+    "product_paths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_scripts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "doctor_profile": {
+      "enum": [
+        "generic",
+        "stetix",
+        "strict",
+        "ci"
+      ]
+    },
     "command_policy": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "allow": { "type": "array", "items": { "type": "string" } },
-        "deny": { "type": "array", "items": { "type": "string" } }
+        "allow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deny": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "token_budget": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "observation_format": { "enum": ["ultra_compact", "compact", "standard", "full"] },
-        "summary_max_chars": { "type": "number", "exclusiveMinimum": 0 },
-        "output_excerpt_max_chars": { "type": "number", "exclusiveMinimum": 0 },
-        "report_compact_max_chars": { "type": "number", "exclusiveMinimum": 0 }
+        "observation_format": {
+          "enum": [
+            "ultra_compact",
+            "compact",
+            "standard",
+            "full"
+          ]
+        },
+        "summary_max_chars": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "output_excerpt_max_chars": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "report_compact_max_chars": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
       }
     },
     "codebase_memory": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["enabled", "memory_dir", "default_strategy", "stale_after_days", "max_summary_chars", "surface_budgets", "high_risk_surfaces"],
+      "required": [
+        "enabled",
+        "memory_dir",
+        "default_strategy",
+        "stale_after_days",
+        "max_summary_chars",
+        "surface_budgets",
+        "high_risk_surfaces"
+      ],
       "properties": {
-        "enabled": { "type": "boolean" },
-        "memory_dir": { "type": "string", "minLength": 1 },
-        "default_strategy": { "enum": ["off", "query", "refresh"] },
-        "stale_after_days": { "type": "number", "exclusiveMinimum": 0 },
-        "max_summary_chars": { "type": "number", "exclusiveMinimum": 0 },
+        "enabled": {
+          "type": "boolean"
+        },
+        "memory_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "default_strategy": {
+          "enum": [
+            "off",
+            "query",
+            "refresh"
+          ]
+        },
+        "stale_after_days": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_summary_chars": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
         "surface_budgets": {
           "type": "object",
-          "additionalProperties": { "type": "number", "exclusiveMinimum": 0 }
+          "additionalProperties": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
         },
-        "high_risk_surfaces": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        "high_risk_surfaces": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
       }
     },
     "learning_memory": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["enabled", "memory_dir", "top_k", "ttl_days", "max_summary_chars", "max_lessons_per_surface"],
+      "required": [
+        "enabled",
+        "memory_dir",
+        "top_k",
+        "ttl_days",
+        "max_summary_chars",
+        "max_lessons_per_surface"
+      ],
       "properties": {
-        "enabled": { "type": "boolean" },
-        "memory_dir": { "type": "string", "minLength": 1 },
-        "top_k": { "type": "number", "exclusiveMinimum": 0 },
-        "ttl_days": { "type": "number", "exclusiveMinimum": 0 },
-        "max_summary_chars": { "type": "number", "exclusiveMinimum": 0 },
-        "max_lessons_per_surface": { "type": "number", "exclusiveMinimum": 0 }
+        "enabled": {
+          "type": "boolean"
+        },
+        "memory_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "top_k": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "ttl_days": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_summary_chars": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_lessons_per_surface": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "weak_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "max_files_per_task",
+        "max_claims_per_action",
+        "summary_max_chars",
+        "output_excerpt_max_chars",
+        "repair_hint_max_chars",
+        "next_output_format"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "max_files_per_task": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_claims_per_action": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "summary_max_chars": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "output_excerpt_max_chars": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "repair_hint_max_chars": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "next_output_format": {
+          "enum": [
+            "ultra_compact",
+            "compact"
+          ]
+        }
       }
     }
   }

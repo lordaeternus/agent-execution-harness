@@ -1,8 +1,18 @@
 {
   "schema_version": "agent_harness_config_v1",
   "artifact_dir": ".checks/agent-harness-runs",
-  "product_paths": ["src/", "supabase/"],
-  "required_scripts": ["agent:harness", "agent:plan:lint", "agent:execute", "agent:report", "agent:harness:doctor", "governance:test"],
+  "product_paths": [
+    "src/",
+    "supabase/"
+  ],
+  "required_scripts": [
+    "agent:harness",
+    "agent:plan:lint",
+    "agent:execute",
+    "agent:report",
+    "agent:harness:doctor",
+    "governance:test"
+  ],
   "doctor_profile": "stetix",
   "token_budget": {
     "observation_format": "ultra_compact",
@@ -27,7 +37,12 @@
       "generic": 700,
       "backend": 900
     },
-    "high_risk_surfaces": ["auth", "db", "api", "ai"]
+    "high_risk_surfaces": [
+      "auth",
+      "db",
+      "api",
+      "ai"
+    ]
   },
   "learning_memory": {
     "enabled": true,
@@ -39,6 +54,23 @@
   },
   "command_policy": {
     "allow": [],
-    "deny": ["DROP", "TRUNCATE", "UPDATE", "DELETE", "git reset --hard", "push --force", "force-with-lease"]
+    "deny": [
+      "DROP",
+      "TRUNCATE",
+      "UPDATE",
+      "DELETE",
+      "git reset --hard",
+      "push --force",
+      "force-with-lease"
+    ]
+  },
+  "weak_model": {
+    "enabled": true,
+    "max_files_per_task": 2,
+    "max_claims_per_action": 8,
+    "summary_max_chars": 180,
+    "output_excerpt_max_chars": 360,
+    "repair_hint_max_chars": 280,
+    "next_output_format": "ultra_compact"
   }
 }

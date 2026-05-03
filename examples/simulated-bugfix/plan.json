@@ -3,6 +3,13 @@
   "plan_id": "simulated-bugfix",
   "risk_level": "L2",
   "rollback_expectation": "Remove simulated files.",
-  "gates": ["pnpm test"],
-  "tasks": [{"task_id": "red-green", "acceptance_criteria": "RED and GREEN evidence exist."}]
+  "gates": ["node --version"],
+  "tasks": [
+    {
+      "task_id": "red-green",
+      "files": ["simulated.txt"],
+      "required_evidence": ["focused_tests", "file_scope"],
+      "acceptance_criteria": "Run `node --version` and record focused_tests plus file_scope evidence for the simulated file."
+    }
+  ]
 }

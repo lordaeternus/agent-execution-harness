@@ -66,6 +66,7 @@ function inferSurface(files: string[]): TaskSurface {
 }
 
 function isRequirementSatisfied(requirement: string, evidence: Evidence[]): boolean {
+  if (requirement === "file_scope") return evidence.some((item) => item.result === "pass" && /(^|[,;\s])file_scope($|[,;\s])/.test(item.scope_covered));
   const alternatives = requirement.split("|").map((item) => item.trim()).filter(Boolean);
   return alternatives.some((alternative) =>
     evidence.some((item) => item.result === "pass" && evidenceTypes(item).includes(alternative)),

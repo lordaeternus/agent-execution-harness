@@ -3,28 +3,98 @@
   "title": "agent_harness_plan_v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "plan_id", "risk_level", "rollback_expectation", "gates", "tasks"],
+  "required": [
+    "schema_version",
+    "plan_id",
+    "risk_level",
+    "rollback_expectation",
+    "gates",
+    "tasks"
+  ],
   "properties": {
-    "schema_version": { "const": "agent_harness_plan_v1" },
-    "plan_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$", "minLength": 1 },
-    "risk_level": { "enum": ["L1", "L2", "L3"] },
-    "rollback_expectation": { "type": "string", "minLength": 1 },
-    "gates": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "schema_version": {
+      "const": "agent_harness_plan_v1"
+    },
+    "plan_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "minLength": 1
+    },
+    "risk_level": {
+      "enum": [
+        "L1",
+        "L2",
+        "L3"
+      ]
+    },
+    "rollback_expectation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "gates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "tasks": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["task_id", "acceptance_criteria"],
+        "required": [
+          "task_id",
+          "acceptance_criteria"
+        ],
         "properties": {
-          "task_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$", "minLength": 1 },
-          "acceptance_criteria": { "type": "string", "minLength": 1 },
-          "surface": { "enum": ["ui_layout", "ui", "backend", "api", "auth", "db", "ai", "docs", "generic"] },
-          "files": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-          "required_evidence": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+          "task_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]+$",
+            "minLength": 1
+          },
+          "acceptance_criteria": {
+            "type": "string",
+            "minLength": 1
+          },
+          "surface": {
+            "enum": [
+              "ui_layout",
+              "ui",
+              "backend",
+              "api",
+              "auth",
+              "db",
+              "ai",
+              "docs",
+              "generic"
+            ]
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         }
       }
+    },
+    "execution_profile": {
+      "enum": [
+        "standard",
+        "constrained",
+        "weak"
+      ]
     }
   }
 }

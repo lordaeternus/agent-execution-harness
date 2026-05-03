@@ -16,10 +16,12 @@ const compactReportBudget = 1600;
 const observationBudget = 700;
 const ultraObservationBudget = 420;
 const learningSummaryBudget = 500;
+const weakRepairHintBudget = 280;
 if (compactReportBudget > 1600) failures.push("compact report budget exceeds 1600 chars");
 if (observationBudget > 700) failures.push("compact observation budget exceeds 700 chars");
 if (ultraObservationBudget > 420) failures.push("ultra compact observation budget exceeds 420 chars");
 if (learningSummaryBudget > 500) failures.push("learning summary budget exceeds 500 chars");
+if (weakRepairHintBudget > 280) failures.push("weak repair hint budget exceeds 280 chars");
 
 if (failures.length) {
   console.error(failures.join("\n"));

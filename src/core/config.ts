@@ -26,6 +26,15 @@ export function defaultConfig(): AgentHarnessConfig {
     },
     codebase_memory: defaultCodebaseMemoryConfig(),
     learning_memory: defaultLearningMemoryConfig(),
+    weak_model: {
+      enabled: true,
+      max_files_per_task: 2,
+      max_claims_per_action: 8,
+      summary_max_chars: 180,
+      output_excerpt_max_chars: 360,
+      repair_hint_max_chars: 280,
+      next_output_format: "ultra_compact",
+    },
   };
 }
 
@@ -41,6 +50,7 @@ export function loadConfig(cwd = process.cwd(), configPath = "agent-harness.conf
     token_budget: { ...defaults.token_budget, ...(config.token_budget ?? {}) },
     codebase_memory: { ...defaults.codebase_memory, ...(config.codebase_memory ?? {}) },
     learning_memory: { ...defaults.learning_memory, ...(config.learning_memory ?? {}) },
+    weak_model: { ...defaults.weak_model, ...(config.weak_model ?? {}) },
   };
   validateConfig(merged);
   assertSafeRelativePath(merged.artifact_dir, "artifact_dir");

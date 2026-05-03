@@ -7,7 +7,9 @@
   "tasks": [
     {
       "task_id": "basic-task",
-      "acceptance_criteria": "node --version evidence passes."
+      "files": ["created.txt"],
+      "required_evidence": ["focused_tests"],
+      "acceptance_criteria": "Run `node --version` and record passing focused_tests evidence."
     }
   ]
 }

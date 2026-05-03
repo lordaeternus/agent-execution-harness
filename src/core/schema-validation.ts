@@ -3,6 +3,7 @@ import type { AgentHarnessAction } from "./action-types.js";
 import type { AgentHarnessConfig } from "./config-types.js";
 import type { AgentHarnessPlan } from "./plan-types.js";
 import type { AgentHarnessRunState } from "./run-types.js";
+import { compilePlan } from "./plan-compiler.js";
 
 export interface ValidationResult {
   status: "success" | "error";
@@ -23,7 +24,7 @@ export function validateRunState(state: unknown): asserts state is AgentHarnessR
   const value = asRecord(state, "run");
   requireString(value, "schema_version", RUN_SCHEMA_VERSION);
   requireString(value, "run_id");
-  requireEnum(value, "mode", ["strong", "standard", "constrained"]);
+  requireEnum(value, "mode", ["strong", "standard", "constrained", "weak"]);
   requireEnum(value, "status", ["in_progress", "ready_for_report", "completed", "partial_validated", "halt"]);
   requireEnum(value, "phase", ["init", "preflight", "task_start", "gate", "evidence", "report", "halt", "completed"]);
   if (!value.plan || typeof value.plan !== "object") throw new Error("run.plan is required");
@@ -68,10 +69,24 @@ export function validateConfig(config: unknown): asserts config is AgentHarnessC
     requirePositiveNumber(memory, "max_summary_chars");
     requirePositiveNumber(memory, "max_lessons_per_surface");
   }
+  if (value.weak_model !== undefined) {
+    const profile = asRecord(value.weak_model, "config.weak_model");
+    requireBoolean(profile, "enabled");
+    requirePositiveNumber(profile, "max_files_per_task");
+    requirePositiveNumber(profile, "max_claims_per_action");
+    requirePositiveNumber(profile, "summary_max_chars");
+    requirePositiveNumber(profile, "output_excerpt_max_chars");
+    requirePositiveNumber(profile, "repair_hint_max_chars");
+    requireEnum(profile, "next_output_format", ["ultra_compact", "compact"]);
+  }
 }
 
 export function lintPlan(plan: unknown): ValidationResult {
   const errors = collectPlanErrors(plan);
+  if (!errors.length) {
+    const compiled = compilePlan(plan as AgentHarnessPlan);
+    errors.push(...compiled.diagnostics.filter((item) => item.severity === "error").map((item) => `${item.task_id ? `${item.task_id}: ` : ""}${item.code}: ${item.message}`));
+  }
   return { status: errors.length ? "error" : "success", errors };
 }
 
@@ -83,6 +98,7 @@ function collectPlanErrors(plan: unknown): string[] {
     requireSafeId(value, "plan_id");
     requireEnum(value, "risk_level", ["L1", "L2", "L3"]);
     requireString(value, "rollback_expectation");
+    if (value.execution_profile !== undefined) requireEnum(value, "execution_profile", ["standard", "constrained", "weak"]);
     requireArray(value, "gates");
     requireArray(value, "tasks");
     if ((value.gates as unknown[]).length === 0) throw new Error("plan.gates must be non-empty");

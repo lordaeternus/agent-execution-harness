@@ -1265,3 +1265,20 @@ agent-execution-harness
 Treat this as an early public foundation for structured AI-assisted development.
 
 It is useful today if you want agents to work with plans, evidence, safety stops, compact memory, and audit-friendly reports.
+
+### Weak Model Mode
+
+Use `--mode weak` when the coding agent has low reasoning power, small context, or keeps drifting from the plan. The harness then behaves like guardrails on a narrow road: one compact next action, fewer files per task, typed evidence, shorter summaries, and repair hints when a gate fails.
+
+Practical flow:
+
+```bash
+agent-harness plan-lint --plan plan.json
+agent-harness session start --plan plan.json --run-id my-fix --mode weak
+agent-harness next
+agent-harness verify --task-id task-1 --type focused_tests --cmd "pnpm test"
+agent-harness claim auto
+agent-harness finish --summary "validated"
+```
+
+`weak` mode is not for every request. Use normal mode for simple, trusted agents; use weak mode for risky work, junior agents, local LLMs, or repeated failures.

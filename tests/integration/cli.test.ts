@@ -42,6 +42,9 @@ describe("cli integration", () => {
     execFileSync("node", [bin, "files", "declare", "--files", "created.txt"], { cwd: tmp });
     const next = execFileSync("node", [bin, "next"], { cwd: tmp, encoding: "utf8" });
     expect(next).toContain("basic-task");
+    const weakNext = JSON.parse(execFileSync("node", [bin, "next", "--mode", "weak"], { cwd: tmp, encoding: "utf8" }));
+    expect(weakNext.data.action).toBe("task start");
+    expect(weakNext.data.required_evidence).toBeUndefined();
     execFileSync("node", [bin, "task", "start", "--task-id", "basic-task", "--files", "created.txt"], { cwd: tmp });
     const verified = execFileSync("node", [bin, "verify", "--task-id", "basic-task", "--types", "focused_tests,scoped_typecheck", "--cmd", "node --version"], {
       cwd: tmp,
@@ -55,6 +58,19 @@ describe("cli integration", () => {
     execFileSync("node", [bin, "finish", "--summary", "validated"], { cwd: tmp });
     const report = execFileSync("node", [bin, "report", "--run-id", "session-smoke", "--format", "compact"], { cwd: tmp, encoding: "utf8" });
     expect(report).toContain("status: completed");
+  });
+
+  it("returns compact repair hints for failing verify commands", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-verify-repair-"));
+    fs.copyFileSync("tests/fixtures/plans/basic-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "repair-smoke", "--mode", "weak"], { cwd: tmp });
+    execFileSync("node", [bin, "files", "declare", "--files", "created.txt"], { cwd: tmp });
+    execFileSync("node", [bin, "task", "start", "--task-id", "basic-task", "--files", "created.txt"], { cwd: tmp });
+    const output = execFileSync("node", [bin, "verify", "--task-id", "basic-task", "--type", "focused_tests", "--cmd", `${JSON.stringify(process.execPath)} -e ${JSON.stringify("process.exit(1)")}`], { cwd: tmp, encoding: "utf8" });
+    const parsed = JSON.parse(output);
+    expect(parsed.status).toBe("warning");
+    expect(parsed.data.repair_hint.stop_after_attempts).toBe(3);
   });
 
   it("blocks dangerous verify commands before execution", () => {

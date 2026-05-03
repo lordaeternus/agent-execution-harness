@@ -8,6 +8,7 @@ import { verifyClaim } from "./claims.js";
 import { assertNonEmptyString, assertSafeId, assertSafeRelativePath } from "./utils.js";
 import type { AgentHarnessConfig } from "./config-types.js";
 import { evaluateEvidencePolicy } from "./evidence-policy.js";
+import { effectiveExecutionProfile } from "./execution-profile.js";
 
 const ALLOWED: Record<string, string[]> = {
   init: ["read_context", "halt_for_risk"],
@@ -47,9 +48,10 @@ export function createInitialState(plan: AgentHarnessPlan, runId: string, mode =
 export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAction, config: AgentHarnessConfig): AgentHarnessRunState {
   if (action.schema_version !== ACTION_SCHEMA_VERSION) throw new Error("invalid action schema_version");
   if (!ALLOWED[state.phase]?.includes(action.type)) throw new Error(`action ${action.type} not allowed in phase ${state.phase}`);
-  if (state.mode === "constrained" && Array.isArray(action.claims) && action.claims.length > 20) throw new Error("too many claims for constrained mode");
-  if (state.mode === "constrained" && action.summary && action.summary.length > config.token_budget.summary_max_chars) {
-    throw new Error(`summary exceeds constrained limit ${config.token_budget.summary_max_chars}`);
+  const profile = effectiveExecutionProfile(state.mode, config);
+  if (Array.isArray(action.claims) && action.claims.length > profile.maxClaimsPerAction) throw new Error(`too many claims for ${state.mode} mode`);
+  if (action.summary && action.summary.length > profile.summaryMaxChars) {
+    throw new Error(`summary exceeds ${state.mode} limit ${profile.summaryMaxChars}`);
   }
 
   const next = structuredClone(state) as AgentHarnessRunState;
@@ -77,6 +79,7 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
   if (action.type === "edit_file_ready") {
     assertNonEmptyString(action.task_id, "task_id");
     if (!action.files?.length) throw new Error("edit_file_ready requires files");
+    if (action.files.length > profile.maxFilesPerTask) throw new Error(`too many files for ${state.mode} mode`);
     const task = next.tasks.find((item) => item.task_id === action.task_id);
     if (!task) throw new Error(`unknown task_id: ${action.task_id}`);
     for (const file of action.files) {
@@ -106,11 +109,11 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
     if (!next.pending_gate) throw new Error("record_evidence requires pending gate");
     const evidence = normalizeEvidence(action.evidence);
     const task = next.tasks.find((item) => item.task_id === next.pending_gate?.task_id);
-    if (state.mode === "constrained" && task?.required_evidence?.length && !evidence.evidence_type && !evidence.evidence_types?.length) {
-      throw new Error("constrained mode requires evidence_type or evidence_types");
+    if (profile.enforceStructuredEvidence && task?.required_evidence?.length && !evidence.evidence_type && !evidence.evidence_types?.length) {
+      throw new Error(`${state.mode} mode requires evidence_type or evidence_types`);
     }
-    if (evidence.output_excerpt.length > config.token_budget.output_excerpt_max_chars) {
-      throw new Error(`evidence.output_excerpt exceeds limit ${config.token_budget.output_excerpt_max_chars}`);
+    if (evidence.output_excerpt.length > profile.outputExcerptMaxChars) {
+      throw new Error(`evidence.output_excerpt exceeds limit ${profile.outputExcerptMaxChars}`);
     }
     if (evidence.check !== next.pending_gate.command) throw new Error("evidence.check must match pending gate");
     if (next.evidence.some((item) => item.evidence_id === evidence.evidence_id)) throw new Error("duplicate evidence_id");

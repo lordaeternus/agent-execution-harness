@@ -25,6 +25,16 @@ export interface CodebaseMemoryConfig {
   high_risk_surfaces: string[];
 }
 
+export interface WeakModelProfile {
+  enabled: boolean;
+  max_files_per_task: number;
+  max_claims_per_action: number;
+  summary_max_chars: number;
+  output_excerpt_max_chars: number;
+  repair_hint_max_chars: number;
+  next_output_format: "ultra_compact" | "compact";
+}
+
 export interface AgentHarnessConfig {
   schema_version: typeof CONFIG_SCHEMA_VERSION;
   artifact_dir: string;
@@ -35,4 +45,5 @@ export interface AgentHarnessConfig {
   token_budget: TokenBudget;
   codebase_memory?: CodebaseMemoryConfig;
   learning_memory?: LearningMemoryConfig;
+  weak_model?: WeakModelProfile;
 }

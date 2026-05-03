@@ -16,6 +16,7 @@ export interface AgentHarnessPlan {
   plan_id: string;
   risk_level: RiskLevel;
   rollback_expectation: string;
+  execution_profile?: "standard" | "constrained" | "weak";
   gates: string[];
   tasks: AgentHarnessTask[];
 }

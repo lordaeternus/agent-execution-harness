@@ -12,3 +12,7 @@ export * from "./core/evidence-policy.js";
 export * from "./core/codebase-memory.js";
 export * from "./core/learning-types.js";
 export * from "./core/learning-memory.js";
+export * from "./core/plan-compiler-types.js";
+export * from "./core/plan-compiler.js";
+export * from "./core/execution-profile.js";
+export * from "./core/repair-playbooks.js";

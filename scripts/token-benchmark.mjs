@@ -90,6 +90,10 @@ run([
 ]);
 run(["learn", "promote", "--lesson-id", "bench-lesson"]);
 const learnQuery = run(["learn", "query", "--surface", "generic", "--top-k", "3"]);
+run(["session", "start", "--plan", "plan.json", "--run-id", "std-next", "--mode", "standard"]);
+const standardNext = run(["next", "--plan", "plan.json", "--run-id", "std-next", "--mode", "standard"]);
+run(["session", "start", "--plan", "plan.json", "--run-id", "weak-next", "--mode", "weak"]);
+const weakNext = run(["next", "--plan", "plan.json", "--run-id", "weak-next", "--mode", "weak"]);
 const compactRun = total([
   run(["session", "start", "--plan", "plan.json", "--run-id", "new", "--mode", "constrained"]),
   run(["files", "declare", "--files", "created.txt"]),
@@ -100,7 +104,12 @@ const compactRun = total([
 ]);
 const reduction = Math.round(((oldRun - compactRun) / oldRun) * 100);
 
-console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} learn_query_chars=${learnQuery.totalChars}`);
+const weakReduction = Math.round(((standardNext.totalChars - weakNext.totalChars) / standardNext.totalChars) * 100);
+console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} learn_query_chars=${learnQuery.totalChars} standard_next_chars=${standardNext.totalChars} weak_next_chars=${weakNext.totalChars} weak_reduction_pct=${weakReduction}`);
+if (weakReduction < 10) {
+  console.error("weak next benchmark requires at least 10% output reduction");
+  process.exitCode = 1;
+}
 if (reduction < 55) {
   console.error("token benchmark requires at least 55% output reduction");
   process.exitCode = 1;
