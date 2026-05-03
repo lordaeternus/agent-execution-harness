@@ -13,6 +13,21 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## Works With Non-Frontier Agents Too
+
+You do not need a frontier model to benefit from this harness.
+
+Agent Execution Harness is designed to help weaker, cheaper, local, junior, or low-context coding agents execute software work more safely. In `weak` mode, the harness turns broad implementation work into small deterministic steps:
+
+- one exact next command with `next --exact`
+- fewer files per task
+- typed evidence instead of vague status updates
+- short repair hints when the agent gets stuck
+- blocked completion when the agent changes files outside the declared plan
+- compact artifacts so the agent does not need to reread the whole repository
+
+In plain language: a strong model may use the harness as discipline. A weaker model uses it as rails.
+
 AI agents are useful, but they often fail in the same ways:
 
 - they change files before understanding the task
