@@ -1,3 +1,9 @@
+## 0.6.2
+
+- Fixed `claim auto` in weak mode by batching generated claims within the execution profile limit.
+- Changed claim verification to accumulate verified claims across batches instead of replacing prior claims.
+- Added readiness coverage for multi-task weak-mode plans that generate more claims than one weak action can carry.
+
 ## 0.6.1
 
 - Clarified safe update behavior for existing installations.

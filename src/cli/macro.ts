@@ -5,6 +5,7 @@ import { loadRun, saveRun } from "../core/artifact-store.js";
 import { processHarnessAction } from "../core/runner.js";
 import { readJson } from "../core/utils.js";
 import { buildAutoClaims } from "../core/auto-claims.js";
+import { effectiveExecutionProfile } from "../core/execution-profile.js";
 import type { AgentHarnessAction } from "../core/action-types.js";
 import type { AgentHarnessPlan } from "../core/plan-types.js";
 import type { AgentHarnessRunState } from "../core/run-types.js";
@@ -27,6 +28,35 @@ export function macroCommand(args: string[], cwd = process.cwd()): void {
   if (!runId) throw new Error("--run-id is required when no active session exists");
   const plan = readJson<AgentHarnessPlan>(path.resolve(cwd, planPath));
   const previousState = loadRun(cwd, artifactDir, runId);
+  if (resource === "claim" && verb === "auto") {
+    if (!previousState) throw new Error("claim auto requires existing run");
+    const profile = effectiveExecutionProfile(mode, config);
+    const claims = buildAutoClaims(previousState);
+    if (!claims.length) throw new Error("claim auto requires claims");
+    const chunkSize = Number.isFinite(profile.maxClaimsPerAction) ? profile.maxClaimsPerAction : claims.length;
+    if (chunkSize < 1) throw new Error("maxClaimsPerAction must be greater than zero");
+    let state = previousState;
+    for (const batch of chunk(claims, chunkSize)) {
+      state = processHarnessAction({
+        plan,
+        previousState: state,
+        action: { schema_version: ACTION_SCHEMA_VERSION, type: "verify_claims", claims: batch },
+        runId,
+        mode,
+        config,
+      }).state;
+    }
+    const artifactPath = saveRun(cwd, artifactDir, state);
+    writeCompactJson({
+      status: state.status === "halt" ? "halt" : state.status === "partial_validated" ? "warning" : "success",
+      summary: `${state.phase} claims=${state.verified_claims.length}`,
+      next_actions: ["final_report"],
+      artifacts: [{ type: "run_state", path: path.relative(cwd, artifactPath) }],
+      errors: state.errors,
+      data: { batches: Math.ceil(claims.length / chunkSize), claims: state.verified_claims.length },
+    });
+    return;
+  }
   if (resource === "gate" && (verb === "pass" || verb === "fail") && !previousState?.pending_gate) {
     const check = stringFlag(flags, "check", true)!;
     const gate = processHarnessAction({
@@ -110,4 +140,10 @@ function buildMacroAction(
 
 function splitCsv(value: string): string[] {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) chunks.push(items.slice(index, index + size));
+  return chunks;
 }

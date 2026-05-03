@@ -149,6 +149,50 @@ describe("public readiness hardening", () => {
     expect(fs.existsSync(path.join(tmp, ".agent-harness", "backups"))).toBe(true);
   });
 
+  it("batches claim auto in weak mode so low-context agents can finish multi-task plans", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-weak-claims-"));
+    const plan = {
+      schema_version: "agent_harness_plan_v1",
+      plan_id: "weak-claims",
+      risk_level: "L2",
+      execution_profile: "weak",
+      rollback_expectation: "Delete temp simulation files.",
+      gates: ["node --version"],
+      tasks: [
+        { task_id: "task-a", files: ["src/a.ts"], required_evidence: ["focused_tests"], acceptance_criteria: "A passes." },
+        { task_id: "task-b", files: ["src/b.ts"], required_evidence: ["focused_tests"], acceptance_criteria: "B passes." },
+        { task_id: "task-c", files: ["src/c.ts"], required_evidence: ["focused_tests"], acceptance_criteria: "C passes." },
+      ],
+    };
+    fs.mkdirSync(path.join(tmp, "src"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, "plan.json"), `${JSON.stringify(plan, null, 2)}\n`);
+    fs.writeFileSync(path.join(tmp, "src", "a.ts"), "export const a = 1;\n");
+    fs.writeFileSync(path.join(tmp, "src", "b.ts"), "export const b = 1;\n");
+    fs.writeFileSync(path.join(tmp, "src", "c.ts"), "export const c = 1;\n");
+
+    const cli = path.resolve("dist/cli/index.js");
+    execFileSync("node", [cli, "session", "start", "--plan", "plan.json", "--run-id", "weak-claims-run", "--mode", "weak"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [cli, "files", "declare", "--files", "src/a.ts,src/b.ts,src/c.ts"], { cwd: tmp, stdio: "pipe" });
+    for (const [taskId, file, evidenceId] of [
+      ["task-a", "src/a.ts", "ev-a"],
+      ["task-b", "src/b.ts", "ev-b"],
+      ["task-c", "src/c.ts", "ev-c"],
+    ]) {
+      execFileSync("node", [cli, "task", "start", "--task-id", taskId, "--files", file], { cwd: tmp, stdio: "pipe" });
+      execFileSync("node", [cli, "gate", "pass", "--check", "node --version", "--types", "focused_tests", "--scope", `file_scope ${file}`, "--evidence-id", evidenceId], {
+        cwd: tmp,
+        stdio: "pipe",
+      });
+    }
+
+    const claimOutput = execFileSync("node", [cli, "claim", "auto"], { cwd: tmp, encoding: "utf8" });
+    expect(claimOutput).toContain("\"batches\":2");
+    execFileSync("node", [cli, "finish", "--summary", "validated"], { cwd: tmp, stdio: "pipe" });
+    const report = execFileSync("node", [cli, "report", "--run-id", "weak-claims-run", "--format", "compact"], { cwd: tmp, encoding: "utf8" });
+    expect(report).toContain("status: completed");
+    expect(report).toContain("claims:");
+  });
+
   it("can overwrite AGENTS.md only with explicit agents mode", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-agents-overwrite-"));
     fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", private: true }, null, 2)}\n`);

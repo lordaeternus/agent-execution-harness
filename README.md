@@ -259,6 +259,8 @@ agent-harness finish --summary "Validated."
 agent-harness report --run-id fix-id --format compact
 ```
 
+In `weak` mode, `claim auto` automatically batches claims when a plan has many tasks. The agent still runs one simple command, while the harness keeps each internal action small enough for low-context executors.
+
 Codebase memory flow for agents:
 
 ```bash
@@ -1303,7 +1305,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.6.1
+0.6.2
 ```
 
 Package:

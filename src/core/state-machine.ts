@@ -130,8 +130,9 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
   }
   if (action.type === "verify_claims") {
     if (!action.claims?.length) throw new Error("verify_claims requires claims");
-    next.claims = action.claims;
-    next.verified_claims = action.claims.map((claim) => verifyClaim(next, claim, config));
+    const verified = action.claims.map((claim) => verifyClaim(next, claim, config));
+    next.claims = mergeByClaimId(next.claims, action.claims);
+    next.verified_claims = mergeByClaimId(next.verified_claims, verified);
     next.phase = "report";
     next.status = "ready_for_report";
     return next;
@@ -148,4 +149,10 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
     return next;
   }
   return next;
+}
+
+function mergeByClaimId<T extends { claim_id: string }>(existing: T[], incoming: T[]): T[] {
+  const byId = new Map(existing.map((item) => [item.claim_id, item]));
+  for (const item of incoming) byId.set(item.claim_id, item);
+  return [...byId.values()];
 }
