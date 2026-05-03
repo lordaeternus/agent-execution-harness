@@ -1,3 +1,8 @@
+## 0.6.1
+
+- Clarified safe update behavior for existing installations.
+- Added readiness coverage proving init preserves user history, reports, memory, scripts, config and existing AGENTS.md rules unless overwrite is explicitly requested.
+
 ## 0.6.0
 
 - Added semantic plan compiler checks for autonomous execution.

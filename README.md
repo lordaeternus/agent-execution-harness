@@ -647,6 +647,22 @@ Simple explanation: updating means downloading the new harness package, running 
 
 Use `--agents-mode append` unless you are sure you want to replace your existing `AGENTS.md`.
 
+Safe update behavior:
+
+- existing harness history is preserved
+- existing run reports in `.agent-harness/runs/` are preserved
+- existing map/learning memory in `.agent-harness/` is preserved
+- existing project history such as `docs/historico.md` is preserved
+- existing `agent-harness.config.json` is not replaced automatically
+- existing runtime docs are not replaced automatically
+- existing `package.json` scripts are kept; missing harness scripts are added
+- `.gitignore` receives harness lines only once
+- `AGENTS.md` is appended only when you choose `--agents-mode append`
+- `AGENTS.md` is replaced only when you choose `--agents-mode overwrite`
+- every applied install creates a backup under `.agent-harness/backups/`
+
+Think of update like installing a new tool version beside your project rules. It should improve the harness commands, not erase your project memory.
+
 ### After Installing
 
 Use natural language with your AI coding agent:
@@ -1287,7 +1303,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.6.0
+0.6.1
 ```
 
 Package:

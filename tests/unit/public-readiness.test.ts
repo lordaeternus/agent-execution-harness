@@ -105,6 +105,50 @@ describe("public readiness hardening", () => {
     expect(agents.match(/agent-execution-harness:start/g)).toHaveLength(1);
   });
 
+  it("preserves user history, memory, config and scripts during update installs", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-update-preserve-"));
+    fs.mkdirSync(path.join(tmp, "docs"), { recursive: true });
+    fs.mkdirSync(path.join(tmp, ".agent-harness", "runs"), { recursive: true });
+    fs.mkdirSync(path.join(tmp, ".agent-harness", "memory"), { recursive: true });
+
+    fs.writeFileSync(
+      path.join(tmp, "package.json"),
+      `${JSON.stringify({ name: "target", private: true, scripts: { test: "custom-test", "agent:doctor": "custom-doctor" } }, null, 2)}\n`,
+    );
+    fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# Existing Rules\n");
+    fs.writeFileSync(path.join(tmp, "agent-harness.config.json"), "{\"custom\":true}\n");
+    fs.writeFileSync(path.join(tmp, "docs", "agent-runtime.md"), "# Custom Runtime\n");
+    fs.writeFileSync(path.join(tmp, "docs", "historico.md"), "[2026-05-03] existing history\n");
+    fs.writeFileSync(path.join(tmp, ".agent-harness", "runs", "old-run.json"), "{\"status\":\"completed\"}\n");
+    fs.writeFileSync(path.join(tmp, ".agent-harness", "memory", "index.json"), "{\"surfaces\":[]}\n");
+    fs.writeFileSync(path.join(tmp, ".gitignore"), ".agent-harness/runs/\n");
+
+    execFileSync("node", [path.resolve("dist/cli/index.js"), "init", "--adapter", "generic", "--cwd", tmp, "--apply", "--agents-mode", "append"], {
+      cwd: tmp,
+      stdio: "pipe",
+    });
+    execFileSync("node", [path.resolve("dist/cli/index.js"), "init", "--adapter", "generic", "--cwd", tmp, "--apply", "--agents-mode", "append"], {
+      cwd: tmp,
+      stdio: "pipe",
+    });
+
+    const pkg = JSON.parse(fs.readFileSync(path.join(tmp, "package.json"), "utf8")) as { scripts: Record<string, string> };
+    const gitignore = fs.readFileSync(path.join(tmp, ".gitignore"), "utf8");
+
+    expect(fs.readFileSync(path.join(tmp, "docs", "historico.md"), "utf8")).toBe("[2026-05-03] existing history\n");
+    expect(fs.readFileSync(path.join(tmp, ".agent-harness", "runs", "old-run.json"), "utf8")).toBe("{\"status\":\"completed\"}\n");
+    expect(fs.readFileSync(path.join(tmp, ".agent-harness", "memory", "index.json"), "utf8")).toBe("{\"surfaces\":[]}\n");
+    expect(fs.readFileSync(path.join(tmp, "agent-harness.config.json"), "utf8")).toBe("{\"custom\":true}\n");
+    expect(fs.readFileSync(path.join(tmp, "docs", "agent-runtime.md"), "utf8")).toBe("# Custom Runtime\n");
+    expect(fs.readFileSync(path.join(tmp, "AGENTS.md"), "utf8")).toContain("# Existing Rules");
+    expect(fs.readFileSync(path.join(tmp, "AGENTS.md"), "utf8").match(/agent-execution-harness:start/g)).toHaveLength(1);
+    expect(pkg.scripts.test).toBe("custom-test");
+    expect(pkg.scripts["agent:doctor"]).toBe("custom-doctor");
+    expect(gitignore.match(/\.agent-harness\/runs\//g)).toHaveLength(1);
+    expect(gitignore.match(/\.agent-harness\/backups\//g)).toHaveLength(1);
+    expect(fs.existsSync(path.join(tmp, ".agent-harness", "backups"))).toBe(true);
+  });
+
   it("can overwrite AGENTS.md only with explicit agents mode", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-agents-overwrite-"));
     fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", private: true }, null, 2)}\n`);
