@@ -45,6 +45,9 @@ describe("cli integration", () => {
     const weakNext = JSON.parse(execFileSync("node", [bin, "next", "--mode", "weak"], { cwd: tmp, encoding: "utf8" }));
     expect(weakNext.data.action).toBe("task start");
     expect(weakNext.data.required_evidence).toBeUndefined();
+    const exactNext = JSON.parse(execFileSync("node", [bin, "next", "--mode", "weak", "--exact"], { cwd: tmp, encoding: "utf8" }));
+    expect(exactNext.data.exact).toMatchObject({ do_now: "run_exact_command", stop_if: "exit_code_not_zero" });
+    expect(exactNext.data.exact.command).toContain("agent-harness task start --task-id basic-task");
     execFileSync("node", [bin, "task", "start", "--task-id", "basic-task", "--files", "created.txt"], { cwd: tmp });
     const verified = execFileSync("node", [bin, "verify", "--task-id", "basic-task", "--types", "focused_tests,scoped_typecheck", "--cmd", "node --version"], {
       cwd: tmp,
@@ -57,6 +60,30 @@ describe("cli integration", () => {
     execFileSync("node", [bin, "claim", "auto"], { cwd: tmp });
     execFileSync("node", [bin, "finish", "--summary", "validated"], { cwd: tmp });
     const report = execFileSync("node", [bin, "report", "--run-id", "session-smoke", "--format", "compact"], { cwd: tmp, encoding: "utf8" });
+    expect(report).toContain("status: completed");
+  });
+
+  it("guides a weak agent with exact next commands", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-exact-"));
+    fs.copyFileSync("tests/fixtures/plans/basic-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "exact-smoke", "--mode", "weak"], { cwd: tmp });
+    let next = JSON.parse(execFileSync("node", [bin, "next", "--exact"], { cwd: tmp, encoding: "utf8" }));
+    expect(next.data.exact.command).toBe('agent-harness files declare --files "created.txt"');
+    execFileSync("node", [bin, "files", "declare", "--files", "created.txt"], { cwd: tmp });
+    next = JSON.parse(execFileSync("node", [bin, "next", "--exact"], { cwd: tmp, encoding: "utf8" }));
+    expect(next.data.exact.command).toContain("agent-harness task start --task-id basic-task");
+    execFileSync("node", [bin, "task", "start", "--task-id", "basic-task", "--files", "created.txt"], { cwd: tmp });
+    next = JSON.parse(execFileSync("node", [bin, "next", "--exact"], { cwd: tmp, encoding: "utf8" }));
+    expect(next.data.exact.command).toContain("agent-harness verify --task-id basic-task");
+    execFileSync("node", [bin, "verify", "--task-id", "basic-task", "--type", "focused_tests", "--cmd", "node --version"], { cwd: tmp });
+    next = JSON.parse(execFileSync("node", [bin, "next", "--exact"], { cwd: tmp, encoding: "utf8" }));
+    expect(next.data.exact.command).toBe("agent-harness claim auto");
+    execFileSync("node", [bin, "claim", "auto"], { cwd: tmp });
+    next = JSON.parse(execFileSync("node", [bin, "next", "--exact"], { cwd: tmp, encoding: "utf8" }));
+    expect(next.data.exact.command).toBe('agent-harness finish --summary "validated"');
+    execFileSync("node", [bin, "finish", "--summary", "validated"], { cwd: tmp });
+    const report = execFileSync("node", [bin, "report", "--run-id", "exact-smoke", "--format", "compact"], { cwd: tmp, encoding: "utf8" });
     expect(report).toContain("status: completed");
   });
 
@@ -86,6 +113,15 @@ describe("cli integration", () => {
         stdio: "pipe",
       }),
     ).toThrow();
+  });
+
+  it("returns structured repair hints for operational ordering errors", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-order-repair-"));
+    fs.copyFileSync("tests/fixtures/plans/basic-plan.json", path.join(tmp, "plan.json"));
+    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "order-repair", "--mode", "weak"], { cwd: tmp });
+    const output = tryCli(["claim", "auto"], tmp);
+    expect(output.status).toBe("error");
+    expect(output.data.repair_hint.kind).toBe("premature_claim");
   });
 
   it("runs codebase memory map commands", () => {
@@ -156,3 +192,13 @@ describe("cli integration", () => {
     expect(fs.existsSync(path.join(tmp, ".agent-harness/learning/lessons/auth-cli-lesson.json"))).toBe(true);
   });
 });
+
+function tryCli(args: string[], cwd: string): { status: string; data: { repair_hint: { kind: string; stop_after_attempts: number } } } {
+  try {
+    execFileSync("node", [bin, ...args], { cwd, encoding: "utf8", stdio: "pipe" });
+    throw new Error("expected command to fail");
+  } catch (error) {
+    const stderr = (error as { stderr?: Buffer }).stderr?.toString("utf8") ?? "";
+    return JSON.parse(stderr);
+  }
+}

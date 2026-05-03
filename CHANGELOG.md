@@ -1,3 +1,9 @@
+## 0.6.3
+
+- Added `next --exact` to guide low-context agents with one deterministic next command.
+- Added task-level `allowed_commands` for plan-driven validation.
+- Added structured CLI `repair_hint` output for operational ordering errors.
+
 ## 0.6.2
 
 - Fixed `claim auto` in weak mode by batching generated claims within the execution profile limit.

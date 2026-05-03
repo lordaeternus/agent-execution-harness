@@ -35,15 +35,16 @@ export function compilePlan(plan: AgentHarnessPlan): CompiledPlan {
     diagnostics.push({ code: "weak_rollback", severity: "error", message: "L3 plan requires explicit rollback expectation." });
   }
 
-  const tasks = plan.tasks.map((task) => compileTask(task, plan.risk_level, maxFiles, diagnostics));
+  const tasks = plan.tasks.map((task) => compileTask(task, plan.risk_level, maxFiles, plan.gates, diagnostics));
   const hasError = diagnostics.some((item) => item.severity === "error");
   return { plan_id: plan.plan_id, risk_level: plan.risk_level, tasks, diagnostics, status: hasError ? "error" : "success" };
 }
 
-function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: number, diagnostics: PlanCompilerDiagnostic[]): CompiledTaskContract {
+function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: number, planGates: string[], diagnostics: PlanCompilerDiagnostic[]): CompiledTaskContract {
   const files = unique(task.files ?? []);
   const surface = task.surface ?? inferSurface(files);
   const requiredEvidence = unique(task.required_evidence?.length ? task.required_evidence : EVIDENCE_BY_SURFACE[surface]);
+  const allowedCommands = unique(task.allowed_commands?.length ? task.allowed_commands : planGates.length === 1 ? planGates : []);
   const criteria = task.acceptance_criteria.trim();
 
   if (files.length === 0) diagnostics.push(error(task, "missing_files", "Task must declare exact files before execution."));
@@ -51,6 +52,9 @@ function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: num
   if (criteria.length < 18 || VAGUE_WORDS.test(criteria)) diagnostics.push(error(task, "vague_acceptance", "Acceptance criteria is too vague for autonomous execution."));
   if (riskLevel !== "L1" && !COMMAND_HINT.test(criteria) && requiredEvidence.length === 0) {
     diagnostics.push(error(task, "missing_verifiable_dod", "Task needs command-backed criteria or required evidence."));
+  }
+  if (riskLevel !== "L1" && allowedCommands.length === 0) {
+    diagnostics.push(error(task, "missing_allowed_commands", "Task needs allowed_commands when the plan has multiple or no unambiguous gates."));
   }
   if (["auth", "db", "api", "ai"].includes(surface) && !requiredEvidence.length) {
     diagnostics.push(error(task, "missing_risk_evidence", `Surface ${surface} requires explicit evidence.`));
@@ -61,9 +65,11 @@ function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: num
     surface,
     files,
     required_evidence: requiredEvidence,
+    allowed_commands: allowedCommands,
     acceptance_criteria: criteria,
     risk_level: riskLevel,
     max_files_allowed: maxFiles,
+    next_allowed_action: "task_start",
   };
 }
 

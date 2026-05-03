@@ -14,9 +14,11 @@ export interface CompiledTaskContract {
   surface: TaskSurface;
   files: string[];
   required_evidence: string[];
+  allowed_commands: string[];
   acceptance_criteria: string;
   risk_level: RiskLevel;
   max_files_allowed: number;
+  next_allowed_action: "task_start";
 }
 
 export interface CompiledPlan {

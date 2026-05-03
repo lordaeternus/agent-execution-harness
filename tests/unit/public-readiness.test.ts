@@ -193,6 +193,27 @@ describe("public readiness hardening", () => {
     expect(report).toContain("claims:");
   });
 
+  it("guides a weak agent through exact next commands without extra reasoning", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-weak-exact-"));
+    fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+    const cli = path.resolve("dist/cli/index.js");
+
+    execFileSync("node", [cli, "plan-lint", "--plan", "plan.json"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [cli, "session", "start", "--plan", "plan.json", "--run-id", "weak-exact-run", "--mode", "weak"], { cwd: tmp, stdio: "pipe" });
+    expect(JSON.parse(execFileSync("node", [cli, "next", "--exact"], { cwd: tmp, encoding: "utf8" })).data.exact.command).toBe('agent-harness files declare --files "created.txt"');
+    execFileSync("node", [cli, "files", "declare", "--files", "created.txt"], { cwd: tmp, stdio: "pipe" });
+    expect(JSON.parse(execFileSync("node", [cli, "next", "--exact"], { cwd: tmp, encoding: "utf8" })).data.exact.command).toContain("agent-harness task start");
+    execFileSync("node", [cli, "task", "start", "--task-id", "weak-exact-task", "--files", "created.txt"], { cwd: tmp, stdio: "pipe" });
+    expect(JSON.parse(execFileSync("node", [cli, "next", "--exact"], { cwd: tmp, encoding: "utf8" })).data.exact.command).toContain("--cmd \"node --version\"");
+    execFileSync("node", [cli, "verify", "--task-id", "weak-exact-task", "--type", "focused_tests", "--cmd", "node --version"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [cli, "claim", "auto"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [cli, "finish", "--summary", "validated"], { cwd: tmp, stdio: "pipe" });
+    const report = execFileSync("node", [cli, "report", "--run-id", "weak-exact-run", "--format", "compact"], { cwd: tmp, encoding: "utf8" });
+    expect(report).toContain("status: completed");
+    expect(report).toContain("evidence_policy: score=100 missing=none");
+  });
+
   it("can overwrite AGENTS.md only with explicit agents mode", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-agents-overwrite-"));
     fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", private: true }, null, 2)}\n`);

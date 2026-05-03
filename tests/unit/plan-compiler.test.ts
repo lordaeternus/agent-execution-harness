@@ -13,6 +13,7 @@ function basePlan(overrides: Partial<AgentHarnessPlan> = {}): AgentHarnessPlan {
       {
         task_id: "compiler-task",
         files: ["src/core/plan-compiler.ts"],
+        allowed_commands: ["pnpm test:run tests/unit/plan-compiler.test.ts"],
         acceptance_criteria: "Run `pnpm test:run tests/unit/plan-compiler.test.ts` and pass compiler cases.",
       },
     ],
@@ -24,7 +25,13 @@ describe("plan compiler", () => {
   it("compiles a precise task contract", () => {
     const result = compilePlan(basePlan());
     expect(result.status).toBe("success");
-    expect(result.tasks[0]).toMatchObject({ task_id: "compiler-task", surface: "backend", max_files_allowed: 3 });
+    expect(result.tasks[0]).toMatchObject({
+      task_id: "compiler-task",
+      surface: "backend",
+      max_files_allowed: 3,
+      allowed_commands: ["pnpm test:run tests/unit/plan-compiler.test.ts"],
+      next_allowed_action: "task_start",
+    });
   });
 
   it("rejects vague criteria and missing files", () => {
@@ -42,6 +49,7 @@ describe("plan compiler", () => {
           {
             task_id: "large",
             files: ["src/a.ts", "src/b.ts", "src/c.ts"],
+            allowed_commands: ["pnpm test"],
             acceptance_criteria: "Run `pnpm test` and verify the risky implementation.",
           },
         ],
@@ -49,5 +57,40 @@ describe("plan compiler", () => {
     );
     expect(result.status).toBe("error");
     expect(result.diagnostics.map((item) => item.code)).toEqual(expect.arrayContaining(["weak_rollback", "too_many_files"]));
+  });
+
+  it("requires task allowed_commands when plan gates are ambiguous", () => {
+    const result = compilePlan(
+      basePlan({
+        gates: ["pnpm lint", "pnpm test"],
+        tasks: [
+          {
+            task_id: "ambiguous",
+            files: ["src/core/plan-compiler.ts"],
+            required_evidence: ["focused_tests"],
+            acceptance_criteria: "Run the focused compiler validation.",
+          },
+        ],
+      }),
+    );
+    expect(result.status).toBe("error");
+    expect(result.diagnostics.map((item) => item.code)).toContain("missing_allowed_commands");
+  });
+
+  it("uses the single plan gate as allowed command when unambiguous", () => {
+    const result = compilePlan(
+      basePlan({
+        tasks: [
+          {
+            task_id: "single-gate",
+            files: ["src/core/plan-compiler.ts"],
+            required_evidence: ["focused_tests"],
+            acceptance_criteria: "Run the focused compiler validation.",
+          },
+        ],
+      }),
+    );
+    expect(result.status).toBe("success");
+    expect(result.tasks[0].allowed_commands).toEqual(["pnpm test:run tests/unit/plan-compiler.test.ts"]);
   });
 });

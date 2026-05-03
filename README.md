@@ -261,6 +261,8 @@ agent-harness report --run-id fix-id --format compact
 
 In `weak` mode, `claim auto` automatically batches claims when a plan has many tasks. The agent still runs one simple command, while the harness keeps each internal action small enough for low-context executors.
 
+For low-context agents, use `next --exact`. It returns the exact next harness command plus the stop condition, reducing ordering mistakes such as claiming early, skipping file declaration, or forgetting the active task.
+
 Codebase memory flow for agents:
 
 ```bash
@@ -1305,7 +1307,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.6.2
+0.6.3
 ```
 
 Package:

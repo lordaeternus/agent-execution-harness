@@ -9,6 +9,7 @@ export interface AgentHarnessTask {
   surface?: TaskSurface;
   files?: string[];
   required_evidence?: string[];
+  allowed_commands?: string[];
 }
 
 export interface AgentHarnessPlan {

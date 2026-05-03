@@ -1,0 +1,17 @@
+{
+  "schema_version": "agent_harness_plan_v1",
+  "plan_id": "weak-exact-plan",
+  "risk_level": "L2",
+  "execution_profile": "weak",
+  "rollback_expectation": "Delete generated simulation files.",
+  "gates": ["node --version"],
+  "tasks": [
+    {
+      "task_id": "weak-exact-task",
+      "files": ["created.txt"],
+      "required_evidence": ["focused_tests"],
+      "allowed_commands": ["node --version"],
+      "acceptance_criteria": "Run `node --version` and record focused_tests evidence."
+    }
+  ]
+}

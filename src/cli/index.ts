@@ -10,6 +10,7 @@ import { mapCommand } from "./map.js";
 import { sessionCommand } from "./session.js";
 import { nextCommand } from "./next.js";
 import { verifyCommand } from "./verify.js";
+import { classifyRepair } from "../core/repair-playbooks.js";
 import { learnCommand } from "./learn.js";
 
 const [command, ...args] = process.argv.slice(2);
@@ -32,6 +33,8 @@ try {
   else if (command === "init") await initCommand(args);
   else throw new Error(`unknown command: ${command}`);
 } catch (error) {
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+  const message = error instanceof Error ? error.message : String(error);
+  const repair = classifyRepair([command, ...args].join(" "), message);
+  process.stderr.write(`${JSON.stringify({ status: "error", summary: message, errors: [message], data: { repair_hint: repair } })}\n`);
   process.exitCode = 1;
 }

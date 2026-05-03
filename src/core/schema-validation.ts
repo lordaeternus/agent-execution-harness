@@ -112,6 +112,7 @@ function collectPlanErrors(plan: unknown): string[] {
       if (record.surface !== undefined) requireEnum(record, "surface", ["ui_layout", "ui", "backend", "api", "auth", "db", "ai", "docs", "generic"]);
       if (record.files !== undefined) requireArray(record, "files");
       if (record.required_evidence !== undefined) requireArray(record, "required_evidence");
+      if (record.allowed_commands !== undefined) requireArray(record, "allowed_commands");
       if (seenTasks.has(record.task_id as string)) throw new Error(`duplicate task_id: ${String(record.task_id)}`);
       seenTasks.add(record.task_id as string);
     }
