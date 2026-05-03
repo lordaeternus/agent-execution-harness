@@ -11,6 +11,7 @@ import { writeCompactJson } from "./output.js";
 import { resolveCliRunContext } from "./context.js";
 import { classifyRepair } from "../core/repair-playbooks.js";
 import { effectiveExecutionProfile } from "../core/execution-profile.js";
+import { applyScopeGuardToState, collectGitTouchedFiles } from "../core/scope-guard.js";
 
 export function verifyCommand(args: string[], cwd = process.cwd()): void {
   const flags = parseFlags(args);
@@ -68,6 +69,9 @@ export function verifyCommand(args: string[], cwd = process.cwd()): void {
       },
     },
   }).state;
+  if (context.config.scope_guard?.enabled !== false) {
+    state = applyScopeGuardToState(state, collectGitTouchedFiles(cwd), context.config.scope_guard?.generated_allowlist ?? []);
+  }
   const artifactPath = saveRun(cwd, context.artifactDir, state);
   const profile = effectiveExecutionProfile(context.mode, context.config);
   const repair = exitCode === 0 ? undefined : classifyRepair(command, output, profile.repairHintMaxChars);

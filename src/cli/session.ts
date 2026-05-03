@@ -8,6 +8,7 @@ import type { AgentHarnessPlan } from "../core/plan-types.js";
 import { parseFlags, stringFlag } from "./args.js";
 import { writeCompactJson } from "./output.js";
 import { saveActiveSession } from "./session-store.js";
+import { applyScopeBaselineToState, collectGitTouchedFiles } from "../core/scope-guard.js";
 
 export function sessionCommand(args: string[], cwd = process.cwd()): void {
   const [verb, ...rest] = args;
@@ -31,6 +32,7 @@ export function sessionCommand(args: string[], cwd = process.cwd()): void {
         config,
         action: { schema_version: ACTION_SCHEMA_VERSION, type: "read_context", summary: stringFlag(flags, "summary") ?? "ctx" },
       });
+  if (!previousState && config.scope_guard?.enabled !== false) result.state = applyScopeBaselineToState(result.state, collectGitTouchedFiles(cwd));
   const artifactPath = saveRun(cwd, artifactDir, result.state);
   const sessionPath = saveActiveSession(cwd, artifactDir, { plan_path: planPath, run_id: runId, mode });
   writeCompactJson({

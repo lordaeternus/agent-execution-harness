@@ -35,6 +35,10 @@ export function defaultConfig(): AgentHarnessConfig {
       repair_hint_max_chars: 280,
       next_output_format: "ultra_compact",
     },
+    scope_guard: {
+      enabled: true,
+      generated_allowlist: [".agent-harness/**", "docs/build-report/agent-harness/**", "dist/**", "coverage/**", ".checks/**", ".opencode/**", "planejamentos/**", "plan.json"],
+    },
   };
 }
 
@@ -51,6 +55,7 @@ export function loadConfig(cwd = process.cwd(), configPath = "agent-harness.conf
     codebase_memory: { ...defaults.codebase_memory, ...(config.codebase_memory ?? {}) },
     learning_memory: { ...defaults.learning_memory, ...(config.learning_memory ?? {}) },
     weak_model: { ...defaults.weak_model, ...(config.weak_model ?? {}) },
+    scope_guard: { ...defaults.scope_guard, ...(config.scope_guard ?? {}) },
   };
   validateConfig(merged);
   assertSafeRelativePath(merged.artifact_dir, "artifact_dir");

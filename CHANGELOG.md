@@ -1,3 +1,9 @@
+## 0.6.4
+
+- Added scope guard to block `finish` when git diff contains product/source files outside declared plan files.
+- Added `touched_files` and `unexpected_files` tracking in run artifacts.
+- Added `unexpected_file_changed` repair hints and weak-agent simulation coverage.
+
 ## 0.6.3
 
 - Added `next --exact` to guide low-context agents with one deterministic next command.

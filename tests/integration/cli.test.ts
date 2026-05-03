@@ -124,6 +124,24 @@ describe("cli integration", () => {
     expect(output.data.repair_hint.kind).toBe("premature_claim");
   });
 
+  it("blocks finish when diff contains files outside the plan", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-scope-"));
+    fs.copyFileSync("tests/fixtures/plans/basic-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+    execFileSync("git", ["init"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "add", "plan.json", "created.txt"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "baseline"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "scope-smoke", "--mode", "weak"], { cwd: tmp });
+    execFileSync("node", [bin, "files", "declare", "--files", "created.txt"], { cwd: tmp });
+    execFileSync("node", [bin, "task", "start", "--task-id", "basic-task", "--files", "created.txt"], { cwd: tmp });
+    execFileSync("node", [bin, "verify", "--task-id", "basic-task", "--type", "focused_tests", "--cmd", "node --version"], { cwd: tmp });
+    execFileSync("node", [bin, "claim", "auto"], { cwd: tmp });
+    fs.writeFileSync(path.join(tmp, "unexpected.txt"), "bad");
+    const output = tryCli(["finish", "--summary", "validated"], tmp);
+    expect(output.status).toBe("error");
+    expect(output.data.repair_hint.kind).toBe("unexpected_file_changed");
+  });
+
   it("runs codebase memory map commands", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-map-"));
     fs.mkdirSync(path.join(tmp, "src/auth"), { recursive: true });

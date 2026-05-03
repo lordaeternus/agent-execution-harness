@@ -1,14 +1,12 @@
 # Stetix Adapter Patch
 
-- Approved L2/L3, multi-step/delegated work: require `pnpm agent:harness`.
-- Routine execution: read `docs/process/agent-runtime.md`; avoid long docs.
-- Weak executor: `--mode weak`, <=2 files/task, typed evidence.
-- Prefer: session start, next --exact, verify, claim auto, finish.
-- Weak `claim auto` batches internally; run it once.
-- Canonical memory: `docs/historico.md`. Risky/unclear: query harness memory before edit.
-- Durable structure: update harness memory after edit. Memory is cache; source/docs stay canonical.
-- No success claim without artifact `completed`.
+- L2/L3, multi-step/delegated: require `pnpm agent:harness`.
+- Read `docs/process/agent-runtime.md`; avoid long docs.
+- Flow: session start -> next --exact -> verify -> claim auto -> finish.
+- Weak: `--mode weak`, <=2 files/task, typed evidence; claim auto batches.
+- Scope guard blocks finish when product/source diff is outside declared files.
+- Canonical memory: `docs/historico.md`; risky/unclear: query harness memory.
+- Durable structure: update memory after edit; memory is cache, source/docs win.
+- No success claim without completed artifact, evidence and claims.
 - Failed verify/CLI order returns repair hint; max 3 tries, then HALT.
-- UI/layout needs smoke/visual assertion; else `partial_validated`.
-- Evidence must include evidence_type/evidence_types matching required evidence.
-- Long logs by reference/hash. Simulations: verify no product paths changed.
+- UI/layout needs smoke/visual assertion; long logs by reference/hash.

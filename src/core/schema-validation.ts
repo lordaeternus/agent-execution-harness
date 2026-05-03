@@ -79,6 +79,11 @@ export function validateConfig(config: unknown): asserts config is AgentHarnessC
     requirePositiveNumber(profile, "repair_hint_max_chars");
     requireEnum(profile, "next_output_format", ["ultra_compact", "compact"]);
   }
+  if (value.scope_guard !== undefined) {
+    const scope = asRecord(value.scope_guard, "config.scope_guard");
+    requireBoolean(scope, "enabled");
+    requireArray(scope, "generated_allowlist");
+  }
 }
 
 export function lintPlan(plan: unknown): ValidationResult {

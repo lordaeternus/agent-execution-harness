@@ -263,6 +263,8 @@ In `weak` mode, `claim auto` automatically batches claims when a plan has many t
 
 For low-context agents, use `next --exact`. It returns the exact next harness command plus the stop condition, reducing ordering mistakes such as claiming early, skipping file declaration, or forgetting the active task.
 
+The scope guard also checks the real git diff before `finish`. If the agent changed a product/source file outside the plan, the run stops with a `repair_hint` instead of pretending success. In plain language: the agent can only finish if the files it touched match the files it declared.
+
 Codebase memory flow for agents:
 
 ```bash

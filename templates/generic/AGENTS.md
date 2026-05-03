@@ -1,14 +1,12 @@
 # Agent Harness
 
-- Read `docs/agent-runtime.md` first; README is human docs.
-- Approved L2/L3, multi-step or delegated plans: use `agent-harness`.
-- Prefer: `session start`, `next --exact`, `verify`, `claim auto`, `finish`.
-- Weak executor: `--mode weak`; one task, <=2 files, typed evidence.
-- Weak `claim auto` batches internally; run it once.
-- Risky/unclear: `map query --surface <surface>` before edit.
-- Durable structure: `map update --files <files>` then `map record --surface <surface> --files <files> --summary "<fact>"`.
-- No success claim without artifact `completed`. Claims need command evidence, exit code, scope.
-- Failed `verify`/CLI order returns `repair_hint`; max 3 tries, then HALT.
-- UI/layout needs smoke or visual assertion; else partial_validated.
-- Long logs: output_ref + sha256; short excerpts only.
-- HALT on destructive command, missing evidence or unsafe ambiguity.
+- Read `docs/agent-runtime.md`; README is human docs.
+- L2/L3, multi-step, delegated: use `agent-harness`.
+- Flow: `session start` -> `next --exact` -> `verify` -> `claim auto` -> `finish`.
+- Weak: `--mode weak`; 1 task, <=2 files, typed evidence.
+- `claim auto` batches internally; run once.
+- Scope guard blocks `finish` if product/source diff is outside declared files.
+- Risky/unclear: `map query`; durable structure: `map update` + `map record`.
+- No success claim without completed artifact, evidence and claims.
+- Failed verify/CLI order returns `repair_hint`; max 3 tries, then HALT.
+- UI/layout needs smoke/visual assertion; long logs by `output_ref` + `sha256`.

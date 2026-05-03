@@ -10,6 +10,7 @@ export type RepairKind =
   | "wrong_evidence_type"
   | "undeclared_file"
   | "too_many_files"
+  | "unexpected_file_changed"
   | "phase_order"
   | "unknown";
 
@@ -25,6 +26,7 @@ const RULES: Array<[RepairKind, RegExp, string]> = [
   ["wrong_evidence_type", /(requires evidence_type|evidence_type|evidence_types|wrong evidence)/i, "Rerun verify with --type or --types matching the plan required_evidence."],
   ["undeclared_file", /(file not declared|declare_files|undeclared)/i, "Run files declare with the exact task files, then rerun task start."],
   ["too_many_files", /(too many files|max_files|touches .* files)/i, "Split the task or run weak mode with at most the configured files per task."],
+  ["unexpected_file_changed", /(unexpected_file_changed|unexpected_files|outside.*plan|arquivo.*fora)/i, "Revert or explicitly add the unexpected file to the plan before finish."],
   ["phase_order", /(not allowed in phase|requires a pending matching gate|pending gate|phase)/i, "Run next --exact and execute only the returned command for the current phase."],
   ["command_blocked", /(command blocked|dangerous command)/i, "Stop. Replace command with a non-destructive focused gate or ask owner only for destructive ops."],
   ["schema_validation", /(schema_version|must be|required|invalid|schema|plan-lint)/i, "Fix JSON shape against the harness schema, then rerun plan-lint before execution."],

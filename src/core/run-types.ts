@@ -43,6 +43,9 @@ export interface AgentHarnessRunState {
   plan: AgentHarnessPlan;
   tasks: RunTask[];
   declared_files: string[];
+  baseline_touched_files?: string[];
+  touched_files?: string[];
+  unexpected_files?: string[];
   current_task_id: string | null;
   pending_gate: { task_id: string | null; command: string } | null;
   evidence: Evidence[];

@@ -35,6 +35,11 @@ export interface WeakModelProfile {
   next_output_format: "ultra_compact" | "compact";
 }
 
+export interface ScopeGuardSettings {
+  enabled: boolean;
+  generated_allowlist: string[];
+}
+
 export interface AgentHarnessConfig {
   schema_version: typeof CONFIG_SCHEMA_VERSION;
   artifact_dir: string;
@@ -46,4 +51,5 @@ export interface AgentHarnessConfig {
   codebase_memory?: CodebaseMemoryConfig;
   learning_memory?: LearningMemoryConfig;
   weak_model?: WeakModelProfile;
+  scope_guard?: ScopeGuardSettings;
 }

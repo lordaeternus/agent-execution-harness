@@ -214,6 +214,25 @@ describe("public readiness hardening", () => {
     expect(report).toContain("evidence_policy: score=100 missing=none");
   });
 
+  it("blocks a weak agent that changes a file outside the plan", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-weak-scope-"));
+    fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+    execFileSync("git", ["init"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "add", "plan.json", "created.txt"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "baseline"], { cwd: tmp, stdio: "pipe" });
+    const cli = path.resolve("dist/cli/index.js");
+
+    execFileSync("node", [cli, "session", "start", "--plan", "plan.json", "--run-id", "weak-scope-run", "--mode", "weak"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [cli, "files", "declare", "--files", "created.txt"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [cli, "task", "start", "--task-id", "weak-exact-task", "--files", "created.txt"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [cli, "verify", "--task-id", "weak-exact-task", "--type", "focused_tests", "--cmd", "node --version"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [cli, "claim", "auto"], { cwd: tmp, stdio: "pipe" });
+    fs.writeFileSync(path.join(tmp, "outside.txt"), "bad");
+    const output = runFailingCli([cli, "finish", "--summary", "validated"], tmp);
+    expect(output.data.repair_hint.kind).toBe("unexpected_file_changed");
+  });
+
   it("can overwrite AGENTS.md only with explicit agents mode", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-agents-overwrite-"));
     fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", private: true }, null, 2)}\n`);
@@ -241,3 +260,12 @@ describe("public readiness hardening", () => {
     expect(quickstart).toContain("agent-harness learn promote");
   });
 });
+
+function runFailingCli(args: string[], cwd: string): { data: { repair_hint: { kind: string } } } {
+  try {
+    execFileSync("node", args, { cwd, encoding: "utf8", stdio: "pipe" });
+    throw new Error("expected command to fail");
+  } catch (error) {
+    return JSON.parse((error as { stderr?: Buffer }).stderr?.toString("utf8") ?? "{}");
+  }
+}

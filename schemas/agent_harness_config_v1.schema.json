@@ -216,6 +216,26 @@
           ]
         }
       }
+    },
+    "scope_guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "generated_allowlist"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "generated_allowlist": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
     }
   }
 }
