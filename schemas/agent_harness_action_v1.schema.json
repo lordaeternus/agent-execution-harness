@@ -2,25 +2,75 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "agent_harness_action_v1",
   "type": "object",
-  "additionalProperties": true,
+  "additionalProperties": false,
   "required": ["schema_version", "type"],
   "properties": {
     "schema_version": { "const": "agent_harness_action_v1" },
     "type": {
       "enum": ["read_context", "declare_files", "edit_file_ready", "run_gate", "record_evidence", "verify_claims", "final_report", "halt_for_risk"]
     },
-    "summary": { "type": "string" },
-    "task_id": { "type": "string" },
-    "files": { "type": "array", "items": { "type": "string" } },
-    "command": { "type": "string" },
+    "summary": { "type": "string", "minLength": 1 },
+    "task_id": { "type": "string", "minLength": 1 },
+    "files": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "command": { "type": "string", "minLength": 1 },
     "evidence": {
       "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_id", "check", "result", "exit_code", "output_excerpt", "scope_covered"],
       "properties": {
+        "evidence_id": { "type": "string", "minLength": 1 },
         "evidence_type": { "type": "string" },
         "evidence_types": { "type": "array", "items": { "type": "string" } },
+        "check": { "type": "string", "minLength": 1 },
+        "result": { "enum": ["pass", "fail", "halt"] },
+        "exit_code": { "type": "number" },
+        "output_excerpt": { "type": "string", "minLength": 1 },
         "output_ref": { "type": "string" },
-        "sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" }
+        "sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+        "scope_covered": { "type": "string", "minLength": 1 },
+        "residual_gap": { "type": "string" }
       }
-    }
-  }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["claim_id", "kind", "value", "evidence_id"],
+        "properties": {
+          "claim_id": { "type": "string", "minLength": 1 },
+          "kind": {
+            "enum": [
+              "file_exists",
+              "command_ran",
+              "gate_passed",
+              "gate_failed",
+              "dangerous_command_blocked",
+              "task_reconciled",
+              "bug_reproduced_before_fix",
+              "bug_fixed_after_fix",
+              "acceptance_criteria_met",
+              "contract_preserved",
+              "rollback_defined",
+              "no_product_code_changed"
+            ]
+          },
+          "value": { "type": "string", "minLength": 1 },
+          "evidence_id": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "reason": { "type": "string" },
+    "residual_risk": { "type": "string" }
+  },
+  "allOf": [
+    { "if": { "properties": { "type": { "const": "read_context" } } }, "then": { "required": ["summary"] } },
+    { "if": { "properties": { "type": { "const": "declare_files" } } }, "then": { "required": ["files"] } },
+    { "if": { "properties": { "type": { "const": "edit_file_ready" } } }, "then": { "required": ["task_id", "files"] } },
+    { "if": { "properties": { "type": { "const": "run_gate" } } }, "then": { "required": ["command"] } },
+    { "if": { "properties": { "type": { "const": "record_evidence" } } }, "then": { "required": ["evidence"] } },
+    { "if": { "properties": { "type": { "const": "verify_claims" } } }, "then": { "required": ["claims"] } },
+    { "if": { "properties": { "type": { "const": "final_report" } } }, "then": { "required": ["summary"] } },
+    { "if": { "properties": { "type": { "const": "halt_for_risk" } } }, "then": { "required": ["reason"] } }
+  ]
 }

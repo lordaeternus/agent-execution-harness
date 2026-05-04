@@ -56,6 +56,12 @@
           "items": {
             "type": "string"
           }
+        },
+        "strict_requires_allowed_command": {
+          "type": "boolean"
+        },
+        "strict_disallow_shell": {
+          "type": "boolean"
         }
       }
     },

@@ -53,6 +53,8 @@
   },
   "command_policy": {
     "allow": [],
+    "strict_requires_allowed_command": true,
+    "strict_disallow_shell": true,
     "deny": [
       "DROP",
       "TRUNCATE",

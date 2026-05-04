@@ -1,3 +1,14 @@
+## 0.7.0
+
+- Added strict execution mode for lower-trust or lower-context agents.
+- Added Ajv-backed runtime validation for versioned harness schemas.
+- Added structured `verify --exec --args-json` command execution and strict shell blocking.
+- Strengthened strict command enforcement against task `allowed_commands`.
+- Expanded scope guard coverage for staged files.
+- Hardened acceptance claims so incomplete evidence policy cannot become `acceptance_criteria_met`.
+- Added adversarial benchmark metrics and strict/out-of-plan benchmark scenarios.
+- Added release-readiness checks for package, README, changelog and release-note version consistency.
+
 ## 0.6.4
 
 - Added scope guard to block `finish` when git diff contains product/source files outside declared plan files.

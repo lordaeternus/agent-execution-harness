@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -11,7 +10,8 @@ import { writeCompactJson } from "./output.js";
 import { resolveCliRunContext } from "./context.js";
 import { classifyRepair } from "../core/repair-playbooks.js";
 import { effectiveExecutionProfile } from "../core/execution-profile.js";
-import { applyScopeGuardToState, collectGitTouchedFiles } from "../core/scope-guard.js";
+import { applyScopeGuardToState, collectGitTouchedFilesResult } from "../core/scope-guard.js";
+import { executeGateCommand } from "../core/command-execution.js";
 
 export function verifyCommand(args: string[], cwd = process.cwd()): void {
   const flags = parseFlags(args);
@@ -22,7 +22,7 @@ export function verifyCommand(args: string[], cwd = process.cwd()): void {
   const evidenceType = stringFlag(flags, "type");
   const evidenceTypes = stringFlag(flags, "types") ? splitCsv(stringFlag(flags, "types")!) : undefined;
   if (!evidenceType && !evidenceTypes?.length) throw new Error("--type or --types is required");
-  const command = stringFlag(flags, "cmd", true)!;
+  const command = buildCheck(flags, context.mode, context.config.command_policy.strict_disallow_shell !== false);
   const policy = evaluateCommandPolicy(command, context.config.command_policy);
   if (!policy.allowed) throw new Error(`command blocked: ${policy.reason}`);
 
@@ -39,9 +39,15 @@ export function verifyCommand(args: string[], cwd = process.cwd()): void {
   }
   if (state.phase !== "evidence" || state.pending_gate?.command !== command) throw new Error("verify requires a pending matching gate");
 
-  const result = spawnSync(command, { cwd, shell: true, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 });
-  const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
-  const exitCode = typeof result.status === "number" ? result.status : 1;
+  const result = executeGateCommand({
+    cwd,
+    command: stringFlag(flags, "cmd"),
+    exec: stringFlag(flags, "exec"),
+    args: parseArgsJson(stringFlag(flags, "args-json")),
+    allowShell: !(context.mode === "strict" && context.config.command_policy.strict_disallow_shell !== false),
+  });
+  const output = result.output;
+  const exitCode = result.exitCode;
   const evidenceId = stringFlag(flags, "evidence-id") ?? `${taskId}-${Date.now()}`;
   const outputRef = writeEvidenceLog(cwd, context.artifactDir, context.runId, evidenceId, output);
   const sha256 = crypto.createHash("sha256").update(output).digest("hex");
@@ -70,7 +76,9 @@ export function verifyCommand(args: string[], cwd = process.cwd()): void {
     },
   }).state;
   if (context.config.scope_guard?.enabled !== false) {
-    state = applyScopeGuardToState(state, collectGitTouchedFiles(cwd), context.config.scope_guard?.generated_allowlist ?? []);
+    const touched = collectGitTouchedFilesResult(cwd);
+    if (!touched.ok && context.mode === "strict") throw new Error(`scope_guard_unavailable: ${touched.reason}`);
+    state = applyScopeGuardToState(state, touched.files, context.config.scope_guard?.generated_allowlist ?? []);
   }
   const artifactPath = saveRun(cwd, context.artifactDir, state);
   const profile = effectiveExecutionProfile(context.mode, context.config);
@@ -107,4 +115,20 @@ function excerpt(output: string, maxChars: number): string {
 
 function splitCsv(value: string): string[] {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function buildCheck(flags: Record<string, string | boolean>, mode: string, strictDisallowShell: boolean): string {
+  const command = stringFlag(flags, "cmd");
+  const exec = stringFlag(flags, "exec");
+  if (mode === "strict" && strictDisallowShell && command) throw new Error("strict mode blocks --cmd; use --exec and --args-json");
+  if (exec) return [exec, ...parseArgsJson(stringFlag(flags, "args-json"))].join(" ");
+  if (command) return command;
+  throw new Error("--cmd or --exec is required");
+}
+
+function parseArgsJson(value: string | undefined): string[] {
+  if (!value) return [];
+  const parsed = JSON.parse(value) as unknown;
+  if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== "string")) throw new Error("--args-json must be a JSON string array");
+  return parsed;
 }

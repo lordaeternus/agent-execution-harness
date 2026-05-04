@@ -177,7 +177,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.5.0.md)
+- [Release notes](docs/release-notes/v0.7.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -273,6 +273,15 @@ agent-harness claim auto
 agent-harness finish --summary "Validated."
 agent-harness report --run-id fix-id --format compact
 ```
+
+For strict execution, prefer structured commands instead of shell strings:
+
+```bash
+agent-harness session start --plan plan.json --run-id fix-id --mode strict
+agent-harness verify --task-id task-id --type focused_tests --exec pnpm --args-json "[\"test\"]"
+```
+
+`strict` mode blocks shell-style `--cmd` by default and requires the command to match the task `allowed_commands`.
 
 In `weak` mode, `claim auto` automatically batches claims when a plan has many tasks. The agent still runs one simple command, while the harness keeps each internal action small enough for low-context executors.
 
@@ -1112,6 +1121,12 @@ Runs a policy-checked command, stores long output as a referenced log, records `
 agent-harness verify --task-id fix-login --type focused_tests --cmd "pnpm test"
 ```
 
+Strict structured command:
+
+```bash
+agent-harness verify --task-id fix-login --type focused_tests --exec pnpm --args-json "[\"test\"]"
+```
+
 ### `map`
 
 Maintains compact codebase memory for selective reuse.
@@ -1251,6 +1266,8 @@ The harness blocks or halts when it sees unsafe behavior, including:
 - evidence that does not match the pending gate
 - final report before verified claims
 - completion before all tasks are reconciled
+- shell commands in `strict` mode when structured `--exec` is required
+- validation commands that are not listed in the task `allowed_commands` in `strict` mode
 
 This does not replace human judgment. It creates mechanical pressure against unsafe automation.
 
@@ -1324,7 +1341,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.6.3
+0.7.0
 ```
 
 Package:
@@ -1353,3 +1370,22 @@ agent-harness finish --summary "validated"
 ```
 
 `weak` mode is not for every request. Use normal mode for simple, trusted agents; use weak mode for risky work, junior agents, local LLMs, or repeated failures.
+
+### Strict Mode
+
+Use `--mode strict` when the agent is weak, the work is sensitive, or you want the strongest local enforcement currently available.
+
+Strict mode adds three important rules:
+
+- validation commands must be declared in the plan task `allowed_commands`
+- shell-style `--cmd` is blocked by default
+- use `--exec` plus `--args-json` so the harness runs a structured command without shell parsing
+
+Example:
+
+```bash
+agent-harness session start --plan plan.json --run-id strict-fix --mode strict
+agent-harness verify --task-id task-1 --type focused_tests --exec pnpm --args-json "[\"test:run\",\"tests/login.test.ts\"]"
+```
+
+Strict mode is safer, but less flexible. If a command is not declared in the plan, the harness stops instead of guessing.

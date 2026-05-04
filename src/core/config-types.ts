@@ -4,6 +4,8 @@ import type { LearningMemoryConfig } from "./learning-types.js";
 export interface CommandPolicy {
   allow?: string[];
   deny?: string[];
+  strict_requires_allowed_command?: boolean;
+  strict_disallow_shell?: boolean;
 }
 
 export type ObservationFormat = "ultra_compact" | "compact" | "standard" | "full";

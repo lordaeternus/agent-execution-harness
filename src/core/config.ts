@@ -17,6 +17,8 @@ export function defaultConfig(): AgentHarnessConfig {
     command_policy: {
       allow: [],
       deny: ["DROP", "TRUNCATE", "git reset --hard", "push --force", "force-with-lease"],
+      strict_requires_allowed_command: true,
+      strict_disallow_shell: true,
     },
     token_budget: {
       observation_format: "standard",

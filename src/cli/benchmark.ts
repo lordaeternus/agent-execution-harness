@@ -14,4 +14,5 @@ export function benchmarkCommand(args: string[], cwd = process.cwd()): void {
   const report = calculateBenchmark(runs);
   process.stdout.write(`agent-harness-benchmark mode=${String(flags.mode ?? "smoke")} scenarios=${index.scenarios.length}\n`);
   process.stdout.write(`completion_rate=${report.completion_rate} pass@1=${report["pass@1"]} halt_rate=${report.halt_rate}\n`);
+  process.stdout.write(`false_success_rate=${report.false_success_rate} repair_success_rate=${report.repair_success_rate} unexpected_diff_block_rate=${report.unexpected_diff_block_rate}\n`);
 }

@@ -1,0 +1,15 @@
+{
+  "runs": [
+    {
+      "model_executor": "weak-strict-shell",
+      "status": "halt",
+      "attempt": 1,
+      "retries": 0,
+      "gate_passed": false,
+      "halted": true,
+      "cost_usd": 0.01,
+      "false_success": false,
+      "repair_succeeded": false
+    }
+  ]
+}

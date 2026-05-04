@@ -202,7 +202,6 @@ describe("core harness", () => {
         type: "verify_claims",
         claims: [
           { claim_id: "c-ui-gate", kind: "gate_passed", value: "pnpm agent:verify:ui", evidence_id: "ui-ev-partial" },
-          { claim_id: "c-ui-accept", kind: "acceptance_criteria_met", value: "ui-task", evidence_id: "ui-ev-partial" },
           { claim_id: "c-ui-rollback", kind: "rollback_defined", value: "rollback", evidence_id: "ui-ev-partial" },
         ],
       },

@@ -117,6 +117,15 @@ agent-harness finish --summary "Login fix validated."
 agent-harness report --run-id fix-login --format compact
 ```
 
+For stricter execution with weaker or less trusted agents:
+
+```bash
+agent-harness session start --plan plan.json --run-id fix-login --mode strict
+agent-harness verify --task-id login-fix --type focused_tests --exec pnpm --args-json "[\"test\"]"
+```
+
+In strict mode, the command must be listed in the task `allowed_commands`. Shell-style `--cmd` is blocked by default.
+
 Optional codebase memory flow for risky or unclear work:
 
 ```bash

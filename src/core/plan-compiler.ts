@@ -35,12 +35,12 @@ export function compilePlan(plan: AgentHarnessPlan): CompiledPlan {
     diagnostics.push({ code: "weak_rollback", severity: "error", message: "L3 plan requires explicit rollback expectation." });
   }
 
-  const tasks = plan.tasks.map((task) => compileTask(task, plan.risk_level, maxFiles, plan.gates, diagnostics));
+  const tasks = plan.tasks.map((task) => compileTask(task, plan.risk_level, maxFiles, plan.gates, diagnostics, plan.execution_profile));
   const hasError = diagnostics.some((item) => item.severity === "error");
   return { plan_id: plan.plan_id, risk_level: plan.risk_level, tasks, diagnostics, status: hasError ? "error" : "success" };
 }
 
-function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: number, planGates: string[], diagnostics: PlanCompilerDiagnostic[]): CompiledTaskContract {
+function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: number, planGates: string[], diagnostics: PlanCompilerDiagnostic[], profile?: string): CompiledTaskContract {
   const files = unique(task.files ?? []);
   const surface = task.surface ?? inferSurface(files);
   const requiredEvidence = unique(task.required_evidence?.length ? task.required_evidence : EVIDENCE_BY_SURFACE[surface]);
@@ -53,8 +53,11 @@ function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: num
   if (riskLevel !== "L1" && !COMMAND_HINT.test(criteria) && requiredEvidence.length === 0) {
     diagnostics.push(error(task, "missing_verifiable_dod", "Task needs command-backed criteria or required evidence."));
   }
-  if (riskLevel !== "L1" && allowedCommands.length === 0) {
+  if ((riskLevel !== "L1" || profile === "strict") && allowedCommands.length === 0) {
     diagnostics.push(error(task, "missing_allowed_commands", "Task needs allowed_commands when the plan has multiple or no unambiguous gates."));
+  }
+  if (profile === "strict" && !task.allowed_commands?.length) {
+    diagnostics.push(error(task, "strict_missing_allowed_commands", "Strict tasks must declare allowed_commands explicitly."));
   }
   if (["auth", "db", "api", "ai"].includes(surface) && !requiredEvidence.length) {
     diagnostics.push(error(task, "missing_risk_evidence", `Surface ${surface} requires explicit evidence.`));

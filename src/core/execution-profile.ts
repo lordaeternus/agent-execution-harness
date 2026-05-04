@@ -38,6 +38,18 @@ export function effectiveExecutionProfile(mode: string, config: AgentHarnessConf
       observationFormat: config.token_budget.observation_format,
     };
   }
+  if (mode === "strict") {
+    return {
+      mode: "strict",
+      maxFilesPerTask: 2,
+      maxClaimsPerAction: 8,
+      summaryMaxChars: config.token_budget.summary_max_chars,
+      outputExcerptMaxChars: config.token_budget.output_excerpt_max_chars,
+      repairHintMaxChars: 280,
+      enforceStructuredEvidence: true,
+      observationFormat: "ultra_compact",
+    };
+  }
   return {
     mode: mode === "strong" ? "strong" : "standard",
     maxFilesPerTask: Number.POSITIVE_INFINITY,

@@ -2,7 +2,7 @@ import { ACTION_SCHEMA_VERSION, RUN_SCHEMA_VERSION } from "./constants.js";
 import type { AgentHarnessAction } from "./action-types.js";
 import type { AgentHarnessPlan } from "./plan-types.js";
 import type { AgentHarnessRunState } from "./run-types.js";
-import { evaluateCommandPolicy } from "./command-policy.js";
+import { evaluateTaskCommandPolicy } from "./command-policy.js";
 import { normalizeEvidence } from "./evidence.js";
 import { verifyClaim } from "./claims.js";
 import { assertNonEmptyString, assertSafeId, assertSafeRelativePath } from "./utils.js";
@@ -97,7 +97,8 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
   }
   if (action.type === "run_gate") {
     assertNonEmptyString(action.command, "command");
-    const policy = evaluateCommandPolicy(action.command, config.command_policy);
+    const planTask = next.plan.tasks.find((item) => item.task_id === next.current_task_id);
+    const policy = evaluateTaskCommandPolicy(action.command, planTask?.allowed_commands, state.mode, config.command_policy);
     if (!policy.allowed) {
       next.phase = "halt";
       next.status = "halt";

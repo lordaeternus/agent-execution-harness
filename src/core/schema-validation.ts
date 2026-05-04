@@ -4,6 +4,7 @@ import type { AgentHarnessConfig } from "./config-types.js";
 import type { AgentHarnessPlan } from "./plan-types.js";
 import type { AgentHarnessRunState } from "./run-types.js";
 import { compilePlan } from "./plan-compiler.js";
+import { validateAgainstSchema } from "./json-schema-validator.js";
 
 export interface ValidationResult {
   status: "success" | "error";
@@ -21,6 +22,8 @@ export function validateAction(action: unknown): asserts action is AgentHarnessA
 }
 
 export function validateRunState(state: unknown): asserts state is AgentHarnessRunState {
+  const schemaErrors = validateAgainstSchema(RUN_SCHEMA_VERSION, state);
+  if (schemaErrors.length) throw new Error(schemaErrors.join("; "));
   const value = asRecord(state, "run");
   requireString(value, "schema_version", RUN_SCHEMA_VERSION);
   requireString(value, "run_id");
@@ -34,6 +37,8 @@ export function validateRunState(state: unknown): asserts state is AgentHarnessR
 }
 
 export function validateConfig(config: unknown): asserts config is AgentHarnessConfig {
+  const schemaErrors = validateAgainstSchema(CONFIG_SCHEMA_VERSION, config);
+  if (schemaErrors.length) throw new Error(schemaErrors.join("; "));
   const value = asRecord(config, "config");
   requireString(value, "schema_version", CONFIG_SCHEMA_VERSION);
   requireString(value, "artifact_dir");
@@ -97,13 +102,15 @@ export function lintPlan(plan: unknown): ValidationResult {
 
 function collectPlanErrors(plan: unknown): string[] {
   try {
+    const schemaErrors = validateAgainstSchema(PLAN_SCHEMA_VERSION, plan);
+    if (schemaErrors.length) return schemaErrors;
     const value = asRecord(plan, "plan");
     requireString(value, "schema_version", PLAN_SCHEMA_VERSION);
     requireString(value, "plan_id");
     requireSafeId(value, "plan_id");
     requireEnum(value, "risk_level", ["L1", "L2", "L3"]);
     requireString(value, "rollback_expectation");
-    if (value.execution_profile !== undefined) requireEnum(value, "execution_profile", ["standard", "constrained", "weak"]);
+  if (value.execution_profile !== undefined) requireEnum(value, "execution_profile", ["standard", "constrained", "weak", "strict"]);
     requireArray(value, "gates");
     requireArray(value, "tasks");
     if ((value.gates as unknown[]).length === 0) throw new Error("plan.gates must be non-empty");
@@ -129,6 +136,8 @@ function collectPlanErrors(plan: unknown): string[] {
 
 function collectActionErrors(action: unknown): string[] {
   try {
+    const schemaErrors = validateAgainstSchema(ACTION_SCHEMA_VERSION, action);
+    if (schemaErrors.length) return schemaErrors;
     const value = asRecord(action, "action");
     requireString(value, "schema_version", ACTION_SCHEMA_VERSION);
     requireEnum(value, "type", ["read_context", "declare_files", "edit_file_ready", "run_gate", "record_evidence", "verify_claims", "final_report", "halt_for_risk"]);

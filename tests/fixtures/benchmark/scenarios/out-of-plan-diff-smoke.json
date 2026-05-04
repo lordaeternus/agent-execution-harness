@@ -1,0 +1,16 @@
+{
+  "runs": [
+    {
+      "model_executor": "weak-out-of-plan",
+      "status": "halt",
+      "attempt": 1,
+      "retries": 1,
+      "gate_passed": true,
+      "halted": true,
+      "cost_usd": 0.01,
+      "false_success": false,
+      "repair_succeeded": true,
+      "unexpected_diff_blocked": true
+    }
+  ]
+}

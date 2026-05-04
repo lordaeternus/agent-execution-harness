@@ -7,10 +7,14 @@
   "properties": {
     "schema_version": { "const": "agent_harness_run_v1" },
     "run_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
-    "mode": { "enum": ["strong", "standard", "constrained"] },
+    "mode": { "enum": ["strong", "standard", "constrained", "weak", "strict"] },
     "status": { "enum": ["in_progress", "ready_for_report", "completed", "partial_validated", "halt"] },
     "phase": { "enum": ["init", "preflight", "task_start", "gate", "evidence", "report", "halt", "completed"] },
     "tasks": { "type": "array" },
+    "declared_files": { "type": "array", "items": { "type": "string" } },
+    "baseline_touched_files": { "type": "array", "items": { "type": "string" } },
+    "touched_files": { "type": "array", "items": { "type": "string" } },
+    "unexpected_files": { "type": "array", "items": { "type": "string" } },
     "evidence": {
       "type": "array",
       "items": {

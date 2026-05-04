@@ -100,7 +100,8 @@
       "enum": [
         "standard",
         "constrained",
-        "weak"
+        "weak",
+        "strict"
       ]
     }
   }

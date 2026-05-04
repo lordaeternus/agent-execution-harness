@@ -41,6 +41,10 @@ export function evaluateEvidencePolicy(state: AgentHarnessRunState): EvidencePol
   };
 }
 
+export function isTaskEvidenceComplete(state: AgentHarnessRunState, taskId: string): boolean {
+  return evaluateEvidencePolicy(state).tasks.find((task) => task.task_id === taskId)?.missing.length === 0;
+}
+
 function requiredEvidenceForTask(task: RunTask, planTask: AgentHarnessTask | undefined): string[] {
   if (planTask?.required_evidence?.length) return unique(planTask.required_evidence);
   if (task.required_evidence?.length) return unique(task.required_evidence);

@@ -12,7 +12,7 @@ import type { AgentHarnessRunState } from "../core/run-types.js";
 import { parseFlags, stringFlag } from "./args.js";
 import { writeCompactJson } from "./output.js";
 import { loadActiveSession } from "./session-store.js";
-import { applyScopeGuardToState, collectGitTouchedFiles } from "../core/scope-guard.js";
+import { applyScopeGuardToState, collectGitTouchedFilesResult } from "../core/scope-guard.js";
 
 export function macroCommand(args: string[], cwd = process.cwd()): void {
   const [resource, maybeVerb] = args;
@@ -80,7 +80,9 @@ export function macroCommand(args: string[], cwd = process.cwd()): void {
     return;
   }
   if (resource === "finish" && previousState && config.scope_guard?.enabled !== false) {
-    const guarded = applyScopeGuardToState(previousState, collectGitTouchedFiles(cwd), config.scope_guard?.generated_allowlist ?? []);
+    const touched = collectGitTouchedFilesResult(cwd);
+    if (!touched.ok && mode === "strict") throw new Error(`scope_guard_unavailable: ${touched.reason}`);
+    const guarded = applyScopeGuardToState(previousState, touched.files, config.scope_guard?.generated_allowlist ?? []);
     if (guarded.unexpected_files?.length) {
       saveRun(cwd, artifactDir, guarded);
       throw new Error(`unexpected_file_changed: ${guarded.unexpected_files.join(",")}`);

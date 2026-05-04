@@ -4,6 +4,7 @@ Execution only.
 
 - L2/L3 or multi-step: `session start` -> `next --exact`.
 - Weak: `--mode weak`; 1 task, <=2 files, typed evidence, compact next.
+- Strict: `--mode strict`; task `allowed_commands` required; prefer `verify --exec <bin> --args-json "[...]"`; shell `--cmd` blocked by default.
 - `claim auto` batches internally; run once.
 - Scope guard: `finish` blocks product/source diff outside declared plan files.
 - Blocked scope: follow `repair_hint`; revert file or add it to plan.

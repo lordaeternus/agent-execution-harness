@@ -11,6 +11,12 @@ export interface ScopeGuardResult {
   summary: string;
 }
 
+export interface GitTouchedFilesResult {
+  ok: boolean;
+  files: string[];
+  reason?: string;
+}
+
 export function evaluateScopeGuard(input: {
   declared_files: string[];
   touched_files: string[];
@@ -34,12 +40,22 @@ export function normalizePath(value: string): string {
 }
 
 export function collectGitTouchedFiles(cwd: string): string[] {
+  return collectGitTouchedFilesResult(cwd).files;
+}
+
+export function collectGitTouchedFilesResult(cwd: string): GitTouchedFilesResult {
   const inside = spawnSync("git", ["rev-parse", "--is-inside-work-tree"], { cwd, encoding: "utf8" });
-  if (inside.status !== 0 || inside.stdout.trim() !== "true") return [];
+  if (inside.status !== 0 || inside.stdout.trim() !== "true") return { ok: false, files: [], reason: "not inside git worktree" };
   const diff = spawnSync("git", ["diff", "--name-only"], { cwd, encoding: "utf8" });
-  if (diff.status !== 0) return [];
+  if (diff.status !== 0) return { ok: false, files: [], reason: "git diff failed" };
+  const staged = spawnSync("git", ["diff", "--cached", "--name-only"], { cwd, encoding: "utf8" });
+  if (staged.status !== 0) return { ok: false, files: [], reason: "git staged diff failed" };
   const untracked = spawnSync("git", ["ls-files", "--others", "--exclude-standard"], { cwd, encoding: "utf8" });
-  return unique(`${diff.stdout}\n${untracked.status === 0 ? untracked.stdout : ""}`.split(/\r?\n/).map(normalizePath));
+  if (untracked.status !== 0) return { ok: false, files: [], reason: "git untracked scan failed" };
+  return {
+    ok: true,
+    files: unique(`${diff.stdout}\n${staged.stdout}\n${untracked.stdout}`.split(/\r?\n/).map(normalizePath)),
+  };
 }
 
 export function applyScopeGuardToState(

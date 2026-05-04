@@ -20,6 +20,18 @@ export function evaluateCommandPolicy(command: string, policy: CommandPolicy = {
   return { allowed: true };
 }
 
+export function evaluateTaskCommandPolicy(command: string, allowedCommands: string[] | undefined, mode: string, policy: CommandPolicy = {}): CommandPolicyResult {
+  const base = evaluateCommandPolicy(command, policy);
+  if (!base.allowed) return base;
+  if (mode === "strict" && policy.strict_requires_allowed_command !== false) {
+    if (!allowedCommands?.length) return { allowed: false, reason: "strict task has no allowed_commands" };
+    if (!allowedCommands.some((allowed) => normalizeCommand(command) === normalizeCommand(allowed))) {
+      return { allowed: false, reason: "not allowed by task allowed_commands" };
+    }
+  }
+  return { allowed: true };
+}
+
 function matchesPolicyPattern(command: string, pattern: string, prefixOnly = false): boolean {
   const commandLower = command.toLowerCase();
   const patternLower = pattern.toLowerCase();
@@ -28,4 +40,8 @@ function matchesPolicyPattern(command: string, pattern: string, prefixOnly = fal
     return new RegExp(pattern.slice(1, -1), "i").test(command);
   }
   return commandLower.includes(patternLower);
+}
+
+function normalizeCommand(command: string): string {
+  return command.trim().replace(/\s+/g, " ");
 }
