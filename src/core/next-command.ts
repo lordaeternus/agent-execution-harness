@@ -19,7 +19,8 @@ export function buildExactNextCommand(state: AgentHarnessRunState): ExactNextCom
     const command = state.pending_gate?.command ?? allowedCommandForTask(state.plan, task);
     const evidenceFlag = evidenceFlagForTask(task);
     const scope = task.required_evidence?.includes("file_scope") ? ` --scope ${quote(`file_scope ${taskFiles(task)}`)}` : "";
-    return exact("run_exact_command", `agent-harness verify --task-id ${task.task_id} ${evidenceFlag}${scope} --cmd ${quote(command)}`, "exit_code_not_zero");
+    const verifyCommand = state.mode === "strict" ? strictVerifyCommand(task.task_id, evidenceFlag, scope, command) : `agent-harness verify --task-id ${task.task_id} ${evidenceFlag}${scope} --cmd ${quote(command)}`;
+    return exact("run_exact_command", verifyCommand, "exit_code_not_zero");
   }
   if (state.phase === "report") {
     return state.verified_claims.length
@@ -54,4 +55,43 @@ function evidenceFlagForTask(task: RunTask): string {
 
 function quote(value: string): string {
   return `"${value.replace(/"/g, '\\"')}"`;
+}
+
+function strictVerifyCommand(taskId: string, evidenceFlag: string, scope: string, command: string): string {
+  if (hasShellSyntax(command)) throw new Error(`strict mode requires non-shell command: ${command}`);
+  const [exec, ...args] = splitCommandLine(command);
+  if (!exec) throw new Error("strict mode requires executable command");
+  return `agent-harness verify --task-id ${taskId} ${evidenceFlag}${scope} --exec ${quote(exec)} --args-json ${quote(JSON.stringify(args))}`;
+}
+
+function hasShellSyntax(command: string): boolean {
+  return /[|&;<>()`$]/.test(command);
+}
+
+function splitCommandLine(command: string): string[] {
+  const tokens: string[] = [];
+  let current = "";
+  let quoteChar = "";
+  for (const char of command) {
+    if (quoteChar) {
+      if (char === quoteChar) quoteChar = "";
+      else current += char;
+      continue;
+    }
+    if (char === "\"" || char === "'") {
+      quoteChar = char;
+      continue;
+    }
+    if (/\s/.test(char)) {
+      if (current) {
+        tokens.push(current);
+        current = "";
+      }
+      continue;
+    }
+    current += char;
+  }
+  if (quoteChar) throw new Error("unterminated quote in command");
+  if (current) tokens.push(current);
+  return tokens;
 }

@@ -1,4 +1,4 @@
-import { ACTION_SCHEMA_VERSION, CONFIG_SCHEMA_VERSION, PLAN_SCHEMA_VERSION, RUN_SCHEMA_VERSION } from "./constants.js";
+import { ACTION_SCHEMA_VERSION, CONFIG_SCHEMA_VERSION, MODES, PLAN_SCHEMA_VERSION, RUN_SCHEMA_VERSION } from "./constants.js";
 import type { AgentHarnessAction } from "./action-types.js";
 import type { AgentHarnessConfig } from "./config-types.js";
 import type { AgentHarnessPlan } from "./plan-types.js";
@@ -27,7 +27,7 @@ export function validateRunState(state: unknown): asserts state is AgentHarnessR
   const value = asRecord(state, "run");
   requireString(value, "schema_version", RUN_SCHEMA_VERSION);
   requireString(value, "run_id");
-  requireEnum(value, "mode", ["strong", "standard", "constrained", "weak"]);
+  requireEnum(value, "mode", [...MODES]);
   requireEnum(value, "status", ["in_progress", "ready_for_report", "completed", "partial_validated", "halt"]);
   requireEnum(value, "phase", ["init", "preflight", "task_start", "gate", "evidence", "report", "halt", "completed"]);
   if (!value.plan || typeof value.plan !== "object") throw new Error("run.plan is required");

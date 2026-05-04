@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { MODES } from "../core/constants.js";
 import { assertSafeId, assertSafeRelativePath } from "../core/utils.js";
 
 export interface ActiveSession {
@@ -32,5 +33,5 @@ export function saveActiveSession(cwd: string, artifactDir: string, session: Act
 function validateSession(session: ActiveSession): void {
   assertSafeRelativePath(session.plan_path, "plan_path");
   assertSafeId(session.run_id, "run_id");
-  if (!["strong", "standard", "constrained", "weak"].includes(session.mode)) throw new Error("session.mode is invalid");
+  if (!(MODES as readonly string[]).includes(session.mode)) throw new Error("session.mode is invalid");
 }

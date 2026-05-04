@@ -177,7 +177,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.7.0.md)
+- [Release notes](docs/release-notes/v0.8.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -288,6 +288,22 @@ In `weak` mode, `claim auto` automatically batches claims when a plan has many t
 For low-context agents, use `next --exact`. It returns the exact next harness command plus the stop condition, reducing ordering mistakes such as claiming early, skipping file declaration, or forgetting the active task.
 
 The scope guard also checks the real git diff before `finish`. If the agent changed a product/source file outside the plan, the run stops with a `repair_hint` instead of pretending success. In plain language: the agent can only finish if the files it touched match the files it declared.
+
+### Weak Worker Handoff
+
+Use handoff when a strong model creates the plan and a weaker model, local model, junior agent, or external chat does the implementation work.
+
+```bash
+agent-harness handoff --plan plan.json --task-id task-id
+```
+
+Paste `data.prompt` into the weak worker. It tells the worker exactly which files and commands are allowed, when to stop, and what JSON to return. After the worker responds, save its JSON and validate it:
+
+```bash
+agent-harness handoff validate --plan plan.json --task-id task-id --input worker-output.json
+```
+
+This keeps the flow token-light: the weak worker receives one compact task capsule, not the whole repository or a long instruction manual. If it invents a file, command, placeholder, or success without evidence, validation fails.
 
 Codebase memory flow for agents:
 
@@ -1341,7 +1357,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.7.0
+0.8.0
 ```
 
 Package:

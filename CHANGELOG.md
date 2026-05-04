@@ -1,3 +1,9 @@
+## 0.8.0
+
+- Added `handoff` to generate compact task capsules for weak workers such as cheaper, local, junior or external-chat agents.
+- Added `handoff validate` to reject worker outputs that invent files, commands, placeholders or success without evidence.
+- Documented the strong-planner / weak-executor / harness-validator flow.
+
 ## 0.7.0
 
 - Added strict execution mode for lower-trust or lower-context agents.

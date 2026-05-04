@@ -87,6 +87,24 @@ describe("cli integration", () => {
     expect(report).toContain("status: completed");
   });
 
+  it("guides a strict session with structured exact verify commands", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-strict-exact-"));
+    fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+    execFileSync("git", ["init"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "add", "plan.json", "created.txt"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "baseline"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "strict-exact", "--mode", "strict"], { cwd: tmp });
+    execFileSync("node", [bin, "files", "declare", "--files", "created.txt"], { cwd: tmp });
+    execFileSync("node", [bin, "task", "start", "--task-id", "weak-exact-task", "--files", "created.txt"], { cwd: tmp });
+    const next = JSON.parse(execFileSync("node", [bin, "next", "--exact"], { cwd: tmp, encoding: "utf8" }));
+    expect(next.data.exact.command).toContain("--exec \"node\"");
+    expect(next.data.exact.command).toContain("--args-json \"[\\\"--version\\\"]\"");
+    expect(next.data.exact.command).not.toContain("--cmd");
+    const verified = JSON.parse(execFileSync("node", [bin, "verify", "--task-id", "weak-exact-task", "--type", "focused_tests", "--exec", "node", "--args-json", "[\"--version\"]"], { cwd: tmp, encoding: "utf8" }));
+    expect(verified.status).toBe("success");
+  });
+
   it("returns compact repair hints for failing verify commands", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-verify-repair-"));
     fs.copyFileSync("tests/fixtures/plans/basic-plan.json", path.join(tmp, "plan.json"));
@@ -208,6 +226,32 @@ describe("cli integration", () => {
     expect(query).toContain("auth-cli-lesson");
     expect(execFileSync("node", [bin, "learn", "prune"], { cwd: tmp, encoding: "utf8" })).toContain("learning prune");
     expect(fs.existsSync(path.join(tmp, ".agent-harness/learning/lessons/auth-cli-lesson.json"))).toBe(true);
+  });
+
+  it("generates and validates weak worker handoff output", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-handoff-"));
+    fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));
+    const handoff = JSON.parse(execFileSync("node", [bin, "handoff", "--plan", "plan.json", "--task-id", "weak-exact-task"], { cwd: tmp, encoding: "utf8" }));
+    expect(handoff.status).toBe("success");
+    expect(handoff.data.packet.allowed_files).toEqual(["created.txt"]);
+    expect(handoff.data.prompt).toContain("Return JSON only");
+
+    fs.writeFileSync(path.join(tmp, "worker-output.json"), `${JSON.stringify({
+      status: "done",
+      files_changed: ["created.txt"],
+      evidence: [{ command: "node --version", result: "pass", output_excerpt: "v22.0.0" }],
+      residual_risk: "none",
+    })}\n`);
+    const valid = JSON.parse(execFileSync("node", [bin, "handoff", "validate", "--plan", "plan.json", "--task-id", "weak-exact-task", "--input", "worker-output.json"], { cwd: tmp, encoding: "utf8" }));
+    expect(valid.status).toBe("success");
+
+    fs.writeFileSync(path.join(tmp, "bad-output.json"), `${JSON.stringify({
+      status: "done",
+      files_changed: ["unexpected.txt"],
+      evidence: [],
+      residual_risk: "none",
+    })}\n`);
+    expect(() => execFileSync("node", [bin, "handoff", "validate", "--plan", "plan.json", "--task-id", "weak-exact-task", "--input", "bad-output.json"], { cwd: tmp, stdio: "pipe" })).toThrow();
   });
 });
 

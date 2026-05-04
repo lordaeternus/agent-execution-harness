@@ -126,6 +126,15 @@ agent-harness verify --task-id login-fix --type focused_tests --exec pnpm --args
 
 In strict mode, the command must be listed in the task `allowed_commands`. Shell-style `--cmd` is blocked by default.
 
+Optional handoff for DeepSeek, local models, junior agents, or another weak worker:
+
+```bash
+agent-harness handoff --plan plan.json --task-id login-fix
+agent-harness handoff validate --plan plan.json --task-id login-fix --input worker-output.json
+```
+
+Paste the generated `data.prompt` into the worker. Keep what passes validation; repair or discard the rest.
+
 Optional codebase memory flow for risky or unclear work:
 
 ```bash

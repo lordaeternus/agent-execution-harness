@@ -16,3 +16,5 @@ export * from "./core/plan-compiler-types.js";
 export * from "./core/plan-compiler.js";
 export * from "./core/execution-profile.js";
 export * from "./core/repair-playbooks.js";
+export * from "./core/handoff-types.js";
+export * from "./core/handoff.js";
