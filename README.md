@@ -28,6 +28,8 @@ Agent Execution Harness is designed to help weaker, cheaper, local, junior, or l
 
 In plain language: a strong model may use the harness as discipline. A weaker model uses it as rails.
 
+You can also use a strong model as the planner/reviewer and a cheaper or weaker model as the worker. The `handoff` flow gives that worker one compact task capsule, then validates its JSON output before the work can be trusted.
+
 AI agents are useful, but they often fail in the same ways:
 
 - they change files before understanding the task
@@ -159,6 +161,7 @@ If the agent cannot show evidence, the work is not complete.
 - [Why Use This?](#why-use-this)
 - [What You Get](#what-you-get)
 - [Quick Start](#quick-start)
+- [Which Mode Should I Use?](#which-mode-should-i-use)
 - [Codebase Memory Diagram](#codebase-memory-diagram)
 - [Learning Loop](#learning-loop)
 - [What Problem Does This Solve?](#what-problem-does-this-solve)
@@ -187,6 +190,17 @@ If the agent cannot show evidence, the work is not complete.
 Use this if you want to try the harness in an existing project.
 
 AI agents should read [`docs/agent-runtime.md`](docs/agent-runtime.md) for the short runtime protocol. This README is for humans.
+
+## Which Mode Should I Use?
+
+| Mode | Use when | What it optimizes |
+|---|---|---|
+| `standard` | normal AI coding agent, normal task | balanced speed and evidence |
+| `weak` | cheaper model, local model, junior agent, or low-context executor | smaller steps, compact output, repair hints |
+| `strict` | sensitive work or less trusted executor | only declared structured commands can pass |
+| `handoff` | strong model plans/reviews while another model executes one task | compact delegation with JSON validation |
+
+Simple rule: use `standard` by default, `weak` when the agent drifts, `strict` when command control matters, and `handoff` when you want one model to plan and another model to execute.
 
 ### The Simple Path
 
