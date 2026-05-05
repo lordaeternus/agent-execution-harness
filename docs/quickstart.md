@@ -58,6 +58,7 @@ Use this prompt:
 
 ```txt
 Use the agent harness for approved plans, multi-step work, risky changes, and any task where you need to prove completion.
+For L2/L3 tasks, run the harness automatically. The user should not need to remember to ask for it.
 Read docs/agent-runtime.md first.
 Do not claim success unless the artifact is completed and includes evidence plus verified claims.
 In the final answer, include run_id, artifact path, status, gates, evidence, verified claims, and rollback notes.

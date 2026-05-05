@@ -2,7 +2,7 @@
 
 Use this file for routine harness execution in Stetix. Do not load long docs unless needed.
 
-- Use `pnpm agent:harness` or token-light commands for approved L2/L3, multi-step or delegated work.
+- For approved L2/L3, multi-step or delegated work, run `pnpm agent:harness` or token-light commands automatically; user should not need to ask.
 - Start with `pnpm agent:harness session start`, then use `pnpm agent:harness next`.
 - For L2 unclear or L3 high-risk work, run `pnpm agent:harness map query --surface <surface>` before editing.
 - For repeated failures or known-risk surfaces, run `pnpm agent:harness learn query --surface <surface> --top-k 3`.

@@ -1,3 +1,7 @@
+## 0.9.1
+
+- Clarified that L2/L3, multi-step, delegated or risky work should run through the harness automatically, without requiring the user to remember to request it.
+
 ## 0.9.0
 
 - Added a lightweight control catalog so users can see which harness controls cover which risks.

@@ -1,7 +1,7 @@
 # Agent Harness
 
 - Read `docs/agent-runtime.md`; README is human docs.
-- L2/L3, multi-step, delegated: use `agent-harness`.
+- L2/L3, multi-step, delegated: run `agent-harness` automatically; user should not need to ask.
 - Flow: `session start` -> `next --exact` -> `verify` -> `claim auto` -> `finish`.
 - Weak: `--mode weak`; 1 task, <=2 files, typed evidence.
 - `claim auto` batches internally; run once.

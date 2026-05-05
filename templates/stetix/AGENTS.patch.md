@@ -1,6 +1,6 @@
 # Stetix Adapter Patch
 
-- L2/L3, multi-step/delegated: require `pnpm agent:harness`.
+- L2/L3, multi-step/delegated: require `pnpm agent:harness` automatically; user should not need to ask.
 - Read `docs/process/agent-runtime.md`; avoid long docs.
 - Flow: session start -> next --exact -> verify -> claim auto -> finish.
 - Weak: `--mode weak`, <=2 files/task, typed evidence; claim auto batches.

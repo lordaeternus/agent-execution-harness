@@ -184,7 +184,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.9.0.md)
+- [Release notes](docs/release-notes/v0.9.1.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -294,6 +294,7 @@ Step 5: tell your AI coding agent to use it:
 
 ```txt
 Use the agent harness for approved plans, multi-step work, risky changes, and any task where you need to prove completion.
+For L2/L3 tasks, run the harness automatically. The user should not need to remember to ask for it.
 Read docs/agent-runtime.md first.
 Do not claim success unless the harness artifact is completed and includes evidence plus verified claims.
 ```
@@ -487,6 +488,7 @@ After installing the harness, give your AI coding agent this instruction:
 
 ```txt
 Use the agent harness for approved plans, multi-step work, risky changes, and any task where you need to prove completion.
+For L2/L3 tasks, run the harness automatically. The user should not need to remember to ask for it.
 Read docs/agent-runtime.md first; do not load the full README for routine execution.
 Before editing, validate the plan.
 During execution, keep the harness artifact updated.
@@ -1419,7 +1421,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.9.0
+0.9.1
 ```
 
 Package:
