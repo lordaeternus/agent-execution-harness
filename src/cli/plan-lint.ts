@@ -14,6 +14,7 @@ export function planLintCommand(args: string[], cwd = process.cwd()): void {
     artifacts: [],
     next_actions: result.status === "success" ? ["execute"] : ["fix_plan"],
     errors: result.errors,
+    data: { warnings: result.warnings },
   });
   if (result.status === "error") process.exitCode = 1;
 }

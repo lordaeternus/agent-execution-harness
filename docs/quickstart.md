@@ -135,6 +135,23 @@ agent-harness handoff validate --plan plan.json --task-id login-fix --input work
 
 Paste the generated `data.prompt` into the worker. Keep what passes validation; repair or discard the rest.
 
+Optional cheap project readiness and steering checks:
+
+```bash
+agent-harness doctor --harnessability --cwd .
+agent-harness doctor --steering --cwd .
+```
+
+Use `doctor --harnessability` when agents keep struggling in a project. Use `doctor --steering` after repeated failures to see whether one small rule, test or sensor would prevent recurrence.
+
+Optional approved fixtures for critical behavior:
+
+```bash
+agent-harness fixtures validate --file tests/fixtures/approved/basic-approved-fixture.json
+```
+
+Use fixtures selectively. They are for behavior that must not be guessed.
+
 Optional codebase memory flow for risky or unclear work:
 
 ```bash

@@ -56,3 +56,27 @@ The memory is a compact cache. The source code remains the source of truth.
 - `max_lessons_per_surface`: prune cap for noisy surfaces
 
 Lessons are operational hints. Code, tests and current runtime evidence win.
+
+## Harnessability And Steering
+
+Use these commands to keep the harness cheap and practical:
+
+```bash
+agent-harness doctor --harnessability --cwd .
+agent-harness doctor --steering --cwd .
+```
+
+- `doctor --harnessability` scores local rails such as scripts, tests, `AGENTS.md`, runtime docs and command policy.
+- `doctor --steering` scans recent artifacts and suggests a small control only when failures repeat.
+
+The goal is not to add sensors everywhere. Cheap deterministic checks should run early. Expensive checks should be reserved for risky work.
+
+## Approved Fixtures
+
+Approved fixtures are optional validation anchors for critical behavior:
+
+```bash
+agent-harness fixtures validate --file tests/fixtures/approved/basic-approved-fixture.json
+```
+
+Use them for auth, billing, clinical AI, data transforms or structured AI output. Do not use them for trivial copy or one-file UI changes.

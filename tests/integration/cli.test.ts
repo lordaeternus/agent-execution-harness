@@ -228,6 +228,79 @@ describe("cli integration", () => {
     expect(fs.existsSync(path.join(tmp, ".agent-harness/learning/lessons/auth-cli-lesson.json"))).toBe(true);
   });
 
+  it("reports harnessability, controls and plan warnings", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-doctor-controls-"));
+    fs.mkdirSync(path.join(tmp, "docs"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", scripts: { lint: "eslint .", "test:run": "vitest run", typecheck: "tsc --noEmit" } }, null, 2)}\n`);
+    fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# Rules\n");
+    fs.writeFileSync(path.join(tmp, "agent-harness.config.json"), "{}\n");
+    fs.writeFileSync(path.join(tmp, "docs", "agent-runtime.md"), "# Runtime\n");
+    fs.writeFileSync(path.join(tmp, ".gitignore"), ".agent-harness/runs/\n");
+
+    const doctor = JSON.parse(execFileSync("node", [bin, "doctor", "--harnessability", "--controls", "--cwd", tmp], { encoding: "utf8" }));
+    expect(doctor.data.harnessability.score).toBeGreaterThan(50);
+    expect(doctor.data.controls.map((control: { id: string }) => control.id)).toContain("scope_guard");
+
+    const plan = {
+      schema_version: "agent_harness_plan_v1",
+      plan_id: "l3-warning",
+      risk_level: "L3",
+      rollback_expectation: "Revert the touched files and rerun the focused validation gate.",
+      gates: ["pnpm test"],
+      tasks: [{ task_id: "task-a", files: ["src/a.ts"], acceptance_criteria: "Run `pnpm test` and confirm task A behavior passes." }],
+    };
+    fs.writeFileSync(path.join(tmp, "plan.json"), `${JSON.stringify(plan, null, 2)}\n`);
+    const lint = JSON.parse(execFileSync("node", [bin, "plan-lint", "--plan", "plan.json"], { cwd: tmp, encoding: "utf8" }));
+    expect(lint.status).toBe("success");
+    expect(lint.data.warnings.join("\n")).toContain("L3 task should declare required_evidence");
+  });
+
+  it("reports repeated failure steering and validates approved fixtures", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-steering-cli-"));
+    fs.mkdirSync(path.join(tmp, ".agent-harness/runs"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", scripts: {} }, null, 2)}\n`);
+    fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# Rules\n");
+    fs.writeFileSync(path.join(tmp, "agent-harness.config.json"), "{}\n");
+    fs.writeFileSync(path.join(tmp, ".gitignore"), ".agent-harness/runs/\n");
+    for (const runId of ["one", "two", "three"]) {
+      fs.writeFileSync(
+        path.join(tmp, ".agent-harness/runs", `${runId}.json`),
+        `${JSON.stringify({
+          schema_version: "agent_harness_run_v1",
+          run_id: runId,
+          mode: "weak",
+          status: "halt",
+          phase: "halt",
+          plan: {
+            schema_version: "agent_harness_plan_v1",
+            plan_id: "steering-plan",
+            risk_level: "L2",
+            rollback_expectation: "Revert.",
+            gates: ["node --version"],
+            tasks: [{ task_id: "task-a", acceptance_criteria: "A passes." }],
+          },
+          tasks: [{ task_id: "task-a", status: "blocked", acceptance_criteria: "A passes.", evidence_ids: [] }],
+          declared_files: ["src/a.ts"],
+          unexpected_files: ["src/outside.ts"],
+          current_task_id: null,
+          pending_gate: null,
+          evidence: [],
+          claims: [],
+          verified_claims: [],
+          errors: ["unexpected file changed"],
+          final_report: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, null, 2)}\n`,
+      );
+    }
+    const steering = JSON.parse(execFileSync("node", [bin, "doctor", "--steering", "--cwd", tmp], { encoding: "utf8" }));
+    expect(steering.data.steering.suggestions[0].key).toBe("unexpected_file_changed");
+
+    const fixtureOutput = JSON.parse(execFileSync("node", [bin, "fixtures", "validate", "--file", "tests/fixtures/approved/basic-approved-fixture.json"], { encoding: "utf8" }));
+    expect(fixtureOutput.status).toBe("success");
+  });
+
   it("generates and validates weak worker handoff output", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-handoff-"));
     fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));

@@ -11,6 +11,19 @@ describe("repository contracts", () => {
     expect(() => validateConfig(config)).not.toThrow();
   });
 
+  it("keeps L3 sensor gaps as warnings, not structural errors", () => {
+    const result = lintPlan({
+      schema_version: "agent_harness_plan_v1",
+      plan_id: "l3-warning",
+      risk_level: "L3",
+      rollback_expectation: "Revert the touched files and rerun the focused validation gate.",
+      gates: ["pnpm test"],
+      tasks: [{ task_id: "task-a", files: ["src/a.ts"], acceptance_criteria: "Run `pnpm test` and confirm task A behavior passes." }],
+    });
+    expect(result.status).toBe("success");
+    expect(result.warnings.join("\n")).toContain("L3 task should declare required_evidence");
+  });
+
   it("keeps required docs and templates present", () => {
     for (const file of [
       "README.md",

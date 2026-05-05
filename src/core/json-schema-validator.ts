@@ -3,10 +3,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import type { ErrorObject, ValidateFunction } from "ajv";
-import { ACTION_SCHEMA_VERSION, CONFIG_SCHEMA_VERSION, PLAN_SCHEMA_VERSION, RUN_SCHEMA_VERSION } from "./constants.js";
+import { ACTION_SCHEMA_VERSION, APPROVED_FIXTURE_SCHEMA_VERSION, CONFIG_SCHEMA_VERSION, PLAN_SCHEMA_VERSION, RUN_SCHEMA_VERSION } from "./constants.js";
 
 type SchemaName =
   | typeof ACTION_SCHEMA_VERSION
+  | typeof APPROVED_FIXTURE_SCHEMA_VERSION
   | typeof CONFIG_SCHEMA_VERSION
   | typeof PLAN_SCHEMA_VERSION
   | typeof RUN_SCHEMA_VERSION;

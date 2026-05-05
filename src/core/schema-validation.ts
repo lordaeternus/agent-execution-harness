@@ -5,10 +5,12 @@ import type { AgentHarnessPlan } from "./plan-types.js";
 import type { AgentHarnessRunState } from "./run-types.js";
 import { compilePlan } from "./plan-compiler.js";
 import { validateAgainstSchema } from "./json-schema-validator.js";
+import { sensorWarningsForPlan } from "./sensor-profile.js";
 
 export interface ValidationResult {
   status: "success" | "error";
   errors: string[];
+  warnings: string[];
 }
 
 export function validatePlan(plan: unknown): asserts plan is AgentHarnessPlan {
@@ -93,11 +95,14 @@ export function validateConfig(config: unknown): asserts config is AgentHarnessC
 
 export function lintPlan(plan: unknown): ValidationResult {
   const errors = collectPlanErrors(plan);
+  const warnings: string[] = [];
   if (!errors.length) {
     const compiled = compilePlan(plan as AgentHarnessPlan);
     errors.push(...compiled.diagnostics.filter((item) => item.severity === "error").map((item) => `${item.task_id ? `${item.task_id}: ` : ""}${item.code}: ${item.message}`));
+    warnings.push(...compiled.diagnostics.filter((item) => item.severity === "warning").map((item) => `${item.task_id ? `${item.task_id}: ` : ""}${item.code}: ${item.message}`));
+    warnings.push(...sensorWarningsForPlan(plan as AgentHarnessPlan));
   }
-  return { status: errors.length ? "error" : "success", errors };
+  return { status: errors.length ? "error" : "success", errors, warnings };
 }
 
 function collectPlanErrors(plan: unknown): string[] {

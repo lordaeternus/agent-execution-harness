@@ -6,6 +6,9 @@ Use this file for execution. Use `README.md` only for human learning.
 - Start with `agent-harness session start`, then use `agent-harness next`.
 - For L2 unclear or L3 high-risk work, run `agent-harness map query --surface <surface>` before editing.
 - For repeated failures or known-risk surfaces, run `agent-harness learn query --surface <surface> --top-k 3`.
+- If the project keeps causing agent mistakes, run `agent-harness doctor --harnessability --cwd .`.
+- After repeated failed runs, run `agent-harness doctor --steering --cwd .` and apply only small evidence-backed controls.
+- For critical behavior fixtures, run `agent-harness fixtures validate --file <fixture.json>`.
 - After durable structural code changes, run `agent-harness map update --files <files>` and `agent-harness map record --surface <surface> --files <files> --summary "<durable fact>"`.
 - After durable fixes or incidents, use `agent-harness learn capture`; promote only specific lessons with evidence.
 - Prefer `agent-harness verify --task-id <id> --type <evidence_type> --cmd "<command>"`.

@@ -1,0 +1,17 @@
+{
+  "schema_version": "agent_harness_approved_fixture_v1",
+  "fixture_id": "basic-approved-fixture",
+  "surface": "generic",
+  "owner_approved": true,
+  "validator_command": "node --version",
+  "cases": [
+    {
+      "input": {
+        "value": 2
+      },
+      "expected_output": {
+        "value": 2
+      }
+    }
+  ]
+}

@@ -180,7 +180,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.8.0.md)
+- [Release notes](docs/release-notes/v0.9.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -201,6 +201,50 @@ AI agents should read [`docs/agent-runtime.md`](docs/agent-runtime.md) for the s
 | `handoff` | strong model plans/reviews while another model executes one task | compact delegation with JSON validation |
 
 Simple rule: use `standard` by default, `weak` when the agent drifts, `strict` when command control matters, and `handoff` when you want one model to plan and another model to execute.
+
+## Control Catalog
+
+The harness keeps a small catalog of controls so users can see what is protected and what is not.
+
+Examples:
+
+- `plan_lint`: catches invalid plans before execution.
+- `scope_guard`: blocks finish when files outside the plan changed.
+- `evidence_policy`: blocks success claims without required proof.
+- `strict_command_policy`: blocks undeclared shell commands in strict mode.
+- `handoff_validate`: checks JSON returned by weak or external workers.
+
+This is intentionally metadata, not a heavy policy engine. The goal is auditability with near-zero token cost.
+
+## Harnessability
+
+`doctor --harnessability` checks whether a project is easy for AI agents to work in safely:
+
+```bash
+agent-harness doctor --harnessability --cwd .
+```
+
+It scores cheap local signals such as scripts, `AGENTS.md`, harness config, tests, runtime docs, artifact policy and command policy. A low score does not mean the project is bad. It means agents have fewer rails and may need smaller plans or stronger review.
+
+## Repeated Failure Steering
+
+`doctor --steering` scans recent harness artifacts and suggests the smallest control when the same failure keeps happening:
+
+```bash
+agent-harness doctor --steering --cwd .
+```
+
+It does not auto-rewrite your rules. It only points to repeated evidence, such as out-of-plan edits or missing evidence, so a human or senior agent can decide whether to add a rule, test or checklist item.
+
+## Approved Fixtures
+
+Approved fixtures are optional. Use them only for critical behavior where generated tests are not enough, such as auth, billing, clinical AI, data transforms or structured AI output.
+
+```bash
+agent-harness fixtures validate --file tests/fixtures/approved/basic-approved-fixture.json
+```
+
+A fixture must be explicitly owner-approved. This keeps the feature useful without turning every small task into a heavyweight validation process.
 
 ### The Simple Path
 
@@ -1371,7 +1415,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.8.0
+0.9.0
 ```
 
 Package:

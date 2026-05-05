@@ -1,3 +1,11 @@
+## 0.9.0
+
+- Added a lightweight control catalog so users can see which harness controls cover which risks.
+- Added risk-based sensor profile warnings to `plan-lint` without turning valid plans into errors.
+- Added `doctor --harnessability` to score project readiness for AI-agent execution.
+- Added `doctor --steering` to suggest small controls after repeated evidence-backed failures.
+- Added optional approved fixture validation for critical behavior.
+
 ## 0.8.0
 
 - Added `handoff` to generate compact task capsules for weak workers such as cheaper, local, junior or external-chat agents.
