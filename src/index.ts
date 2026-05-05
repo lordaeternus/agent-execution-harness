@@ -22,3 +22,4 @@ export * from "./core/control-catalog.js";
 export * from "./core/sensor-profile.js";
 export * from "./core/steering.js";
 export * from "./core/approved-fixtures.js";
+export * from "./core/task-graph.js";

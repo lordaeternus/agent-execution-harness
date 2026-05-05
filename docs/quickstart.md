@@ -118,6 +118,13 @@ agent-harness finish --summary "Login fix validated."
 agent-harness report --run-id fix-login --format compact
 ```
 
+If tasks depend on each other, add `depends_on` in the plan and preview safe execution order:
+
+```bash
+agent-harness plan waves --plan plan.json
+agent-harness next --exact
+```
+
 For stricter execution with weaker or less trusted agents:
 
 ```bash

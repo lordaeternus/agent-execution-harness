@@ -1,0 +1,24 @@
+{
+  "schema_version": "agent_harness_plan_v1",
+  "plan_id": "dependency-plan",
+  "risk_level": "L2",
+  "rollback_expectation": "Delete generated dependency test files.",
+  "gates": ["node --version"],
+  "tasks": [
+    {
+      "task_id": "foundation",
+      "files": ["foundation.txt"],
+      "required_evidence": ["focused_tests"],
+      "allowed_commands": ["node --version"],
+      "acceptance_criteria": "Run `node --version` and record passing focused_tests evidence."
+    },
+    {
+      "task_id": "dependent",
+      "depends_on": ["foundation"],
+      "files": ["dependent.txt"],
+      "required_evidence": ["focused_tests"],
+      "allowed_commands": ["node --version"],
+      "acceptance_criteria": "Run `node --version` and record passing focused_tests evidence."
+    }
+  ]
+}

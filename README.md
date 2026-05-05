@@ -184,7 +184,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.9.1.md)
+- [Release notes](docs/release-notes/v0.10.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -349,6 +349,8 @@ agent-harness verify --task-id task-id --type focused_tests --exec pnpm --args-j
 In `weak` mode, `claim auto` automatically batches claims when a plan has many tasks. The agent still runs one simple command, while the harness keeps each internal action small enough for low-context executors.
 
 For low-context agents, use `next --exact`. It returns the exact next harness command plus the stop condition, reducing ordering mistakes such as claiming early, skipping file declaration, or forgetting the active task.
+
+For multi-step plans, tasks can declare `depends_on`. Run `agent-harness plan waves --plan plan.json` to preview safe execution order. `next --exact` then guides the agent only to tasks whose dependencies already passed evidence.
 
 The scope guard also checks the real git diff before `finish`. If the agent changed a product/source file outside the plan, the run stops with a `repair_hint` instead of pretending success. In plain language: the agent can only finish if the files it touched match the files it declared.
 
@@ -982,6 +984,7 @@ Example:
   "tasks": [
     {
       "task_id": "basic-task",
+      "depends_on": [],
       "acceptance_criteria": "node --version evidence passes."
     }
   ]
@@ -1167,6 +1170,14 @@ Validates a plan before execution.
 
 ```bash
 agent-harness plan-lint --plan plan.json
+```
+
+### `plan waves`
+
+Shows dependency waves from optional task `depends_on` fields.
+
+```bash
+agent-harness plan waves --plan plan.json
 ```
 
 ### `execute`
@@ -1421,7 +1432,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.9.1
+0.10.0
 ```
 
 Package:

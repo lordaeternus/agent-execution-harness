@@ -126,6 +126,13 @@ function collectPlanErrors(plan: unknown): string[] {
       requireString(record, "task_id");
       requireSafeId(record, "task_id");
       requireString(record, "acceptance_criteria");
+      if (record.depends_on !== undefined) {
+        requireArray(record, "depends_on");
+        for (const dependency of record.depends_on as unknown[]) {
+          if (typeof dependency !== "string" || dependency.trim().length === 0) throw new Error("depends_on entries must be non-empty strings");
+          if (!/^[a-zA-Z0-9._-]+$/.test(dependency)) throw new Error("depends_on entries contain unsafe characters");
+        }
+      }
       if (record.surface !== undefined) requireEnum(record, "surface", ["ui_layout", "ui", "backend", "api", "auth", "db", "ai", "docs", "generic"]);
       if (record.files !== undefined) requireArray(record, "files");
       if (record.required_evidence !== undefined) requireArray(record, "required_evidence");

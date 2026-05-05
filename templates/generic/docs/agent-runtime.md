@@ -3,6 +3,7 @@
 Use this file for execution. Use `README.md` only for human learning.
 
 - For L2/L3, multi-step, delegated or risky work, run the harness automatically; user should not need to ask.
+- If the plan has `depends_on`, run `agent-harness plan waves --plan <plan>` and follow only unblocked tasks from `next --exact`.
 - Start with `agent-harness session start`, then use `agent-harness next`.
 - For L2 unclear or L3 high-risk work, run `agent-harness map query --surface <surface>` before editing.
 - For repeated failures or known-risk surfaces, run `agent-harness learn query --surface <surface> --top-k 3`.

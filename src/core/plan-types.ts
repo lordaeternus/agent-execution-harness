@@ -6,6 +6,7 @@ export type TaskSurface = "ui_layout" | "ui" | "backend" | "api" | "auth" | "db"
 export interface AgentHarnessTask {
   task_id: string;
   acceptance_criteria: string;
+  depends_on?: string[];
   surface?: TaskSurface;
   files?: string[];
   required_evidence?: string[];

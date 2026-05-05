@@ -7,6 +7,7 @@
   "tasks": [
     {
       "task_id": "example-task",
+      "depends_on": [],
       "surface": "generic",
       "files": [],
       "required_evidence": ["focused_tests"],

@@ -1,5 +1,6 @@
 import type { AgentHarnessPlan, AgentHarnessTask, RiskLevel, TaskSurface } from "./plan-types.js";
 import type { CompiledPlan, CompiledTaskContract, PlanCompilerDiagnostic } from "./plan-compiler-types.js";
+import { calculateTaskWaves, dependenciesForTask, validateTaskGraph } from "./task-graph.js";
 
 const SURFACE_BY_PATH: Array<[RegExp, TaskSurface]> = [
   [/^supabase\/migrations\//, "db"],
@@ -35,9 +36,20 @@ export function compilePlan(plan: AgentHarnessPlan): CompiledPlan {
     diagnostics.push({ code: "weak_rollback", severity: "error", message: "L3 plan requires explicit rollback expectation." });
   }
 
+  const graphDiagnostics = validateTaskGraph(plan.tasks);
+  diagnostics.push(...graphDiagnostics.map((item) => ({
+    code: item.code,
+    severity: item.code === "duplicate_dependency" ? "warning" as const : "error" as const,
+    message: item.message,
+    task_id: item.task_id,
+  })));
   const tasks = plan.tasks.map((task) => compileTask(task, plan.risk_level, maxFiles, plan.gates, diagnostics, plan.execution_profile));
+  const waves = diagnostics.some((item) => item.severity === "error" && ["missing_dependency", "self_dependency", "cycle"].includes(item.code))
+    ? []
+    : calculateTaskWaves(plan.tasks).map((wave) => wave.task_ids);
+  diagnostics.push(...parallelRiskWarnings(tasks, waves));
   const hasError = diagnostics.some((item) => item.severity === "error");
-  return { plan_id: plan.plan_id, risk_level: plan.risk_level, tasks, diagnostics, status: hasError ? "error" : "success" };
+  return { plan_id: plan.plan_id, risk_level: plan.risk_level, waves, tasks, diagnostics, status: hasError ? "error" : "success" };
 }
 
 function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: number, planGates: string[], diagnostics: PlanCompilerDiagnostic[], profile?: string): CompiledTaskContract {
@@ -65,6 +77,7 @@ function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: num
 
   return {
     task_id: task.task_id,
+    depends_on: dependenciesForTask(task),
     surface,
     files,
     required_evidence: requiredEvidence,
@@ -74,6 +87,40 @@ function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: num
     max_files_allowed: maxFiles,
     next_allowed_action: "task_start",
   };
+}
+
+function parallelRiskWarnings(tasks: CompiledTaskContract[], waves: string[][]): PlanCompilerDiagnostic[] {
+  const byId = new Map(tasks.map((task) => [task.task_id, task]));
+  const diagnostics: PlanCompilerDiagnostic[] = [];
+  for (const wave of waves) {
+    for (let leftIndex = 0; leftIndex < wave.length; leftIndex += 1) {
+      const left = byId.get(wave[leftIndex]);
+      if (!left) continue;
+      for (let rightIndex = leftIndex + 1; rightIndex < wave.length; rightIndex += 1) {
+        const right = byId.get(wave[rightIndex]);
+        if (!right) continue;
+        const sharedFiles = left.files.filter((file) => right.files.includes(file));
+        if (sharedFiles.length) {
+          diagnostics.push({
+            code: "parallel_shared_files",
+            severity: "warning",
+            task_id: left.task_id,
+            message: `Tasks ${left.task_id} and ${right.task_id} are in the same wave and share files: ${sharedFiles.join(", ")}.`,
+          });
+        }
+        const riskySurfaces = new Set([left.surface, right.surface].filter((surface) => ["auth", "db", "api", "ai"].includes(surface)));
+        if (riskySurfaces.size) {
+          diagnostics.push({
+            code: "parallel_sensitive_surface",
+            severity: "warning",
+            task_id: left.task_id,
+            message: `Tasks ${left.task_id} and ${right.task_id} are in the same wave across sensitive surface(s): ${[...riskySurfaces].sort().join(", ")}.`,
+          });
+        }
+      }
+    }
+  }
+  return diagnostics;
 }
 
 function inferSurface(files: string[]): TaskSurface {

@@ -1,5 +1,6 @@
 import type { AgentHarnessPlan } from "./plan-types.js";
 import type { AgentHarnessRunState, RunTask } from "./run-types.js";
+import { isTaskUnblocked } from "./task-graph.js";
 
 export interface ExactNextCommand {
   do_now: "run_exact_command" | "halt" | "none";
@@ -8,7 +9,7 @@ export interface ExactNextCommand {
 }
 
 export function buildExactNextCommand(state: AgentHarnessRunState): ExactNextCommand {
-  const task = state.tasks.find((item) => item.status === "in_progress") ?? state.tasks.find((item) => item.status === "not_started");
+  const task = state.tasks.find((item) => item.status === "in_progress") ?? nextUnblockedTask(state);
   if (state.phase === "halt") return exact("halt", "", "run is halted; inspect errors");
   if (state.phase === "completed") return exact("none", "", "run already completed");
   if (state.phase === "preflight") return exact("run_exact_command", `agent-harness files declare --files ${quote(allPlanFiles(state.plan))}`, "exit_code_not_zero");
@@ -28,6 +29,11 @@ export function buildExactNextCommand(state: AgentHarnessRunState): ExactNextCom
       : exact("run_exact_command", "agent-harness claim auto", "exit_code_not_zero");
   }
   return exact("none", "", "no actionable command");
+}
+
+export function nextUnblockedTask(state: Pick<AgentHarnessRunState, "tasks">): RunTask | undefined {
+  const completed = state.tasks.filter((item) => item.status === "completed").map((item) => item.task_id);
+  return state.tasks.find((item) => item.status === "not_started" && isTaskUnblocked(item, completed));
 }
 
 function exact(doNow: ExactNextCommand["do_now"], command: string, stopIf: string): ExactNextCommand {

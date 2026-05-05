@@ -2,14 +2,19 @@ import { parseFlags } from "./args.js";
 import { writeCompactJson } from "./output.js";
 import { resolveCliRunContext } from "./context.js";
 import { effectiveExecutionProfile } from "../core/execution-profile.js";
-import { buildExactNextCommand } from "../core/next-command.js";
+import { buildExactNextCommand, nextUnblockedTask } from "../core/next-command.js";
+import { taskBlockedBy } from "../core/task-graph.js";
 
 export function nextCommand(args: string[], cwd = process.cwd()): void {
   const flags = parseFlags(args);
   const context = resolveCliRunContext(flags, cwd);
   if (!context.state) throw new Error("no run artifact found");
   const state = context.state;
-  const nextTask = state.tasks.find((task) => task.status === "in_progress") ?? state.tasks.find((task) => task.status === "not_started");
+  const completedIds = state.tasks.filter((task) => task.status === "completed").map((task) => task.task_id);
+  const nextTask = state.tasks.find((task) => task.status === "in_progress") ?? nextUnblockedTask(state);
+  const blockedTasks = state.tasks
+    .filter((task) => task.status === "not_started" && taskBlockedBy(task, completedIds).length)
+    .map((task) => ({ task_id: task.task_id, blocked_by: taskBlockedBy(task, completedIds) }));
   const completed = state.tasks.filter((task) => task.status === "completed").length;
   const missing = nextTask ? state.evidence_policy?.tasks.find((task) => task.task_id === nextTask.task_id)?.missing ?? nextTask.required_evidence ?? [] : [];
   const profile = effectiveExecutionProfile(context.mode, context.config);
@@ -19,10 +24,11 @@ export function nextCommand(args: string[], cwd = process.cwd()): void {
         task_id: nextTask.task_id,
         files: nextTask.files ?? [],
         action: nextActions(state.phase)[0] ?? "none",
+        ...(blockedTasks.length ? { blocked_tasks: blockedTasks } : {}),
         ...exact,
         ...(state.phase === "evidence" || state.phase === "report" ? { missing_evidence: missing } : {}),
       }
-    : { missing_evidence: state.evidence_policy?.missing ?? [], action: nextActions(state.phase)[0] ?? "none", ...exact };
+    : { missing_evidence: state.evidence_policy?.missing ?? [], action: nextActions(state.phase)[0] ?? "none", ...(blockedTasks.length ? { blocked_tasks: blockedTasks } : {}), ...exact };
   writeCompactJson({
     status: state.status === "halt" ? "halt" : state.status === "partial_validated" ? "warning" : "success",
     summary: `${state.phase} ${completed}/${state.tasks.length}`,
@@ -38,9 +44,10 @@ export function nextCommand(args: string[], cwd = process.cwd()): void {
               files: nextTask.files ?? [],
               required_evidence: nextTask.required_evidence ?? [],
               missing_evidence: missing,
+              ...(blockedTasks.length ? { blocked_tasks: blockedTasks } : {}),
               ...exact,
             }
-          : { missing_evidence: state.evidence_policy?.missing ?? [], ...exact },
+          : { missing_evidence: state.evidence_policy?.missing ?? [], ...(blockedTasks.length ? { blocked_tasks: blockedTasks } : {}), ...exact },
   });
 }
 

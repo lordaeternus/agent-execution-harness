@@ -1,5 +1,6 @@
 import type { AgentHarnessPlan, AgentHarnessTask } from "./plan-types.js";
 import type { HandoffPacket, HandoffTaskContext, HandoffValidationResult, WeakWorkerOutput } from "./handoff-types.js";
+import { dependenciesForTask } from "./task-graph.js";
 
 const FORBIDDEN_ACTIONS = [
   "decide architecture",
@@ -31,6 +32,8 @@ export function buildHandoffPacket(plan: AgentHarnessPlan, taskId: string): Hand
     role: "implementation_worker_only",
     target: "weak-worker",
     task_id: context.task.task_id,
+    depends_on: dependenciesForTask(context.task),
+    blocks_tasks: context.blocksTasks,
     allowed_files: context.task.files ?? [],
     allowed_commands: allowedCommands(context),
     forbidden_actions: FORBIDDEN_ACTIONS,
@@ -97,7 +100,11 @@ export function parseWeakWorkerOutput(raw: string): WeakWorkerOutput {
 function resolveTaskContext(plan: AgentHarnessPlan, taskId: string): HandoffTaskContext {
   const task = plan.tasks.find((item) => item.task_id === taskId);
   if (!task) throw new Error(`unknown task_id: ${taskId}`);
-  return { task, planGates: plan.gates ?? [] };
+  return {
+    task,
+    planGates: plan.gates ?? [],
+    blocksTasks: plan.tasks.filter((item) => dependenciesForTask(item).includes(taskId)).map((item) => item.task_id).sort(),
+  };
 }
 
 function allowedCommands(context: HandoffTaskContext): string[] {

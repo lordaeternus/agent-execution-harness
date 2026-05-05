@@ -1,3 +1,8 @@
+## 0.10.0
+
+- Added optional task `depends_on` support for dependency-aware plan execution.
+- Added graph validation, deterministic execution waves, dependency-aware `next --exact`, and compact dependency context in `handoff`.
+
 ## 0.9.1
 
 - Clarified that L2/L3, multi-step, delegated or risky work should run through the harness automatically, without requiring the user to remember to request it.

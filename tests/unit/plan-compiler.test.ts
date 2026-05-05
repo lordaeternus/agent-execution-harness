@@ -27,11 +27,13 @@ describe("plan compiler", () => {
     expect(result.status).toBe("success");
     expect(result.tasks[0]).toMatchObject({
       task_id: "compiler-task",
+      depends_on: [],
       surface: "backend",
       max_files_allowed: 3,
       allowed_commands: ["pnpm test:run tests/unit/plan-compiler.test.ts"],
       next_allowed_action: "task_start",
     });
+    expect(result.waves).toEqual([["compiler-task"]]);
   });
 
   it("rejects vague criteria and missing files", () => {
@@ -92,5 +94,50 @@ describe("plan compiler", () => {
     );
     expect(result.status).toBe("success");
     expect(result.tasks[0].allowed_commands).toEqual(["pnpm test:run tests/unit/plan-compiler.test.ts"]);
+  });
+
+  it("rejects invalid dependency graphs", () => {
+    const result = compilePlan(
+      basePlan({
+        tasks: [
+          {
+            task_id: "dependent",
+            depends_on: ["missing"],
+            files: ["src/core/plan-compiler.ts"],
+            allowed_commands: ["pnpm test"],
+            acceptance_criteria: "Run `pnpm test` and pass.",
+          },
+        ],
+      }),
+    );
+    expect(result.status).toBe("error");
+    expect(result.diagnostics.map((item) => item.code)).toContain("missing_dependency");
+  });
+
+  it("warns when same-wave tasks touch shared files or sensitive surfaces", () => {
+    const result = compilePlan(
+      basePlan({
+        tasks: [
+          {
+            task_id: "auth-a",
+            surface: "auth",
+            files: ["src/auth/session.ts"],
+            allowed_commands: ["pnpm test"],
+            required_evidence: ["focused_tests"],
+            acceptance_criteria: "Run `pnpm test` and pass auth A.",
+          },
+          {
+            task_id: "auth-b",
+            surface: "auth",
+            files: ["src/auth/session.ts"],
+            allowed_commands: ["pnpm test"],
+            required_evidence: ["focused_tests"],
+            acceptance_criteria: "Run `pnpm test` and pass auth B.",
+          },
+        ],
+      }),
+    );
+    expect(result.status).toBe("success");
+    expect(result.diagnostics.map((item) => item.code)).toEqual(expect.arrayContaining(["parallel_shared_files", "parallel_sensitive_surface"]));
   });
 });

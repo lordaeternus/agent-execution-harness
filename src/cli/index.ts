@@ -14,12 +14,13 @@ import { classifyRepair } from "../core/repair-playbooks.js";
 import { learnCommand } from "./learn.js";
 import { handoffCommand } from "./handoff.js";
 import { fixturesCommand } from "./fixtures.js";
+import { planCommand } from "./plan.js";
 
 const [command, ...args] = process.argv.slice(2);
 
 try {
   if (!command || command === "--help" || command === "help") {
-    process.stdout.write("agent-harness commands: run, session, next, verify, handoff, fixtures, map, learn, start, files, task, gate, claim, finish, plan-lint, execute, report, doctor, benchmark, init\n");
+    process.stdout.write("agent-harness commands: run, session, next, verify, handoff, fixtures, map, learn, plan, start, files, task, gate, claim, finish, plan-lint, execute, report, doctor, benchmark, init\n");
   } else if (command === "run") runCommand(args);
   else if (command === "session") sessionCommand(args);
   else if (command === "next") nextCommand(args);
@@ -28,6 +29,7 @@ try {
   else if (command === "fixtures") fixturesCommand(args);
   else if (command === "map") mapCommand(args);
   else if (command === "learn") learnCommand(args);
+  else if (command === "plan") planCommand(args);
   else if (["start", "files", "task", "gate", "claim", "finish"].includes(command)) macroCommand([command, ...args]);
   else if (command === "plan-lint") planLintCommand(args);
   else if (command === "execute") executeCommand(args);

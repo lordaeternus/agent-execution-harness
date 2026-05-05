@@ -12,10 +12,26 @@ const plan: AgentHarnessPlan = {
   tasks: [
     {
       task_id: "handoff-task",
+      depends_on: ["setup-task"],
       files: ["created.txt"],
       allowed_commands: ["node --version"],
       required_evidence: ["focused_tests"],
       acceptance_criteria: "Run `node --version` and return focused evidence.",
+    },
+    {
+      task_id: "followup-task",
+      depends_on: ["handoff-task"],
+      files: ["followup.txt"],
+      allowed_commands: ["node --version"],
+      required_evidence: ["focused_tests"],
+      acceptance_criteria: "Run `node --version` and return followup evidence.",
+    },
+    {
+      task_id: "setup-task",
+      files: ["setup.txt"],
+      allowed_commands: ["node --version"],
+      required_evidence: ["focused_tests"],
+      acceptance_criteria: "Run `node --version` and return setup evidence.",
     },
   ],
 };
@@ -27,6 +43,8 @@ describe("weak worker handoff", () => {
     expect(packet).toMatchObject({
       role: "implementation_worker_only",
       task_id: "handoff-task",
+      depends_on: ["setup-task"],
+      blocks_tasks: ["followup-task"],
       allowed_files: ["created.txt"],
       allowed_commands: ["node --version"],
     });

@@ -6,6 +6,8 @@ export interface HandoffPacket {
   role: "implementation_worker_only";
   target: "weak-worker";
   task_id: string;
+  depends_on: string[];
+  blocks_tasks: string[];
   allowed_files: string[];
   allowed_commands: string[];
   forbidden_actions: string[];
@@ -41,4 +43,5 @@ export interface HandoffValidationResult {
 export interface HandoffTaskContext {
   task: AgentHarnessTask;
   planGates: string[];
+  blocksTasks: string[];
 }

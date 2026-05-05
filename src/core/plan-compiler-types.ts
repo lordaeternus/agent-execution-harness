@@ -11,6 +11,7 @@ export interface PlanCompilerDiagnostic {
 
 export interface CompiledTaskContract {
   task_id: string;
+  depends_on: string[];
   surface: TaskSurface;
   files: string[];
   required_evidence: string[];
@@ -24,6 +25,7 @@ export interface CompiledTaskContract {
 export interface CompiledPlan {
   plan_id: string;
   risk_level: RiskLevel;
+  waves: string[][];
   tasks: CompiledTaskContract[];
   diagnostics: PlanCompilerDiagnostic[];
   status: "success" | "error";

@@ -12,6 +12,7 @@ Breaking schema changes require golden artifact compatibility tests.
 
 `agent_harness_plan_v1` supports optional task fields:
 
+- `depends_on`: task ids that must complete with passing evidence before this task can start
 - `surface`: `ui_layout`, `ui`, `backend`, `api`, `auth`, `db`, `ai`, `docs`, or `generic`
 - `files`: files expected for that task
 - `required_evidence`: evidence types required before a run can be `completed`

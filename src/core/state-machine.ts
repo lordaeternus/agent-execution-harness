@@ -9,6 +9,7 @@ import { assertNonEmptyString, assertSafeId, assertSafeRelativePath } from "./ut
 import type { AgentHarnessConfig } from "./config-types.js";
 import { evaluateEvidencePolicy } from "./evidence-policy.js";
 import { effectiveExecutionProfile } from "./execution-profile.js";
+import { taskBlockedBy } from "./task-graph.js";
 
 const ALLOWED: Record<string, string[]> = {
   init: ["read_context", "halt_for_risk"],
@@ -85,6 +86,8 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
     if (action.files.length > profile.maxFilesPerTask) throw new Error(`too many files for ${state.mode} mode`);
     const task = next.tasks.find((item) => item.task_id === action.task_id);
     if (!task) throw new Error(`unknown task_id: ${action.task_id}`);
+    const blockedBy = taskBlockedBy(task, next.tasks.filter((item) => item.status === "completed").map((item) => item.task_id));
+    if (blockedBy.length) throw new Error(`task ${task.task_id} blocked by incomplete dependencies: ${blockedBy.join(", ")}`);
     for (const file of action.files) {
       assertSafeRelativePath(file, "file");
       if (!next.declared_files.includes(file)) throw new Error(`file not declared: ${file}`);

@@ -59,6 +59,14 @@
             "type": "string",
             "minLength": 1
           },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "minLength": 1
+            }
+          },
           "surface": {
             "enum": [
               "ui_layout",

@@ -87,6 +87,31 @@ describe("cli integration", () => {
     expect(report).toContain("status: completed");
   });
 
+  it("reports dependency waves and guides only unblocked tasks", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-dependency-"));
+    fs.copyFileSync("tests/fixtures/plans/dependency-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "foundation.txt"), "ok");
+    fs.writeFileSync(path.join(tmp, "dependent.txt"), "ok");
+
+    const waves = JSON.parse(execFileSync("node", [bin, "plan", "waves", "--plan", "plan.json"], { cwd: tmp, encoding: "utf8" }));
+    expect(waves.status).toBe("success");
+    expect(waves.data.waves).toEqual([{ wave: 1, task_ids: ["foundation"] }, { wave: 2, task_ids: ["dependent"] }]);
+
+    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "dependency-smoke", "--mode", "weak"], { cwd: tmp });
+    execFileSync("node", [bin, "files", "declare", "--files", "foundation.txt,dependent.txt"], { cwd: tmp });
+    let next = JSON.parse(execFileSync("node", [bin, "next", "--exact"], { cwd: tmp, encoding: "utf8" }));
+    expect(next.data.task_id).toBe("foundation");
+    expect(next.data.exact.command).toContain("task start --task-id foundation");
+    expect(next.data.blocked_tasks).toEqual([{ task_id: "dependent", blocked_by: ["foundation"] }]);
+    expect(() => execFileSync("node", [bin, "task", "start", "--task-id", "dependent", "--files", "dependent.txt"], { cwd: tmp, stdio: "pipe" })).toThrow();
+
+    execFileSync("node", [bin, "task", "start", "--task-id", "foundation", "--files", "foundation.txt"], { cwd: tmp });
+    execFileSync("node", [bin, "verify", "--task-id", "foundation", "--type", "focused_tests", "--cmd", "node --version"], { cwd: tmp });
+    next = JSON.parse(execFileSync("node", [bin, "next", "--exact"], { cwd: tmp, encoding: "utf8" }));
+    expect(next.data.task_id).toBe("dependent");
+    expect(next.data.exact.command).toContain("task start --task-id dependent");
+  });
+
   it("guides a strict session with structured exact verify commands", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-strict-exact-"));
     fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));

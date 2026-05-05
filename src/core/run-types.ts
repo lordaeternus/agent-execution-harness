@@ -22,6 +22,7 @@ export interface Evidence {
 
 export interface RunTask {
   task_id: string;
+  depends_on?: string[];
   status: TaskStatus;
   acceptance_criteria: string;
   evidence_ids: string[];
