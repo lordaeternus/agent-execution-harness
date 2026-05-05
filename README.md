@@ -142,6 +142,10 @@ After installation, your project gets:
 - safety checks for risky commands
 - compact output modes to reduce token usage
 - governed learning loop for evidence-backed lessons
+- control catalog showing which risks each harness control covers
+- harnessability scoring to show how ready a project is for AI-agent execution
+- repeated-failure steering to suggest small controls after recurring mistakes
+- optional approved fixtures for critical behavior that must not be guessed
 
 The intended day-to-day experience is simple:
 
