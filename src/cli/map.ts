@@ -1,5 +1,5 @@
 import { loadConfig } from "../core/config.js";
-import { initMemory, queryMemory, recordMemory, statusMemory, updateMemory } from "../core/codebase-memory.js";
+import { compactSurfaceMemoryForExecutor, initMemory, queryMemory, recordMemory, statusMemory, updateMemory } from "../core/codebase-memory.js";
 import { parseFlags, stringFlag } from "./args.js";
 import { writeCompactJson } from "./output.js";
 
@@ -37,6 +37,12 @@ export function mapCommand(args: string[], cwd = process.cwd()): void {
   if (verb === "query") {
     const surface = stringFlag(flags, "surface", true)!;
     const result = queryMemory(cwd, config, surface);
+    const compact = flags.compact === true;
+    const maxFiles = stringFlag(flags, "max-files") ? Number(stringFlag(flags, "max-files")) : 8;
+    if (compact) {
+      process.stdout.write(`${JSON.stringify(compactSurfaceMemoryForExecutor(result, maxFiles))}\n`);
+      return;
+    }
     writeCompactJson({
       status: result.status === "fresh" ? "success" : "warning",
       summary: `${surface} memory ${result.status}`,

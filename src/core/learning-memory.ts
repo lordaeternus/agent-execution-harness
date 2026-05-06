@@ -107,6 +107,15 @@ export function queryLessons(cwd: string, config: AgentHarnessConfig, surface: s
   return { surface, lessons, memory_dir: memory.memory_dir };
 }
 
+export function compactLessonForExecutor(lesson: AgentHarnessLesson): Pick<AgentHarnessLesson, "kind" | "summary" | "files" | "confidence"> {
+  return {
+    kind: lesson.kind,
+    summary: lesson.summary,
+    files: lesson.files,
+    confidence: lesson.confidence,
+  };
+}
+
 export function pruneLessons(cwd: string, config: AgentHarnessConfig): { retired: string[]; removed: string[] } {
   const memory = learningConfig(config);
   const lessons = readAllLessons(cwd, memory).map((lesson) => refreshLessonStatus(cwd, memory, lesson));

@@ -105,6 +105,18 @@ describe("cli integration", () => {
     expect(next.data.blocked_tasks).toEqual([{ task_id: "dependent", blocked_by: ["foundation"] }]);
     expect(() => execFileSync("node", [bin, "task", "start", "--task-id", "dependent", "--files", "dependent.txt"], { cwd: tmp, stdio: "pipe" })).toThrow();
 
+    const micro = JSON.parse(execFileSync("node", [bin, "next", "--exact", "--micro"], { cwd: tmp, encoding: "utf8" }));
+    expect(Object.keys(micro).sort()).toEqual(["blocked_tasks", "command", "state", "status", "stop_if", "task_id"]);
+    expect(micro).toMatchObject({
+      status: "success",
+      state: "task_start",
+      task_id: "foundation",
+      stop_if: "exit_code_not_zero",
+      blocked_tasks: [{ task_id: "dependent", blocked_by: ["foundation"] }],
+    });
+    expect(micro.command).toContain("task start --task-id foundation");
+    expect(JSON.stringify(micro).length).toBeLessThan(JSON.stringify(next).length);
+
     execFileSync("node", [bin, "task", "start", "--task-id", "foundation", "--files", "foundation.txt"], { cwd: tmp });
     execFileSync("node", [bin, "verify", "--task-id", "foundation", "--type", "focused_tests", "--cmd", "node --version"], { cwd: tmp });
     next = JSON.parse(execFileSync("node", [bin, "next", "--exact"], { cwd: tmp, encoding: "utf8" }));
@@ -193,6 +205,9 @@ describe("cli integration", () => {
     expect(init).toContain("memory init");
     const query = execFileSync("node", [bin, "map", "query", "--surface", "auth"], { cwd: tmp, encoding: "utf8" });
     expect(query).toContain("auth memory");
+    const compactQuery = JSON.parse(execFileSync("node", [bin, "map", "query", "--surface", "auth", "--compact", "--max-files", "1"], { cwd: tmp, encoding: "utf8" }));
+    expect(compactQuery.files).toHaveLength(1);
+    expect(compactQuery).not.toHaveProperty("source_files");
     fs.writeFileSync(path.join(tmp, "src/auth/session.ts"), "export const session = 'changed';\n");
     const update = execFileSync("node", [bin, "map", "update", "--files", "src/auth/session.ts"], { cwd: tmp, encoding: "utf8" });
     expect(update).toContain("auth");
@@ -249,6 +264,10 @@ describe("cli integration", () => {
     const query = execFileSync("node", [bin, "learn", "query", "--surface", "auth", "--top-k", "3"], { cwd: tmp, encoding: "utf8" });
     expect(query).toContain("learning query");
     expect(query).toContain("auth-cli-lesson");
+    const compactQuery = JSON.parse(execFileSync("node", [bin, "learn", "query", "--surface", "auth", "--top-k", "3", "--compact"], { cwd: tmp, encoding: "utf8" }));
+    expect(compactQuery.lessons[0]).toMatchObject({ kind: "failure_pattern", files: ["src/auth/session.ts"], confidence: "medium" });
+    expect(compactQuery.lessons[0]).not.toHaveProperty("evidence_refs");
+    expect(compactQuery.lessons[0]).not.toHaveProperty("file_hashes");
     expect(execFileSync("node", [bin, "learn", "prune"], { cwd: tmp, encoding: "utf8" })).toContain("learning prune");
     expect(fs.existsSync(path.join(tmp, ".agent-harness/learning/lessons/auth-cli-lesson.json"))).toBe(true);
   });
@@ -333,6 +352,11 @@ describe("cli integration", () => {
     expect(handoff.status).toBe("success");
     expect(handoff.data.packet.allowed_files).toEqual(["created.txt"]);
     expect(handoff.data.prompt).toContain("Return JSON only");
+    const compactHandoff = JSON.parse(execFileSync("node", [bin, "handoff", "--compact", "--plan", "plan.json", "--task-id", "weak-exact-task"], { cwd: tmp, encoding: "utf8" }));
+    expect(compactHandoff.task_id).toBe("weak-exact-task");
+    expect(compactHandoff.prompt).toContain("Return JSON only");
+    expect(compactHandoff).not.toHaveProperty("packet");
+    expect(JSON.stringify(compactHandoff).length).toBeLessThan(JSON.stringify(handoff).length);
 
     fs.writeFileSync(path.join(tmp, "worker-output.json"), `${JSON.stringify({
       status: "done",

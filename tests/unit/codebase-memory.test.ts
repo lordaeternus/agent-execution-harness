@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { defaultConfig } from "../../src/core/config.js";
-import { initMemory, queryMemory, recordMemory, updateMemory } from "../../src/core/codebase-memory.js";
+import { compactSurfaceMemoryForExecutor, initMemory, queryMemory, recordMemory, updateMemory } from "../../src/core/codebase-memory.js";
 
 function tempProject() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-memory-"));
@@ -41,6 +41,28 @@ describe("codebase memory", () => {
       confidence: "high",
     });
     expect(record.status).toBe("fresh");
+  });
+
+  it("projects compact memory for executors without mutating stored memory", () => {
+    const cwd = tempProject();
+    const config = defaultConfig();
+    initMemory(cwd, config);
+    const record = recordMemory(cwd, config, {
+      surface: "auth",
+      files: ["src/auth/session.ts", "src/auth/guard.ts", "src/auth/policy.ts"],
+      summary: "Session auth surface owns login state contracts and must be checked against authorization call sites before edits.",
+      confidence: "high",
+    });
+    const compact = compactSurfaceMemoryForExecutor(record, 2);
+    expect(compact).toEqual({
+      surface: "auth",
+      status: "fresh",
+      summary: record.summary,
+      confidence: "high",
+      files: ["src/auth/guard.ts", "src/auth/policy.ts"],
+    });
+    expect(compact.files).toHaveLength(2);
+    expect(queryMemory(cwd, config, "auth").files).toHaveLength(3);
   });
 
   it("rejects generic summaries and incomplete subagent records", () => {

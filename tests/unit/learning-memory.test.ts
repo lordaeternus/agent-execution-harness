@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { defaultConfig } from "../../src/core/config.js";
-import { captureLesson, promoteLesson, pruneLessons, queryLessons, rejectLesson } from "../../src/core/learning-memory.js";
+import { captureLesson, compactLessonForExecutor, promoteLesson, pruneLessons, queryLessons, rejectLesson } from "../../src/core/learning-memory.js";
 
 function tempProject() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-learning-"));
@@ -33,6 +33,17 @@ describe("learning memory", () => {
     expect(query.lessons).toHaveLength(1);
     expect(query.lessons[0].lesson_id).toBe("auth-session-contract");
     expect(query.lessons[0].status).toBe("promoted");
+    const compact = compactLessonForExecutor(query.lessons[0]);
+    expect(compact).toEqual({
+      kind: "failure_pattern",
+      summary: "Auth session edits must verify authorization guards because session state can pass while resource access fails.",
+      files: ["src/auth/session.ts"],
+      confidence: "high",
+    });
+    expect(compact).not.toHaveProperty("file_hashes");
+    expect(compact).not.toHaveProperty("schema_version");
+    expect(compact).not.toHaveProperty("evidence_refs");
+    expect(compact).not.toHaveProperty("created_at");
   });
 
   it("marks promoted lessons stale when tracked files change", () => {

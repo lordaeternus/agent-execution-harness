@@ -2,8 +2,9 @@
 
 Execution only.
 
-- L2/L3 or multi-step: run harness automatically; user should not need to ask. Use `session start` -> `next --exact`.
+- L2/L3 or multi-step: run harness automatically; user should not need to ask. Use `session start` -> `next --exact --micro`.
 - Weak: `--mode weak`; 1 task, <=2 files, typed evidence, compact next.
+- Weak/external worker: prefer `handoff --compact`, `map query --compact`, `learn query --compact`.
 - Strict: `--mode strict`; task `allowed_commands` required; prefer `verify --exec <bin> --args-json "[...]"`; shell `--cmd` blocked by default.
 - `claim auto` batches internally; run once.
 - Scope guard: `finish` blocks product/source diff outside declared plan files.

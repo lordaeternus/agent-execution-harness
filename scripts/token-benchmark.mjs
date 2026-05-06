@@ -15,6 +15,8 @@ const plan = {
 };
 fs.writeFileSync(path.join(tmp, "plan.json"), JSON.stringify(plan));
 fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+fs.mkdirSync(path.join(tmp, "src/auth"), { recursive: true });
+fs.writeFileSync(path.join(tmp, "src/auth/session.ts"), "export const session = true;\n");
 fs.mkdirSync(path.join(tmp, ".agent-harness/runs"), { recursive: true });
 fs.writeFileSync(path.join(tmp, ".agent-harness/runs/bench.full.json"), "{}\n");
 const cli = path.join(root, "dist", "cli", "index.js");
@@ -90,10 +92,29 @@ run([
 ]);
 run(["learn", "promote", "--lesson-id", "bench-lesson"]);
 const learnQuery = run(["learn", "query", "--surface", "generic", "--top-k", "3"]);
+const learnQueryCompact = run(["learn", "query", "--surface", "generic", "--top-k", "3", "--compact"]);
+run([
+  "map",
+  "record",
+  "--surface",
+  "auth",
+  "--files",
+  "src/auth/session.ts,created.txt",
+  "--summary",
+  "Auth benchmark memory preserves compact executor context while source files remain the final authority.",
+  "--confidence",
+  "high",
+]);
+const mapQuery = run(["map", "query", "--surface", "auth"]);
+const mapQueryCompact = run(["map", "query", "--surface", "auth", "--compact", "--max-files", "1"]);
 run(["session", "start", "--plan", "plan.json", "--run-id", "std-next", "--mode", "standard"]);
 const standardNext = run(["next", "--plan", "plan.json", "--run-id", "std-next", "--mode", "standard"]);
 run(["session", "start", "--plan", "plan.json", "--run-id", "weak-next", "--mode", "weak"]);
 const weakNext = run(["next", "--plan", "plan.json", "--run-id", "weak-next", "--mode", "weak"]);
+const weakNextExact = run(["next", "--plan", "plan.json", "--run-id", "weak-next", "--mode", "weak", "--exact"]);
+const nextMicro = run(["next", "--plan", "plan.json", "--run-id", "weak-next", "--mode", "weak", "--exact", "--micro"]);
+const handoff = run(["handoff", "--plan", "plan.json", "--task-id", "bench-task"]);
+const handoffCompact = run(["handoff", "--plan", "plan.json", "--task-id", "bench-task", "--compact"]);
 const compactRun = total([
   run(["session", "start", "--plan", "plan.json", "--run-id", "new", "--mode", "constrained"]),
   run(["files", "declare", "--files", "created.txt"]),
@@ -105,12 +126,20 @@ const compactRun = total([
 const reduction = Math.round(((oldRun - compactRun) / oldRun) * 100);
 
 const weakReduction = Math.round(((standardNext.totalChars - weakNext.totalChars) / standardNext.totalChars) * 100);
-console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} learn_query_chars=${learnQuery.totalChars} standard_next_chars=${standardNext.totalChars} weak_next_chars=${weakNext.totalChars} weak_reduction_pct=${weakReduction}`);
+const learnCompactReduction = Math.round(((learnQuery.totalChars - learnQueryCompact.totalChars) / learnQuery.totalChars) * 100);
+const mapCompactReduction = Math.round(((mapQuery.totalChars - mapQueryCompact.totalChars) / mapQuery.totalChars) * 100);
+const nextMicroReduction = Math.round(((weakNextExact.totalChars - nextMicro.totalChars) / weakNextExact.totalChars) * 100);
+const handoffCompactReduction = Math.round(((handoff.totalChars - handoffCompact.totalChars) / handoff.totalChars) * 100);
+console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} learn_query_chars=${learnQuery.totalChars} learn_query_compact_chars=${learnQueryCompact.totalChars} learn_query_compact_reduction_pct=${learnCompactReduction} map_query_chars=${mapQuery.totalChars} map_query_compact_chars=${mapQueryCompact.totalChars} map_query_compact_reduction_pct=${mapCompactReduction} standard_next_chars=${standardNext.totalChars} weak_next_chars=${weakNext.totalChars} weak_reduction_pct=${weakReduction} weak_next_exact_chars=${weakNextExact.totalChars} next_micro_chars=${nextMicro.totalChars} next_micro_reduction_pct=${nextMicroReduction} handoff_chars=${handoff.totalChars} handoff_compact_chars=${handoffCompact.totalChars} handoff_compact_reduction_pct=${handoffCompactReduction}`);
 if (weakReduction < 10) {
   console.error("weak next benchmark requires at least 10% output reduction");
   process.exitCode = 1;
 }
 if (reduction < 55) {
   console.error("token benchmark requires at least 55% output reduction");
+  process.exitCode = 1;
+}
+if (learnCompactReduction < 25 || mapCompactReduction < 15 || nextMicroReduction < 10 || handoffCompactReduction < 20) {
+  console.error("compact output benchmarks require positive reductions across learn/map/next/handoff");
   process.exitCode = 1;
 }

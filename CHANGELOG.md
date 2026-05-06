@@ -1,3 +1,8 @@
+## 0.10.1
+
+- Added opt-in micro/compact outputs for token-sensitive agent loops: `next --exact --micro`, `handoff --compact`, `learn query --compact`, and `map query --compact`.
+- Expanded token benchmarks and budgets to guard compact output size without removing full audit outputs.
+
 ## 0.10.0
 
 - Added optional task `depends_on` support for dependency-aware plan execution.

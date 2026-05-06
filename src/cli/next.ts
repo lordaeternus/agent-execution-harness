@@ -19,6 +19,18 @@ export function nextCommand(args: string[], cwd = process.cwd()): void {
   const missing = nextTask ? state.evidence_policy?.tasks.find((task) => task.task_id === nextTask.task_id)?.missing ?? nextTask.required_evidence ?? [] : [];
   const profile = effectiveExecutionProfile(context.mode, context.config);
   const exact = flags.exact === true ? { exact: buildExactNextCommand(state) } : {};
+  if (flags.micro === true) {
+    const exactCommand = buildExactNextCommand(state);
+    process.stdout.write(`${JSON.stringify({
+      status: state.status === "halt" ? "halt" : state.status === "partial_validated" ? "warning" : "success",
+      state: state.phase,
+      task_id: nextTask?.task_id ?? null,
+      command: exactCommand.command,
+      stop_if: exactCommand.stop_if,
+      ...(blockedTasks.length ? { blocked_tasks: blockedTasks } : {}),
+    })}\n`);
+    return;
+  }
   const weakData = nextTask
     ? {
         task_id: nextTask.task_id,

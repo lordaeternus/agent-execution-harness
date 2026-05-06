@@ -184,7 +184,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.10.0.md)
+- [Release notes](docs/release-notes/v0.10.1.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -337,6 +337,17 @@ agent-harness finish --summary "Validated."
 agent-harness report --run-id fix-id --format compact
 ```
 
+For weak, local, low-context or cost-sensitive executors, use the micro/compact variants:
+
+```bash
+agent-harness next --exact --micro
+agent-harness handoff --compact --plan plan.json --task-id task-id
+agent-harness map query --surface auth --compact
+agent-harness learn query --surface auth --top-k 3 --compact
+```
+
+These commands remove duplicate transport metadata from the chat output while preserving the full audit trail in artifacts and full commands. Use the normal output when a human needs to debug; use compact output when an agent only needs the next action.
+
 For strict execution, prefer structured commands instead of shell strings:
 
 ```bash
@@ -348,7 +359,7 @@ agent-harness verify --task-id task-id --type focused_tests --exec pnpm --args-j
 
 In `weak` mode, `claim auto` automatically batches claims when a plan has many tasks. The agent still runs one simple command, while the harness keeps each internal action small enough for low-context executors.
 
-For low-context agents, use `next --exact`. It returns the exact next harness command plus the stop condition, reducing ordering mistakes such as claiming early, skipping file declaration, or forgetting the active task.
+For low-context agents, use `next --exact --micro`. It returns the exact next harness command plus the stop condition, reducing ordering mistakes such as claiming early, skipping file declaration, or forgetting the active task.
 
 For multi-step plans, tasks can declare `depends_on`. Run `agent-harness plan waves --plan plan.json` to preview safe execution order. `next --exact` then guides the agent only to tasks whose dependencies already passed evidence.
 
@@ -359,10 +370,10 @@ The scope guard also checks the real git diff before `finish`. If the agent chan
 Use handoff when a strong model creates the plan and a weaker model, local model, junior agent, or external chat does the implementation work.
 
 ```bash
-agent-harness handoff --plan plan.json --task-id task-id
+agent-harness handoff --compact --plan plan.json --task-id task-id
 ```
 
-Paste `data.prompt` into the weak worker. It tells the worker exactly which files and commands are allowed, when to stop, and what JSON to return. After the worker responds, save its JSON and validate it:
+Paste `prompt` into the weak worker. It tells the worker exactly which files and commands are allowed, when to stop, and what JSON to return. After the worker responds, save its JSON and validate it:
 
 ```bash
 agent-harness handoff validate --plan plan.json --task-id task-id --input worker-output.json
@@ -374,7 +385,7 @@ Codebase memory flow for agents:
 
 ```bash
 agent-harness map init
-agent-harness map query --surface auth
+agent-harness map query --surface auth --compact
 agent-harness map update --files src/auth/session.ts
 agent-harness map record --surface auth --files src/auth/session.ts --summary "Auth session owns login state contracts and must be checked before authorization edits."
 ```
@@ -384,7 +395,7 @@ Use this selectively. Simple one-file work does not need a full map. Risky or un
 Learning loop for repeated bugs or known-risk areas:
 
 ```bash
-agent-harness learn query --surface auth --top-k 3
+agent-harness learn query --surface auth --top-k 3 --compact
 agent-harness learn capture --surface auth --kind failure_pattern --summary "Auth fixes must verify authorization guards after session edits." --files src/auth/session.ts --evidence-ref .agent-harness/runs/fix.full.json
 agent-harness learn promote --lesson-id auth-failure-pattern-20260502
 ```
@@ -1432,7 +1443,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.10.0
+0.10.1
 ```
 
 Package:

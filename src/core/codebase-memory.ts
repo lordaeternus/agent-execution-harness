@@ -139,6 +139,16 @@ export function queryMemory(cwd: string, config: AgentHarnessConfig, surface: st
   return limitSurface(record, memory);
 }
 
+export function compactSurfaceMemoryForExecutor(record: SurfaceMemory, maxFiles = 8): Pick<SurfaceMemory, "surface" | "status" | "summary" | "confidence"> & { files: string[] } {
+  return {
+    surface: record.surface,
+    status: record.status,
+    summary: record.summary,
+    confidence: record.confidence,
+    files: record.files.slice(0, Math.max(0, maxFiles)),
+  };
+}
+
 export function updateMemory(cwd: string, config: AgentHarnessConfig, files: string[]): { touched_surfaces: string[]; missing_files: string[] } {
   const memory = memoryConfig(config);
   const index = readIndex(cwd, memory);

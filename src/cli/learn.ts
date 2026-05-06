@@ -1,6 +1,7 @@
 import { loadConfig } from "../core/config.js";
 import {
   captureLesson,
+  compactLessonForExecutor,
   promoteLesson,
   pruneLessons,
   queryLessons,
@@ -97,6 +98,11 @@ export function learnCommand(args: string[], cwd = process.cwd()): void {
     const surface = stringFlag(flags, "surface", true)!;
     const topK = stringFlag(flags, "top-k") ? Number(stringFlag(flags, "top-k")) : undefined;
     const result = queryLessons(cwd, config, surface, topK);
+    const compact = flags.compact === true;
+    if (compact) {
+      process.stdout.write(`${JSON.stringify({ surface: result.surface, lessons: result.lessons.map(compactLessonForExecutor), memory_dir: result.memory_dir })}\n`);
+      return;
+    }
     writeCompactJson({
       status: "success",
       summary: `learning query surface=${surface} lessons=${result.lessons.length}`,

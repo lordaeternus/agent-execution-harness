@@ -19,6 +19,11 @@ function createCommand(args: string[], cwd: string): void {
   const taskId = stringFlag(flags, "task-id", true)!;
   const packet = buildHandoffPacket(plan, taskId);
   const prompt = buildHandoffPrompt(packet);
+  const compact = flags.compact === true;
+  if (compact) {
+    process.stdout.write(`${JSON.stringify({ task_id: taskId, prompt, prompt_chars: prompt.length })}\n`);
+    return;
+  }
   writeCompactJson({
     status: "success",
     summary: `handoff generated task=${taskId} chars=${prompt.length}`,

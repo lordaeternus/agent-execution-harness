@@ -54,6 +54,16 @@ describe("weak worker handoff", () => {
     expect(prompt.length).toBeLessThan(2500);
   });
 
+  it("can project a prompt-only packet for compact CLI handoff", () => {
+    const packet = buildHandoffPacket(plan, "handoff-task");
+    const prompt = buildHandoffPrompt(packet);
+    const compact = { task_id: packet.task_id, prompt, prompt_chars: prompt.length };
+    expect(compact.task_id).toBe("handoff-task");
+    expect(compact.prompt).toContain("Return JSON only");
+    expect(compact).not.toHaveProperty("packet");
+    expect(JSON.stringify(compact).length).toBeLessThan(JSON.stringify({ packet, prompt, prompt_chars: prompt.length }).length);
+  });
+
   it("accepts valid worker output", () => {
     expect(validateWeakWorkerOutput(plan, "handoff-task", {
       status: "done",

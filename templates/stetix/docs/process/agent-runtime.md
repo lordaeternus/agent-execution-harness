@@ -3,10 +3,11 @@
 Use this file for routine harness execution in Stetix. Do not load long docs unless needed.
 
 - For approved L2/L3, multi-step or delegated work, run `pnpm agent:harness` or token-light commands automatically; user should not need to ask.
-- If the plan has `depends_on`, run `pnpm agent:harness plan waves --plan <plan>` and follow only unblocked tasks from `next --exact`.
-- Start with `pnpm agent:harness session start`, then use `pnpm agent:harness next`.
-- For L2 unclear or L3 high-risk work, run `pnpm agent:harness map query --surface <surface>` before editing.
-- For repeated failures or known-risk surfaces, run `pnpm agent:harness learn query --surface <surface> --top-k 3`.
+- If the plan has `depends_on`, run `pnpm agent:harness plan waves --plan <plan>` and follow only unblocked tasks from `next --exact --micro`.
+- Start with `pnpm agent:harness session start`, then use `pnpm agent:harness next --exact --micro` for weak agents.
+- For L2 unclear or L3 high-risk work, run `pnpm agent:harness map query --surface <surface> --compact` before editing.
+- For repeated failures or known-risk surfaces, run `pnpm agent:harness learn query --surface <surface> --top-k 3 --compact`.
+- For external weak workers, use `pnpm agent:harness handoff --compact --plan <plan> --task-id <id>`.
 - If the project keeps causing agent mistakes, run `pnpm agent:harness doctor --harnessability --cwd .`.
 - After repeated failed runs, run `pnpm agent:harness doctor --steering --cwd .` and apply only small evidence-backed controls.
 - For critical behavior fixtures, run `pnpm agent:harness fixtures validate --file <fixture.json>`.
