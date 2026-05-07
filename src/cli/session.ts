@@ -9,6 +9,7 @@ import { parseFlags, stringFlag } from "./args.js";
 import { writeCompactJson } from "./output.js";
 import { saveActiveSession } from "./session-store.js";
 import { applyScopeBaselineToState, collectGitTouchedFilesResult } from "../core/scope-guard.js";
+import { checkLearningHealth } from "../core/learning-memory.js";
 
 export function sessionCommand(args: string[], cwd = process.cwd()): void {
   const [verb, ...rest] = args;
@@ -39,12 +40,23 @@ export function sessionCommand(args: string[], cwd = process.cwd()): void {
   }
   const artifactPath = saveRun(cwd, artifactDir, result.state);
   const sessionPath = saveActiveSession(cwd, artifactDir, { plan_path: planPath, run_id: runId, mode });
+  const learningHealth = safeLearningHealth(cwd, config);
+  const learningNeedsAudit = learningHealth?.learning_health === "needs_audit";
   writeCompactJson({
     ...result.observation,
     artifacts: [
       { type: "run_state", path: path.relative(cwd, artifactPath) },
       { type: "active_session", path: path.relative(cwd, sessionPath) },
     ],
-    next_actions: result.state.phase === "preflight" ? ["files declare"] : result.observation.next_actions,
+    next_actions: [...(result.state.phase === "preflight" ? ["files declare"] : result.observation.next_actions), ...(learningNeedsAudit ? ["learn audit --compact"] : [])],
+    ...(learningNeedsAudit ? { data: { learning_health: learningHealth } } : {}),
   });
+}
+
+function safeLearningHealth(cwd: string, config: ReturnType<typeof loadConfig>) {
+  try {
+    return checkLearningHealth(cwd, config);
+  } catch {
+    return undefined;
+  }
 }

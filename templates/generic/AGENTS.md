@@ -7,6 +7,7 @@
 - `claim auto` batches internally; run once.
 - Scope guard blocks `finish` if product/source diff is outside declared files.
 - Risky/unclear: `map query`; durable structure: `map update` + `map record`.
+- If `learning_health=needs_audit`, run `learn audit --compact`; no auto-delete.
 - No success claim without completed artifact, evidence and claims.
 - Failed verify/CLI order returns `repair_hint`; max 3 tries, then HALT.
 - UI/layout needs smoke/visual assertion; long logs by `output_ref` + `sha256`.

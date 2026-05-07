@@ -75,6 +75,12 @@ export function validateConfig(config: unknown): asserts config is AgentHarnessC
     requirePositiveNumber(memory, "ttl_days");
     requirePositiveNumber(memory, "max_summary_chars");
     requirePositiveNumber(memory, "max_lessons_per_surface");
+    requirePositiveNumber(memory, "audit_cooldown_days");
+    requirePositiveNumber(memory, "audit_max_lessons");
+    requirePositiveNumber(memory, "audit_max_stale_ratio");
+    requirePositiveNumber(memory, "audit_max_low_confidence_ratio");
+    requirePositiveNumber(memory, "audit_max_duplicate_candidates");
+    requirePositiveNumber(memory, "audit_compact_max_chars");
   }
   if (value.weak_model !== undefined) {
     const profile = asRecord(value.weak_model, "config.weak_model");

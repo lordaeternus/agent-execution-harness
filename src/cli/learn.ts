@@ -1,6 +1,8 @@
 import { loadConfig } from "../core/config.js";
 import {
+  auditLearningMemory,
   captureLesson,
+  checkLearningHealth,
   compactLessonForExecutor,
   promoteLesson,
   pruneLessons,
@@ -125,6 +127,40 @@ export function learnCommand(args: string[], cwd = process.cwd()): void {
       summary: `learning query surface=${surface} lessons=${result.lessons.length}`,
       artifacts: [{ type: "learning_memory", path: result.memory_dir }],
       next_actions: result.lessons.length ? ["read source files before editing"] : ["read source files", "learn capture after durable discovery"],
+      errors: [],
+      data: result,
+    });
+    return;
+  }
+
+  if (verb === "health") {
+    const result = checkLearningHealth(cwd, config);
+    if (flags.compact === true) {
+      process.stdout.write(`${JSON.stringify({ learning_health: result.learning_health, reasons: result.reasons, counts: result.counts, ...(result.next_action ? { next_action: result.next_action } : {}) })}\n`);
+      return;
+    }
+    writeCompactJson({
+      status: result.learning_health === "needs_audit" ? "warning" : "success",
+      summary: result.summary,
+      artifacts: [{ type: "learning_memory", path: result.memory_dir }],
+      next_actions: result.next_action ? [result.next_action] : ["continue"],
+      errors: [],
+      data: result,
+    });
+    return;
+  }
+
+  if (verb === "audit") {
+    const result = auditLearningMemory(cwd, config);
+    if (flags.compact === true) {
+      process.stdout.write(`${JSON.stringify(result)}\n`);
+      return;
+    }
+    writeCompactJson({
+      status: result.learning_audit === "needs_attention" ? "warning" : "success",
+      summary: result.summary,
+      artifacts: [{ type: "learning_memory", path: result.memory_dir }],
+      next_actions: result.next_actions,
       errors: [],
       data: result,
     });

@@ -11,6 +11,12 @@ describe("repository contracts", () => {
     expect(() => validateConfig(config)).not.toThrow();
   });
 
+  it("rejects invalid learning audit config limits", () => {
+    const config = JSON.parse(fs.readFileSync("templates/generic/agent-harness.config.json", "utf8"));
+    config.learning_memory.audit_compact_max_chars = 0;
+    expect(() => validateConfig(config)).toThrow("audit_compact_max_chars");
+  });
+
   it("keeps L3 sensor gaps as warnings, not structural errors", () => {
     const result = lintPlan({
       schema_version: "agent_harness_plan_v1",

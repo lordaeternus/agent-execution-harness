@@ -3,7 +3,17 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { defaultConfig } from "../../src/core/config.js";
-import { captureLesson, compactLessonForExecutor, promoteLesson, pruneLessons, queryLessons, rejectLesson, validateLessonForPromotion } from "../../src/core/learning-memory.js";
+import {
+  auditLearningMemory,
+  captureLesson,
+  checkLearningHealth,
+  compactLessonForExecutor,
+  promoteLesson,
+  pruneLessons,
+  queryLessons,
+  rejectLesson,
+  validateLessonForPromotion,
+} from "../../src/core/learning-memory.js";
 
 function tempProject() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-learning-"));
@@ -208,5 +218,83 @@ describe("learning memory", () => {
     const rejected = rejectLesson(cwd, config, "auth-reject", "evidence did not support the lesson");
     expect(rejected.status).toBe("rejected");
     expect(rejected.reason).toContain("evidence");
+  });
+
+  it("reports healthy learning memory without mutating lessons", () => {
+    const cwd = tempProject();
+    const config = defaultConfig();
+    captureLesson(cwd, config, {
+      lesson_id: "auth-healthy",
+      surface: "auth",
+      kind: "verification_rule",
+      summary: "Auth healthy lesson keeps compact reusable verification context without requiring memory cleanup.",
+      files: ["src/auth/session.ts"],
+      evidence_refs: [".agent-harness/runs/auth.full.json"],
+      confidence: "high",
+    });
+    const before = fs.readFileSync(path.join(cwd, ".agent-harness/learning/lessons/auth-healthy.json"), "utf8");
+    const health = checkLearningHealth(cwd, config);
+    const audit = auditLearningMemory(cwd, config);
+    const after = fs.readFileSync(path.join(cwd, ".agent-harness/learning/lessons/auth-healthy.json"), "utf8");
+    expect(health.learning_health).toBe("ok");
+    expect(audit.learning_audit).toBe("ok");
+    expect(before).toBe(after);
+  });
+
+  it("flags stale, duplicate and low-confidence lessons for compact audit without mutating files", () => {
+    const cwd = tempProject();
+    const config = {
+      ...defaultConfig(),
+      learning_memory: {
+        ...defaultConfig().learning_memory!,
+        audit_max_lessons: 2,
+        audit_max_stale_ratio: 0.1,
+        audit_max_low_confidence_ratio: 0.1,
+        audit_max_duplicate_candidates: 0,
+        audit_compact_max_chars: 600,
+      },
+    };
+    fs.writeFileSync(path.join(cwd, "src/auth/guard.ts"), "export const guard = true;\n");
+    const shared = {
+      surface: "auth",
+      kind: "failure_pattern" as const,
+      files: ["src/auth/session.ts"],
+      evidence_refs: [".agent-harness/runs/auth.full.json"],
+      failure_signature: "authorization guard failed after session edit",
+    };
+    for (const lesson of [
+      {
+        lesson_id: "auth-duplicate-a",
+        summary: "Auth duplicate lesson A says guard verification must run after session state edits.",
+        confidence: "high" as const,
+      },
+      {
+        lesson_id: "auth-duplicate-b",
+        summary: "Auth duplicate lesson B says guard verification must run after session state edits.",
+        confidence: "high" as const,
+      },
+      {
+        lesson_id: "auth-low-confidence",
+        summary: "Auth low confidence lesson should be audited when weak signals accumulate.",
+        confidence: "low" as const,
+      },
+    ]) {
+      captureLesson(cwd, config, { ...shared, ...lesson });
+    }
+    const stalePath = path.join(cwd, ".agent-harness/learning/lessons/auth-duplicate-a.json");
+    const before = fs.readFileSync(stalePath, "utf8");
+    fs.writeFileSync(path.join(cwd, "src/auth/session.ts"), "export const session = 'changed';\n");
+
+    const health = checkLearningHealth(cwd, config);
+    const audit = auditLearningMemory(cwd, config);
+    const after = fs.readFileSync(stalePath, "utf8");
+
+    expect(health.learning_health).toBe("needs_audit");
+    expect(health.reasons).toEqual(expect.arrayContaining(["too_many_lessons", "too_many_stale_lessons"]));
+    expect(health.next_action).toBe("learn audit --compact");
+    expect(audit.learning_audit).toBe("needs_attention");
+    expect(audit.candidates.stale).toContain("auth-duplicate-a");
+    expect(JSON.stringify(audit).length).toBeLessThanOrEqual(600);
+    expect(before).toBe(after);
   });
 });

@@ -13,6 +13,16 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.12.0
+
+This release adds lightweight learning-memory health checks.
+
+- `learn health --compact`: tells the agent when memory needs cleanup.
+- `learn audit --compact`: lists stale, duplicate or low-confidence lessons in a short read-only report.
+- `session start` can return `learning_health=needs_audit`, so agents can audit memory without the user remembering commands.
+
+In plain language: the harness can notice when its lesson notebook is getting noisy and ask the agent to do a compact review. It does not delete lessons automatically.
+
 ## What's New In v0.11.1
 
 This patch makes installation easier to understand.
@@ -205,7 +215,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.11.1.md)
+- [Release notes](docs/release-notes/v0.12.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -497,18 +507,22 @@ It is useful when the agent finds a recurring bug, fixes a fragile area, or disc
 Flow:
 
 ```txt
-capture -> validate -> promote -> query -> prune
+capture -> validate -> promote -> query -> health/audit -> prune
 ```
 
 - `capture`: save a candidate lesson from evidence.
 - `validate`: prove the lesson has evidence, existing files, safe text, and required failure details.
 - `promote`: allow a specific lesson to appear in future queries.
 - `query`: return only the most relevant lessons for one surface, optionally ranked by touched files and failure signature.
+- `health`: cheap check that tells the agent when memory needs a compact audit.
+- `audit`: short read-only report of stale, duplicate or low-confidence lessons.
 - `prune`: retire expired or noisy lessons.
 
 Lessons are intentionally small. The default query returns only `top_k = 3`, so the agent gets useful context without spending tokens on old history.
 
-This is not model training. It is an evidence-backed memory notebook. Routine output stays compact: no embeddings, no extra reviewing agent, and no long learning report unless a human asks for audit detail.
+This is not model training. It is an evidence-backed memory notebook. Routine output stays compact: no embeddings, no extra reviewing agent, no automatic deletion, and no long learning report unless a human asks for audit detail.
+
+For non-technical users, this should feel automatic: during L2/L3 work, `session start` may tell the agent `learning_health=needs_audit`; the agent then runs `learn audit --compact` and reports the result in plain language.
 
 Truth priority:
 
@@ -1467,7 +1481,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.11.1
+0.12.0
 ```
 
 Package:

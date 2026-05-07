@@ -45,7 +45,13 @@ The memory is a compact cache. The source code remains the source of truth.
     "top_k": 3,
     "ttl_days": 60,
     "max_summary_chars": 500,
-    "max_lessons_per_surface": 20
+    "max_lessons_per_surface": 20,
+    "audit_cooldown_days": 7,
+    "audit_max_lessons": 50,
+    "audit_max_stale_ratio": 0.25,
+    "audit_max_low_confidence_ratio": 0.2,
+    "audit_max_duplicate_candidates": 5,
+    "audit_compact_max_chars": 600
   }
 }
 ```
@@ -54,8 +60,9 @@ The memory is a compact cache. The source code remains the source of truth.
 - `ttl_days`: when lessons become stale
 - `max_summary_chars`: hard token budget per lesson summary
 - `max_lessons_per_surface`: prune cap for noisy surfaces
+- `audit_*`: cheap thresholds for `learn health` and compact `learn audit`
 
-Lessons are operational hints. Code, tests and current runtime evidence win.
+Lessons are operational hints. Code, tests and current runtime evidence win. Audits recommend cleanup; they do not delete lessons automatically.
 
 ## Harnessability And Steering
 

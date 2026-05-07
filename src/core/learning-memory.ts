@@ -5,6 +5,8 @@ import type { AgentHarnessConfig } from "./config-types.js";
 import {
   LEARNING_SCHEMA_VERSION,
   type AgentHarnessLesson,
+  type LearningAuditResult,
+  type LearningHealthResult,
   type LessonCaptureInput,
   type LessonKind,
   type LessonQueryResult,
@@ -46,6 +48,12 @@ export function defaultLearningMemoryConfig(): LearningMemoryConfig {
     ttl_days: 60,
     max_summary_chars: 500,
     max_lessons_per_surface: 20,
+    audit_cooldown_days: 7,
+    audit_max_lessons: 50,
+    audit_max_stale_ratio: 0.25,
+    audit_max_low_confidence_ratio: 0.2,
+    audit_max_duplicate_candidates: 5,
+    audit_compact_max_chars: 600,
   };
 }
 
@@ -137,6 +145,48 @@ export function compactLessonForExecutor(lesson: AgentHarnessLesson): Pick<Agent
     files: lesson.files,
     confidence: lesson.confidence,
   };
+}
+
+export function checkLearningHealth(cwd: string, config: AgentHarnessConfig): LearningHealthResult {
+  const memory = learningConfig(config);
+  const snapshot = buildAuditSnapshot(cwd, memory);
+  const reasons: string[] = [];
+  if (snapshot.counts.total > memory.audit_max_lessons) reasons.push("too_many_lessons");
+  if (snapshot.ratios.stale > memory.audit_max_stale_ratio) reasons.push("too_many_stale_lessons");
+  if (snapshot.ratios.low_confidence > memory.audit_max_low_confidence_ratio) reasons.push("too_many_low_confidence_lessons");
+  if (snapshot.counts.duplicate_candidates > memory.audit_max_duplicate_candidates) reasons.push("too_many_duplicate_candidates");
+  const learning_health = reasons.length ? "needs_audit" : "ok";
+  return {
+    learning_health,
+    summary: learning_health === "ok" ? `learning memory ok lessons=${snapshot.counts.total}` : `learning memory needs audit reasons=${reasons.join(",")}`,
+    memory_dir: memory.memory_dir,
+    counts: snapshot.counts,
+    ratios: snapshot.ratios,
+    reasons,
+    ...(learning_health === "needs_audit" ? { next_action: "learn audit --compact" } : {}),
+  };
+}
+
+export function auditLearningMemory(cwd: string, config: AgentHarnessConfig): LearningAuditResult {
+  const memory = learningConfig(config);
+  const snapshot = buildAuditSnapshot(cwd, memory);
+  const candidates = {
+    stale: snapshot.stale.slice(0, 8).map((lesson) => lesson.lesson_id),
+    low_confidence: snapshot.lowConfidence.slice(0, 8).map((lesson) => lesson.lesson_id),
+    duplicate_groups: snapshot.duplicateGroups.slice(0, 5).map((group) => ({ lesson_ids: group.map((lesson) => lesson.lesson_id).slice(0, 5) })),
+  };
+  const hasCandidates = candidates.stale.length > 0 || candidates.low_confidence.length > 0 || candidates.duplicate_groups.length > 0;
+  const result: LearningAuditResult = {
+    learning_audit: hasCandidates ? "needs_attention" : "ok",
+    summary: hasCandidates
+      ? `audit found stale=${snapshot.counts.stale} low=${snapshot.counts.low_confidence} dup=${snapshot.counts.duplicate_candidates}`
+      : `audit ok lessons=${snapshot.counts.total}`,
+    memory_dir: memory.memory_dir,
+    counts: snapshot.counts,
+    candidates,
+    next_actions: hasCandidates ? ["review candidates", "retire only lessons with clear evidence"] : ["continue"],
+  };
+  return trimAuditResult(result, memory.audit_compact_max_chars);
 }
 
 export function pruneLessons(cwd: string, config: AgentHarnessConfig): { retired: string[]; removed: string[] } {
@@ -238,6 +288,73 @@ function refreshLessonStatus(cwd: string, memory: LearningMemoryConfig, lesson: 
     next.updated_at = now();
     writeLesson(cwd, memory, next);
     upsertIndex(cwd, memory, next);
+  }
+  return next;
+}
+
+function previewLessonStatus(cwd: string, lesson: AgentHarnessLesson): LessonStatus {
+  if (["rejected", "retired"].includes(lesson.status)) return lesson.status;
+  if (new Date(lesson.expires_at).getTime() < Date.now()) return "stale";
+  if (hasChangedFile(cwd, lesson)) return "stale";
+  return lesson.status;
+}
+
+function buildAuditSnapshot(cwd: string, memory: LearningMemoryConfig): {
+  counts: LearningHealthResult["counts"];
+  ratios: LearningHealthResult["ratios"];
+  stale: AgentHarnessLesson[];
+  lowConfidence: AgentHarnessLesson[];
+  duplicateGroups: AgentHarnessLesson[][];
+} {
+  const lessons = readAllLessons(cwd, memory).filter((lesson) => !["rejected", "retired"].includes(lesson.status));
+  const active = lessons.filter((lesson) => previewLessonStatus(cwd, lesson) !== "stale");
+  const stale = lessons.filter((lesson) => previewLessonStatus(cwd, lesson) === "stale");
+  const lowConfidence = active.filter((lesson) => lesson.confidence === "low");
+  const duplicateGroups = findDuplicateGroups(active);
+  const duplicateCandidates = duplicateGroups.reduce((sum, group) => sum + Math.max(0, group.length - 1), 0);
+  const activeCount = active.length || 1;
+  return {
+    counts: {
+      total: lessons.length,
+      active: active.length,
+      stale: stale.length,
+      low_confidence: lowConfidence.length,
+      duplicate_candidates: duplicateCandidates,
+    },
+    ratios: {
+      stale: ratio(stale.length, lessons.length),
+      low_confidence: ratio(lowConfidence.length, activeCount),
+    },
+    stale,
+    lowConfidence,
+    duplicateGroups,
+  };
+}
+
+function findDuplicateGroups(lessons: AgentHarnessLesson[]): AgentHarnessLesson[][] {
+  const groups = new Map<string, AgentHarnessLesson[]>();
+  for (const lesson of lessons) {
+    const key = [lesson.surface, lesson.kind, lesson.files.join(","), tokens(lesson.failure_signature ?? lesson.fix_pattern ?? lesson.summary).slice(0, 8).join("-")].join("|");
+    groups.set(key, [...(groups.get(key) ?? []), lesson]);
+  }
+  return [...groups.values()].filter((group) => group.length > 1);
+}
+
+function ratio(part: number, total: number): number {
+  if (total <= 0) return 0;
+  return Number((part / total).toFixed(2));
+}
+
+function trimAuditResult(result: LearningAuditResult, maxChars: number): LearningAuditResult {
+  let next = result;
+  while (JSON.stringify(next).length > maxChars && next.candidates.duplicate_groups.length > 0) {
+    next = { ...next, candidates: { ...next.candidates, duplicate_groups: next.candidates.duplicate_groups.slice(0, -1) } };
+  }
+  while (JSON.stringify(next).length > maxChars && next.candidates.stale.length > 0) {
+    next = { ...next, candidates: { ...next.candidates, stale: next.candidates.stale.slice(0, -1) } };
+  }
+  while (JSON.stringify(next).length > maxChars && next.candidates.low_confidence.length > 0) {
+    next = { ...next, candidates: { ...next.candidates, low_confidence: next.candidates.low_confidence.slice(0, -1) } };
   }
   return next;
 }

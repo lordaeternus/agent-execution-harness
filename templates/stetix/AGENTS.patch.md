@@ -7,6 +7,7 @@
 - Scope guard blocks finish when product/source diff is outside declared files.
 - Canonical memory: `docs/historico.md`; risky/unclear: query harness memory.
 - Durable structure: update memory after edit; memory is cache, source/docs win.
+- If `learning_health=needs_audit`, run compact audit; never delete lessons automatically.
 - No success claim without completed artifact, evidence and claims.
 - Failed verify/CLI order returns repair hint; max 3 tries, then HALT.
 - UI/layout needs smoke/visual assertion; long logs by reference/hash.

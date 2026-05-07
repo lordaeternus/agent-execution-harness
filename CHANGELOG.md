@@ -1,3 +1,10 @@
+## 0.12.0
+
+- Added compact learning-memory health checks with `learn health --compact`.
+- Added read-only compact learning audit with `learn audit --compact`.
+- Added `learning_health=needs_audit` guidance during `session start` so agents can audit memory without user commands.
+- Added token budgets and config thresholds for lightweight audit output.
+
 ## 0.11.1
 
 - Clarified `init --apply` success output for first-time users.

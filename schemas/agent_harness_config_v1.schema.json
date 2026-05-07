@@ -151,7 +151,13 @@
         "top_k",
         "ttl_days",
         "max_summary_chars",
-        "max_lessons_per_surface"
+        "max_lessons_per_surface",
+        "audit_cooldown_days",
+        "audit_max_lessons",
+        "audit_max_stale_ratio",
+        "audit_max_low_confidence_ratio",
+        "audit_max_duplicate_candidates",
+        "audit_compact_max_chars"
       ],
       "properties": {
         "enabled": {
@@ -174,6 +180,30 @@
           "exclusiveMinimum": 0
         },
         "max_lessons_per_surface": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "audit_cooldown_days": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "audit_max_lessons": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "audit_max_stale_ratio": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "audit_max_low_confidence_ratio": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "audit_max_duplicate_candidates": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "audit_compact_max_chars": {
           "type": "number",
           "exclusiveMinimum": 0
         }

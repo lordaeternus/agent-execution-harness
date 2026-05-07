@@ -286,8 +286,75 @@ describe("cli integration", () => {
     expect(compactQuery.lessons[0]).toMatchObject({ kind: "failure_pattern", files: ["src/auth/session.ts"], confidence: "medium" });
     expect(compactQuery.lessons[0]).not.toHaveProperty("evidence_refs");
     expect(compactQuery.lessons[0]).not.toHaveProperty("file_hashes");
+    execFileSync(
+      "node",
+      [
+        bin,
+        "learn",
+        "capture",
+        "--lesson-id",
+        "auth-low-confidence",
+        "--surface",
+        "auth",
+        "--kind",
+        "verification_rule",
+        "--summary",
+        "Auth low confidence lesson should trigger compact audit guidance without deleting memory.",
+        "--files",
+        "src/auth/session.ts",
+        "--evidence-ref",
+        ".agent-harness/runs/auth.full.json",
+        "--confidence",
+        "low",
+      ],
+      { cwd: tmp, encoding: "utf8" },
+    );
+    const health = JSON.parse(execFileSync("node", [bin, "learn", "health", "--compact"], { cwd: tmp, encoding: "utf8" }));
+    expect(health.learning_health).toBe("needs_audit");
+    expect(health.next_action).toBe("learn audit --compact");
+    const beforeAudit = fs.readFileSync(path.join(tmp, ".agent-harness/learning/lessons/auth-low-confidence.json"), "utf8");
+    const audit = JSON.parse(execFileSync("node", [bin, "learn", "audit", "--compact"], { cwd: tmp, encoding: "utf8" }));
+    const afterAudit = fs.readFileSync(path.join(tmp, ".agent-harness/learning/lessons/auth-low-confidence.json"), "utf8");
+    expect(audit.learning_audit).toBe("needs_attention");
+    expect(audit.candidates.low_confidence).toContain("auth-low-confidence");
+    expect(beforeAudit).toBe(afterAudit);
     expect(execFileSync("node", [bin, "learn", "prune"], { cwd: tmp, encoding: "utf8" })).toContain("learning prune");
     expect(fs.existsSync(path.join(tmp, ".agent-harness/learning/lessons/auth-cli-lesson.json"))).toBe(true);
+  });
+
+  it("surfaces compact learning health guidance during session start", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-session-health-"));
+    fs.copyFileSync("tests/fixtures/plans/basic-plan.json", path.join(tmp, "plan.json"));
+    fs.mkdirSync(path.join(tmp, "src/auth"), { recursive: true });
+    fs.mkdirSync(path.join(tmp, ".agent-harness/runs"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, "src/auth/session.ts"), "export const session = true;\n");
+    fs.writeFileSync(path.join(tmp, ".agent-harness/runs/auth.full.json"), "{}\n");
+    execFileSync(
+      "node",
+      [
+        bin,
+        "learn",
+        "capture",
+        "--lesson-id",
+        "auth-session-low",
+        "--surface",
+        "auth",
+        "--kind",
+        "verification_rule",
+        "--summary",
+        "Auth session low confidence lesson should make session start ask the agent for compact audit.",
+        "--files",
+        "src/auth/session.ts",
+        "--evidence-ref",
+        ".agent-harness/runs/auth.full.json",
+        "--confidence",
+        "low",
+      ],
+      { cwd: tmp, stdio: "pipe" },
+    );
+    const start = JSON.parse(execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "health-session"], { cwd: tmp, encoding: "utf8" }));
+    expect(start.next_actions).toContain("learn audit --compact");
+    expect(start.data.learning_health.learning_health).toBe("needs_audit");
   });
 
   it("reports harnessability, controls and plan warnings", () => {

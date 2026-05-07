@@ -50,7 +50,13 @@
     "top_k": 3,
     "ttl_days": 60,
     "max_summary_chars": 500,
-    "max_lessons_per_surface": 20
+    "max_lessons_per_surface": 20,
+    "audit_cooldown_days": 7,
+    "audit_max_lessons": 50,
+    "audit_max_stale_ratio": 0.25,
+    "audit_max_low_confidence_ratio": 0.2,
+    "audit_max_duplicate_candidates": 5,
+    "audit_compact_max_chars": 600
   },
   "command_policy": {
     "allow": [],

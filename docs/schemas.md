@@ -40,3 +40,5 @@ Breaking schema changes require golden artifact compatibility tests.
 - `kind`: `failure_pattern`, `fix_pattern`, `architecture_fact`, `verification_rule`, or `rollback_note`
 - `evidence_refs`: artifact paths backing the lesson
 - `status`: `candidate`, `validated`, `promoted`, `stale`, `rejected`, or `retired`
+
+`learning_memory` config also supports audit thresholds used by `learn health` and `learn audit --compact`; audits are advisory and do not delete lessons automatically.
