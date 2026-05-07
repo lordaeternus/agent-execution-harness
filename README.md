@@ -13,6 +13,16 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.11.1
+
+This patch makes installation easier to understand.
+
+- `init --apply` now says clearly when the harness was installed successfully.
+- The output explains what happened to `AGENTS.md`: appended, overwritten, created, or left unchanged.
+- The next steps show exact doctor and rollback commands.
+
+In plain language: after installing, you should no longer need to guess whether it worked.
+
 ## What's New In v0.11.0
 
 This release improves the harness learning loop without adding embeddings, extra AI agents, or long reports.
@@ -195,7 +205,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.11.0.md)
+- [Release notes](docs/release-notes/v0.11.1.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -1457,7 +1467,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.11.0
+0.11.1
 ```
 
 Package:

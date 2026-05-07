@@ -1,3 +1,9 @@
+## 0.11.1
+
+- Clarified `init --apply` success output for first-time users.
+- Added a concise human message explaining whether `AGENTS.md` was appended, overwritten, created or left unchanged.
+- Expanded install readiness coverage for the clearer init response.
+
 ## 0.11.0
 
 - Added `learn validate` so evidence-backed lessons must be validated before promotion.

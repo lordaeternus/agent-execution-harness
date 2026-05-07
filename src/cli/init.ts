@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline/promises";
-import { createInstallManifest } from "./install-manifest.js";
+import { createInstallManifest, type InstallAction } from "./install-manifest.js";
 import { createBackup, restoreBackup } from "./install-rollback.js";
 import { parseFlags, stringFlag } from "./args.js";
 import { writeJson } from "./output.js";
@@ -46,17 +46,29 @@ export async function initCommand(args: string[], cwd = process.cwd()): Promise<
   }
   writeJson({
     status: manifest.some((item) => item.action === "conflict") ? "warning" : "success",
-    summary: apply ? "init applied" : "init dry-run complete",
+    summary: apply ? "Agent Execution Harness installed successfully" : "Agent Execution Harness dry-run complete; no files changed",
     artifacts: [
       ...manifest.map((item) => ({ type: item.action, path: item.path })),
       ...(apply ? [{ type: "backup", path: backupDir }] : []),
     ],
     next_actions: apply
-      ? ["run doctor", `rollback with --rollback ${backupDir} if needed`]
-      : ["review manifest", "rerun with --apply", "use --agents-mode append if AGENTS.md already exists"],
+      ? ["Run doctor: npx agent-execution-harness@latest doctor --harnessability --cwd .", `Rollback if needed: npx agent-execution-harness@latest init --rollback ${backupDir}`]
+      : ["Review planned file changes", "Install: npx agent-execution-harness@latest init --apply", "If AGENTS.md already exists, choose append to add harness rules without overwriting current rules"],
     errors: [],
-    data: { files: manifest, agents_mode: resolvedAgentsMode },
+    data: { files: manifest, agents_mode: resolvedAgentsMode, user_message: buildUserMessage(apply, resolvedAgentsMode, backupDir, manifest) },
   });
+}
+
+function buildUserMessage(apply: boolean, agentsMode: AgentsMode, backupDir: string, manifest: InstallAction[]): string {
+  if (!apply) {
+    return "Dry-run complete. No files were changed. Run init --apply to install the harness.";
+  }
+  const agentsAction = manifest.find((item) => item.path === "AGENTS.md")?.action;
+  let agentsText = "AGENTS.md was created or left unchanged.";
+  if (agentsAction === "create") agentsText = "AGENTS.md was created.";
+  else if (agentsMode === "append") agentsText = "AGENTS.md was appended; existing rules were kept.";
+  else if (agentsMode === "overwrite") agentsText = "AGENTS.md was overwritten by explicit request.";
+  return `Agent Execution Harness installed successfully. ${agentsText} Backup saved at ${backupDir}. Run doctor next to verify project readiness.`;
 }
 
 function applyTemplate(input: { templateRoot: string; target: string; itemPath: string; agentsMode: AgentsMode }): void {
