@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { benchmarkCommand } from "./benchmark.js";
 import { doctorCommand } from "./doctor.js";
 import { executeCommand } from "./execute.js";
@@ -17,10 +20,13 @@ import { fixturesCommand } from "./fixtures.js";
 import { planCommand } from "./plan.js";
 
 const [command, ...args] = process.argv.slice(2);
+const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 try {
   if (!command || command === "--help" || command === "help") {
     process.stdout.write("agent-harness commands: run, session, next, verify, handoff, fixtures, map, learn, plan, start, files, task, gate, claim, finish, plan-lint, execute, report, doctor, benchmark, init\n");
+  } else if (command === "--version" || command === "-v" || command === "version") {
+    process.stdout.write(`${readPackageVersion()}\n`);
   } else if (command === "run") runCommand(args);
   else if (command === "session") sessionCommand(args);
   else if (command === "next") nextCommand(args);
@@ -43,4 +49,10 @@ try {
   const repair = classifyRepair([command, ...args].join(" "), message);
   process.stderr.write(`${JSON.stringify({ status: "error", summary: message, errors: [message], data: { repair_hint: repair } })}\n`);
   process.exitCode = 1;
+}
+
+function readPackageVersion(): string {
+  const pkg = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8")) as { version?: string };
+  if (!pkg.version) throw new Error("package version missing");
+  return pkg.version;
 }

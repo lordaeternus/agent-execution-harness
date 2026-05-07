@@ -7,6 +7,12 @@ import { describe, expect, it } from "vitest";
 const bin = path.resolve("dist/cli/index.js");
 
 describe("cli integration", () => {
+  it("prints a plain version for humans", () => {
+    const version = JSON.parse(fs.readFileSync("package.json", "utf8")).version;
+    expect(execFileSync("node", [bin, "--version"], { encoding: "utf8" }).trim()).toBe(version);
+    expect(execFileSync("node", [bin, "version"], { encoding: "utf8" }).trim()).toBe(version);
+  });
+
   it("runs plan-lint and execute", () => {
     execFileSync("node", [bin, "plan-lint", "--plan", "tests/fixtures/plans/basic-plan.json"], { stdio: "pipe" });
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-cli-"));

@@ -13,6 +13,16 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.12.3
+
+This patch adds plain version output.
+
+- `agent-harness --version`
+- `agent-harness -v`
+- `agent-harness version`
+
+In plain language: after installing, users can check the installed version without seeing a JSON error.
+
 ## What's New In v0.12.2
 
 This patch polishes install output for first-time users.
@@ -234,7 +244,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.12.2.md)
+- [Release notes](docs/release-notes/v0.12.3.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -1508,7 +1518,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.12.2
+0.12.3
 ```
 
 Package:

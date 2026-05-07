@@ -1,3 +1,7 @@
+## 0.12.3
+
+- Added plain `--version`, `-v` and `version` output for first-time users testing an install.
+
 ## 0.12.2
 
 - Made `init --apply` output even friendlier by replacing technical `merge/create` labels with plain file names.
