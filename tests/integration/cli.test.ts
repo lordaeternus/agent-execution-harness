@@ -366,7 +366,11 @@ describe("cli integration", () => {
     fs.writeFileSync(path.join(tmp, "docs", "agent-runtime.md"), "# Runtime\n");
     fs.writeFileSync(path.join(tmp, ".gitignore"), ".agent-harness/runs/\n");
 
-    const doctor = JSON.parse(execFileSync("node", [bin, "doctor", "--harnessability", "--controls", "--cwd", tmp], { encoding: "utf8" }));
+    const humanDoctor = execFileSync("node", [bin, "doctor", "--harnessability", "--controls", "--cwd", tmp], { encoding: "utf8" });
+    expect(humanDoctor).toContain("Agent Execution Harness doctor passed.");
+    expect(humanDoctor).toContain("Harnessability score:");
+    expect(humanDoctor).toContain("For JSON output:");
+    const doctor = JSON.parse(execFileSync("node", [bin, "doctor", "--json", "--harnessability", "--controls", "--cwd", tmp], { encoding: "utf8" }));
     expect(doctor.data.harnessability.score).toBeGreaterThan(50);
     expect(doctor.data.controls.map((control: { id: string }) => control.id)).toContain("scope_guard");
 
@@ -423,7 +427,7 @@ describe("cli integration", () => {
         }, null, 2)}\n`,
       );
     }
-    const steering = JSON.parse(execFileSync("node", [bin, "doctor", "--steering", "--cwd", tmp], { encoding: "utf8" }));
+    const steering = JSON.parse(execFileSync("node", [bin, "doctor", "--json", "--steering", "--cwd", tmp], { encoding: "utf8" }));
     expect(steering.data.steering.suggestions[0].key).toBe("unexpected_file_changed");
 
     const fixtureOutput = JSON.parse(execFileSync("node", [bin, "fixtures", "validate", "--file", "tests/fixtures/approved/basic-approved-fixture.json"], { encoding: "utf8" }));

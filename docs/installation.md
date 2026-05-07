@@ -4,6 +4,8 @@ Use `init` first as a dry run. Review manifest. Use `--apply` only after review.
 
 Installer must support backup, rollback and doctor validation.
 
+By default, install and doctor commands print human-readable messages. Use `--json` only when CI or automation needs structured output.
+
 `AGENTS.md` is protected by default. If the target project already has one, choose the behavior explicitly:
 
 ```bash

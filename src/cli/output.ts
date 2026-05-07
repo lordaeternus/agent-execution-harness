@@ -18,3 +18,7 @@ export function writeJson(input: CliEnvelope): void {
 export function writeCompactJson(input: CliEnvelope): void {
   process.stdout.write(`${JSON.stringify(input)}\n`);
 }
+
+export function writeHuman(lines: Array<string | undefined>): void {
+  process.stdout.write(`${lines.filter((line): line is string => line !== undefined && line.length > 0).join("\n")}\n`);
+}

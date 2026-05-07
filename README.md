@@ -13,6 +13,16 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.12.1
+
+This patch makes install and readiness output easier for humans.
+
+- `init` prints a short success message by default.
+- `doctor` prints a readable readiness report by default.
+- `--json` keeps structured output available for CI, scripts and advanced automation.
+
+In plain language: beginners see "installed successfully" plus the next command to run. Machines can still ask for JSON.
+
 ## What's New In v0.12.0
 
 This release adds lightweight learning-memory health checks.
@@ -215,7 +225,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.12.0.md)
+- [Release notes](docs/release-notes/v0.12.1.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -257,6 +267,12 @@ This is intentionally metadata, not a heavy policy engine. The goal is auditabil
 
 ```bash
 agent-harness doctor --harnessability --cwd .
+```
+
+By default, `doctor` prints a human-readable report. For JSON output:
+
+```bash
+agent-harness doctor --json --harnessability --cwd .
 ```
 
 It scores cheap local signals such as scripts, `AGENTS.md`, harness config, tests, runtime docs, artifact policy and command policy. A low score does not mean the project is bad. It means agents have fewer rails and may need smaller plans or stronger review.
@@ -312,13 +328,14 @@ It adds harness rules to `AGENTS.md` without replacing your current instructions
 Step 4: check that installation worked:
 
 ```bash
-npx agent-execution-harness@latest doctor --cwd .
+npx agent-execution-harness@latest doctor --harnessability --cwd .
 ```
 
 Expected result:
 
 ```txt
-status: success
+Agent Execution Harness doctor passed.
+Harnessability score: 90/100
 ```
 
 Step 5: tell your AI coding agent to use it:
@@ -704,7 +721,7 @@ Use this for most projects:
 cd C:\Projetos\my-app
 npx agent-execution-harness@latest init --adapter generic --cwd .
 npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
-npx agent-execution-harness@latest doctor --cwd .
+npx agent-execution-harness@latest doctor --harnessability --cwd .
 ```
 
 What each command does:
@@ -712,12 +729,13 @@ What each command does:
 - `cd C:\Projetos\my-app`: opens your project folder
 - `init --adapter generic --cwd .`: previews the installation
 - `init --adapter generic --cwd . --apply --agents-mode append`: installs the harness and appends rules to `AGENTS.md`
-- `doctor --cwd .`: checks if everything is configured
+- `doctor --harnessability --cwd .`: checks if everything is configured and gives a readiness score
 
 Expected doctor result:
 
 ```txt
-status: success
+Agent Execution Harness doctor passed.
+Harnessability score: 90/100
 ```
 
 ### AGENTS.md Options
@@ -768,7 +786,7 @@ npm install --save-dev agent-execution-harness
 Then commands are available as:
 
 ```bash
-agent-harness doctor --cwd .
+agent-harness doctor --harnessability --cwd .
 agent-harness run
 agent-harness report
 ```
@@ -783,7 +801,7 @@ If you used `npx`, run the same installer with `@latest`:
 cd C:\Projetos\my-app
 npx agent-execution-harness@latest init --adapter generic --cwd .
 npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
-npx agent-execution-harness@latest doctor --cwd .
+npx agent-execution-harness@latest doctor --harnessability --cwd .
 ```
 
 If you installed it in `package.json`, update the package first:
@@ -792,7 +810,7 @@ If you installed it in `package.json`, update the package first:
 cd C:\Projetos\my-app
 npm install --save-dev agent-execution-harness@latest
 npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
-npx agent-execution-harness@latest doctor --cwd .
+npx agent-execution-harness@latest doctor --harnessability --cwd .
 ```
 
 For projects using pnpm:
@@ -800,7 +818,7 @@ For projects using pnpm:
 ```bash
 pnpm add -D agent-execution-harness@latest
 npx agent-execution-harness@latest init --adapter generic --cwd . --apply --agents-mode append
-npx agent-execution-harness@latest doctor --cwd .
+npx agent-execution-harness@latest doctor --harnessability --cwd .
 ```
 
 Simple explanation: updating means downloading the new harness package, running the installer again, and checking the project with `doctor`.
@@ -864,7 +882,7 @@ GitHub stores the source code. npm distributes the installable package.
 This command:
 
 ```bash
-npx agent-execution-harness@latest doctor --cwd .
+npx agent-execution-harness@latest doctor --harnessability --cwd .
 ```
 
 means:
@@ -912,7 +930,7 @@ No artifact, no evidence, no trust.
 
 That is normal. Accept it.
 
-### `doctor` does not return `status: success`
+### `doctor` does not pass
 
 Read the findings. Usually this means one of these is missing:
 
@@ -1209,7 +1227,7 @@ Without `--agents-mode`, interactive terminals ask what to do. Non-interactive r
 Checks whether a project is configured correctly.
 
 ```bash
-agent-harness doctor --cwd .
+agent-harness doctor --harnessability --cwd .
 ```
 
 ### `plan-lint`
@@ -1481,7 +1499,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.12.0
+0.12.1
 ```
 
 Package:

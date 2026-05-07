@@ -5,7 +5,7 @@ import { createInterface } from "node:readline/promises";
 import { createInstallManifest, type InstallAction } from "./install-manifest.js";
 import { createBackup, restoreBackup } from "./install-rollback.js";
 import { parseFlags, stringFlag } from "./args.js";
-import { writeJson } from "./output.js";
+import { envelope, type CliEnvelope, writeHuman, writeJson } from "./output.js";
 
 const TEMPLATE_FILES = ["agent-harness.config.json", "AGENTS.md", "docs/agent-runtime.md", "docs/process/agent-runtime.md", ".gitignore", "package.json"];
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -15,6 +15,7 @@ type AgentsMode = "skip" | "append" | "overwrite";
 
 export async function initCommand(args: string[], cwd = process.cwd()): Promise<void> {
   const flags = parseFlags(args);
+  const json = flags.json === true;
   const adapter = stringFlag(flags, "adapter") ?? "generic";
   const target = stringFlag(flags, "cwd") ?? cwd;
   const apply = flags.apply === true;
@@ -22,13 +23,15 @@ export async function initCommand(args: string[], cwd = process.cwd()): Promise<
   const agentsMode = parseAgentsMode(stringFlag(flags, "agents-mode"));
   if (rollback) {
     const restored = restoreBackup(target, path.resolve(target, rollback));
-    writeJson({
+    const result = envelope({
       status: "success",
       summary: `rollback restored ${restored} entries`,
       artifacts: [{ type: "rollback", path: rollback }],
       next_actions: ["run doctor"],
       errors: [],
     });
+    if (json) writeJson(result);
+    else writeHuman(["Agent Execution Harness rollback restored successfully.", `Restored entries: ${restored}`, "", "Next step:", "npx agent-execution-harness@latest doctor --harnessability --cwd ."]);
     return;
   }
   const templateRoot = path.resolve(PACKAGE_ROOT, "templates", adapter);
@@ -44,7 +47,7 @@ export async function initCommand(args: string[], cwd = process.cwd()): Promise<
       applyTemplate({ templateRoot, target, itemPath: item.path, agentsMode: resolvedAgentsMode });
     }
   }
-  writeJson({
+  const result = envelope({
     status: manifest.some((item) => item.action === "conflict") ? "warning" : "success",
     summary: apply ? "Agent Execution Harness installed successfully" : "Agent Execution Harness dry-run complete; no files changed",
     artifacts: [
@@ -57,6 +60,8 @@ export async function initCommand(args: string[], cwd = process.cwd()): Promise<
     errors: [],
     data: { files: manifest, agents_mode: resolvedAgentsMode, user_message: buildUserMessage(apply, resolvedAgentsMode, backupDir, manifest) },
   });
+  if (json) writeJson(result);
+  else writeHuman(renderInitResult(result, apply, resolvedAgentsMode, backupDir, manifest));
 }
 
 function buildUserMessage(apply: boolean, agentsMode: AgentsMode, backupDir: string, manifest: InstallAction[]): string {
@@ -69,6 +74,49 @@ function buildUserMessage(apply: boolean, agentsMode: AgentsMode, backupDir: str
   else if (agentsMode === "append") agentsText = "AGENTS.md was appended; existing rules were kept.";
   else if (agentsMode === "overwrite") agentsText = "AGENTS.md was overwritten by explicit request.";
   return `Agent Execution Harness installed successfully. ${agentsText} Backup saved at ${backupDir}. Run doctor next to verify project readiness.`;
+}
+
+function renderInitResult(result: CliEnvelope, apply: boolean, agentsMode: AgentsMode, backupDir: string, manifest: InstallAction[]): string[] {
+  if (!apply) {
+    const planned = manifest.map((item) => `- ${item.action}: ${item.path}`);
+    return [
+      "Agent Execution Harness preview complete.",
+      "No files were changed.",
+      "",
+      "Planned changes:",
+      ...planned,
+      "",
+      "To install or update:",
+      "npx agent-execution-harness@latest init --apply --agents-mode append",
+      "",
+      "For JSON output:",
+      "npx agent-execution-harness@latest init --json",
+    ];
+  }
+  const agentsAction = manifest.find((item) => item.path === "AGENTS.md")?.action;
+  let agentsText = "AGENTS.md created or kept unchanged.";
+  if (agentsAction === "create") agentsText = "AGENTS.md created.";
+  else if (agentsMode === "append") agentsText = "AGENTS.md appended; existing rules kept.";
+  else if (agentsMode === "overwrite") agentsText = "AGENTS.md overwritten by explicit request.";
+  else if (agentsMode === "skip") agentsText = "AGENTS.md skipped; existing rules kept unchanged.";
+  const changed = result.artifacts.filter((artifact) => artifact.type !== "backup").map((artifact) => `- ${artifact.type}: ${artifact.path ?? ""}`);
+  return [
+    "Agent Execution Harness installed successfully.",
+    agentsText,
+    `Backup saved at: ${backupDir}`,
+    "",
+    "Files checked:",
+    ...changed,
+    "",
+    "Next step:",
+    "npx agent-execution-harness@latest doctor --harnessability --cwd .",
+    "",
+    "Rollback if needed:",
+    `npx agent-execution-harness@latest init --rollback ${backupDir}`,
+    "",
+    "For JSON output:",
+    "npx agent-execution-harness@latest init --json --apply",
+  ];
 }
 
 function applyTemplate(input: { templateRoot: string; target: string; itemPath: string; agentsMode: AgentsMode }): void {

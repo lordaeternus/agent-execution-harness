@@ -1,3 +1,9 @@
+## 0.12.1
+
+- Changed `init` and `doctor` to use human-friendly output by default.
+- Added `--json` for automation, CI and advanced users who still need structured envelopes.
+- Clarified install/update and doctor docs so non-technical users can see success, backup and next-step commands without reading raw JSON.
+
 ## 0.12.0
 
 - Added compact learning-memory health checks with `learn health --compact`.

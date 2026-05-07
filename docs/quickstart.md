@@ -41,16 +41,19 @@ It appends harness rules to `AGENTS.md` instead of replacing your current file.
 Run:
 
 ```bash
-npx agent-execution-harness@latest doctor --cwd .
+npx agent-execution-harness@latest doctor --harnessability --cwd .
 ```
 
 Expected result:
 
 ```txt
-status: success
+Agent Execution Harness doctor passed.
+Harnessability score: 90/100
 ```
 
 If doctor reports errors, fix them before trusting the harness.
+
+By default, install and doctor commands print human-readable messages. Use `--json` only for CI, scripts or automation.
 
 ## 5. Tell The Agent To Use It
 

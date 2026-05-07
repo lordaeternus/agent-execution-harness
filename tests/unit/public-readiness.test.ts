@@ -61,12 +61,16 @@ describe("public readiness hardening", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-init-"));
     fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", scripts: {} }, null, 2)}\n`);
     const output = execFileSync("node", ["dist/cli/index.js", "init", "--adapter", "generic", "--cwd", tmp, "--apply"], { encoding: "utf8" });
-    const result = JSON.parse(output) as { data: { user_message: string } };
     expect(fs.existsSync(path.join(tmp, "agent-harness.config.json"))).toBe(true);
     expect(fs.existsSync(path.join(tmp, "AGENTS.md"))).toBe(true);
     expect(fs.existsSync(path.join(tmp, "docs", "agent-runtime.md"))).toBe(true);
     expect(fs.existsSync(path.join(tmp, ".agent-harness", "backups"))).toBe(true);
-    expect(result.data.user_message).toContain("AGENTS.md was created");
+    expect(output).toContain("Agent Execution Harness installed successfully.");
+    expect(output).toContain("AGENTS.md created.");
+    expect(output).toContain("Next step:");
+    const jsonOutput = execFileSync("node", ["dist/cli/index.js", "init", "--adapter", "generic", "--cwd", tmp, "--apply", "--json"], { encoding: "utf8" });
+    const result = JSON.parse(jsonOutput) as { data: { user_message: string } };
+    expect(result.data.user_message).toContain("Agent Execution Harness installed successfully");
   });
 
   it("init resolves templates from the package when called outside the repo", () => {
@@ -101,11 +105,9 @@ describe("public readiness hardening", () => {
       stdio: "pipe",
     });
 
-    const result = JSON.parse(output) as { summary: string; next_actions: string[]; data: { user_message: string } };
-    expect(result.summary).toContain("installed successfully");
-    expect(result.data.user_message).toContain("Agent Execution Harness installed successfully");
-    expect(result.data.user_message).toContain("AGENTS.md was appended");
-    expect(result.next_actions[0]).toContain("Run doctor");
+    expect(output).toContain("Agent Execution Harness installed successfully.");
+    expect(output).toContain("AGENTS.md appended; existing rules kept.");
+    expect(output).toContain("npx agent-execution-harness@latest doctor --harnessability --cwd .");
 
     const agents = fs.readFileSync(path.join(tmp, "AGENTS.md"), "utf8");
     expect(agents).toContain("# Existing Rules");
