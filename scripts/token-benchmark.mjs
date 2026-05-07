@@ -89,7 +89,10 @@ run([
   "created.txt",
   "--evidence-ref",
   ".agent-harness/runs/bench.full.json",
+  "--failure-signature",
+  "benchmark verification gate failed",
 ]);
+const validateOutput = run(["learn", "validate", "--lesson-id", "bench-lesson"]);
 run(["learn", "promote", "--lesson-id", "bench-lesson"]);
 const learnQuery = run(["learn", "query", "--surface", "generic", "--top-k", "3"]);
 const learnQueryCompact = run(["learn", "query", "--surface", "generic", "--top-k", "3", "--compact"]);
@@ -115,6 +118,22 @@ const weakNextExact = run(["next", "--plan", "plan.json", "--run-id", "weak-next
 const nextMicro = run(["next", "--plan", "plan.json", "--run-id", "weak-next", "--mode", "weak", "--exact", "--micro"]);
 const handoff = run(["handoff", "--plan", "plan.json", "--task-id", "bench-task"]);
 const handoffCompact = run(["handoff", "--plan", "plan.json", "--task-id", "bench-task", "--compact"]);
+run(["session", "start", "--plan", "plan.json", "--run-id", "repeat-bench", "--mode", "weak"]);
+run(["files", "declare", "--files", "created.txt"]);
+run(["task", "start", "--task-id", "bench-task", "--files", "created.txt"]);
+const failingVerifyCommand = `${JSON.stringify(process.execPath)} -e "process.exit(1)"`;
+run(["verify", "--task-id", "bench-task", "--type", "focused_tests", "--cmd", failingVerifyCommand]);
+const repeatedRunFile = path.join(tmp, ".agent-harness/runs/repeat-bench.full.json");
+const repeatedState = JSON.parse(fs.readFileSync(repeatedRunFile, "utf8"));
+repeatedState.status = "in_progress";
+repeatedState.phase = "gate";
+repeatedState.current_task_id = "bench-task";
+repeatedState.pending_gate = null;
+repeatedState.tasks[0].status = "in_progress";
+fs.writeFileSync(repeatedRunFile, `${JSON.stringify(repeatedState, null, 2)}\n`);
+fs.writeFileSync(path.join(tmp, ".agent-harness/runs/repeat-bench.json"), `${JSON.stringify(repeatedState, null, 2)}\n`);
+const repeatedFailure = run(["verify", "--task-id", "bench-task", "--type", "focused_tests", "--cmd", failingVerifyCommand]);
+const repeatedFailureHint = JSON.parse(repeatedFailure.output).data.learning_hint ?? "";
 const compactRun = total([
   run(["session", "start", "--plan", "plan.json", "--run-id", "new", "--mode", "constrained"]),
   run(["files", "declare", "--files", "created.txt"]),
@@ -130,7 +149,7 @@ const learnCompactReduction = Math.round(((learnQuery.totalChars - learnQueryCom
 const mapCompactReduction = Math.round(((mapQuery.totalChars - mapQueryCompact.totalChars) / mapQuery.totalChars) * 100);
 const nextMicroReduction = Math.round(((weakNextExact.totalChars - nextMicro.totalChars) / weakNextExact.totalChars) * 100);
 const handoffCompactReduction = Math.round(((handoff.totalChars - handoffCompact.totalChars) / handoff.totalChars) * 100);
-console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} learn_query_chars=${learnQuery.totalChars} learn_query_compact_chars=${learnQueryCompact.totalChars} learn_query_compact_reduction_pct=${learnCompactReduction} map_query_chars=${mapQuery.totalChars} map_query_compact_chars=${mapQueryCompact.totalChars} map_query_compact_reduction_pct=${mapCompactReduction} standard_next_chars=${standardNext.totalChars} weak_next_chars=${weakNext.totalChars} weak_reduction_pct=${weakReduction} weak_next_exact_chars=${weakNextExact.totalChars} next_micro_chars=${nextMicro.totalChars} next_micro_reduction_pct=${nextMicroReduction} handoff_chars=${handoff.totalChars} handoff_compact_chars=${handoffCompact.totalChars} handoff_compact_reduction_pct=${handoffCompactReduction}`);
+console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} validate_output_chars=${validateOutput.totalChars} repeated_failure_hint_chars=${repeatedFailureHint.length} learn_query_chars=${learnQuery.totalChars} learn_query_compact_chars=${learnQueryCompact.totalChars} learn_query_compact_reduction_pct=${learnCompactReduction} map_query_chars=${mapQuery.totalChars} map_query_compact_chars=${mapQueryCompact.totalChars} map_query_compact_reduction_pct=${mapCompactReduction} standard_next_chars=${standardNext.totalChars} weak_next_chars=${weakNext.totalChars} weak_reduction_pct=${weakReduction} weak_next_exact_chars=${weakNextExact.totalChars} next_micro_chars=${nextMicro.totalChars} next_micro_reduction_pct=${nextMicroReduction} handoff_chars=${handoff.totalChars} handoff_compact_chars=${handoffCompact.totalChars} handoff_compact_reduction_pct=${handoffCompactReduction}`);
 if (weakReduction < 10) {
   console.error("weak next benchmark requires at least 10% output reduction");
   process.exitCode = 1;

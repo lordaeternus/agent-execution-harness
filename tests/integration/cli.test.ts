@@ -149,10 +149,25 @@ describe("cli integration", () => {
     execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "repair-smoke", "--mode", "weak"], { cwd: tmp });
     execFileSync("node", [bin, "files", "declare", "--files", "created.txt"], { cwd: tmp });
     execFileSync("node", [bin, "task", "start", "--task-id", "basic-task", "--files", "created.txt"], { cwd: tmp });
-    const output = execFileSync("node", [bin, "verify", "--task-id", "basic-task", "--type", "focused_tests", "--cmd", `${JSON.stringify(process.execPath)} -e ${JSON.stringify("process.exit(1)")}`], { cwd: tmp, encoding: "utf8" });
+    const failingCommand = `${JSON.stringify(process.execPath)} -e ${JSON.stringify("process.exit(1)")}`;
+    const output = execFileSync("node", [bin, "verify", "--task-id", "basic-task", "--type", "focused_tests", "--cmd", failingCommand], { cwd: tmp, encoding: "utf8" });
     const parsed = JSON.parse(output);
     expect(parsed.status).toBe("warning");
     expect(parsed.data.repair_hint.stop_after_attempts).toBe(3);
+    expect(parsed.data.learning_hint).toBeUndefined();
+    const runFile = path.join(tmp, ".agent-harness/runs/repair-smoke.full.json");
+    const state = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    state.status = "in_progress";
+    state.phase = "gate";
+    state.current_task_id = "basic-task";
+    state.pending_gate = null;
+    state.tasks[0].status = "in_progress";
+    fs.writeFileSync(runFile, `${JSON.stringify(state, null, 2)}\n`);
+    fs.writeFileSync(path.join(tmp, ".agent-harness/runs/repair-smoke.json"), `${JSON.stringify(state, null, 2)}\n`);
+    const repeated = JSON.parse(execFileSync("node", [bin, "verify", "--task-id", "basic-task", "--type", "focused_tests", "--cmd", failingCommand], { cwd: tmp, encoding: "utf8" }));
+    expect(repeated.data.learning_hint).toContain("repeated_failure");
+    expect(repeated.data.learning_hint.length).toBeLessThanOrEqual(180);
+    expect(repeated.next_actions.join(" ")).toContain("learn query");
   });
 
   it("blocks dangerous verify commands before execution", () => {
@@ -256,15 +271,18 @@ describe("cli integration", () => {
         "src/auth/session.ts",
         "--evidence-ref",
         ".agent-harness/runs/auth.full.json",
+        "--failure-signature",
+        "auth guard verification failed in CLI smoke",
       ],
       { cwd: tmp, encoding: "utf8" },
     );
     expect(capture).toContain("lesson captured");
+    expect(execFileSync("node", [bin, "learn", "validate", "--lesson-id", "auth-cli-lesson"], { cwd: tmp, encoding: "utf8" })).toContain("lesson validated");
     expect(execFileSync("node", [bin, "learn", "promote", "--lesson-id", "auth-cli-lesson"], { cwd: tmp, encoding: "utf8" })).toContain("lesson promoted");
     const query = execFileSync("node", [bin, "learn", "query", "--surface", "auth", "--top-k", "3"], { cwd: tmp, encoding: "utf8" });
     expect(query).toContain("learning query");
     expect(query).toContain("auth-cli-lesson");
-    const compactQuery = JSON.parse(execFileSync("node", [bin, "learn", "query", "--surface", "auth", "--top-k", "3", "--compact"], { cwd: tmp, encoding: "utf8" }));
+    const compactQuery = JSON.parse(execFileSync("node", [bin, "learn", "query", "--surface", "auth", "--top-k", "3", "--files", "src/auth/session.ts", "--failure-signature", "auth guard", "--compact"], { cwd: tmp, encoding: "utf8" }));
     expect(compactQuery.lessons[0]).toMatchObject({ kind: "failure_pattern", files: ["src/auth/session.ts"], confidence: "medium" });
     expect(compactQuery.lessons[0]).not.toHaveProperty("evidence_refs");
     expect(compactQuery.lessons[0]).not.toHaveProperty("file_hashes");

@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { defaultConfig } from "../../src/core/config.js";
-import { captureLesson, compactLessonForExecutor, promoteLesson, pruneLessons, queryLessons, rejectLesson } from "../../src/core/learning-memory.js";
+import { captureLesson, compactLessonForExecutor, promoteLesson, pruneLessons, queryLessons, rejectLesson, validateLessonForPromotion } from "../../src/core/learning-memory.js";
 
 function tempProject() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-learning-"));
@@ -26,8 +26,10 @@ describe("learning memory", () => {
       files: ["src/auth/session.ts"],
       evidence_refs: [".agent-harness/runs/auth.full.json"],
       confidence: "high",
+      failure_signature: "authorization guard failed after session edit",
     });
     expect(lesson.status).toBe("candidate");
+    validateLessonForPromotion(cwd, config, "auth-session-contract");
     promoteLesson(cwd, config, "auth-session-contract");
     const query = queryLessons(cwd, config, "auth", 3);
     expect(query.lessons).toHaveLength(1);
@@ -46,6 +48,78 @@ describe("learning memory", () => {
     expect(compact).not.toHaveProperty("created_at");
   });
 
+  it("validates lessons before promotion and blocks unsafe candidates", () => {
+    const cwd = tempProject();
+    const config = defaultConfig();
+    captureLesson(cwd, config, {
+      lesson_id: "auth-validation-required",
+      surface: "auth",
+      kind: "failure_pattern",
+      summary: "Auth validation requires evidence, existing files, and a failure signature before promotion.",
+      files: ["src/auth/session.ts"],
+      evidence_refs: [".agent-harness/runs/auth.full.json"],
+      failure_signature: "TS2322 in auth session guard",
+    });
+    expect(() => promoteLesson(cwd, config, "auth-validation-required")).toThrow("validated");
+    const validated = validateLessonForPromotion(cwd, config, "auth-validation-required");
+    expect(validated.status).toBe("validated");
+    expect(promoteLesson(cwd, config, "auth-validation-required").status).toBe("promoted");
+
+    captureLesson(cwd, config, {
+      lesson_id: "auth-missing-signature",
+      surface: "auth",
+      kind: "failure_pattern",
+      summary: "Auth failure pattern without a signature must not become reusable memory for future agents.",
+      files: ["src/auth/session.ts"],
+      evidence_refs: [".agent-harness/runs/auth.full.json"],
+    });
+    expect(() => validateLessonForPromotion(cwd, config, "auth-missing-signature")).toThrow("failure_signature");
+
+    captureLesson(cwd, config, {
+      lesson_id: "auth-missing-file",
+      surface: "auth",
+      kind: "verification_rule",
+      summary: "Auth verification rule must not validate when a referenced implementation file is missing.",
+      files: ["src/auth/missing.ts"],
+      evidence_refs: [".agent-harness/runs/auth.full.json"],
+    });
+    expect(() => validateLessonForPromotion(cwd, config, "auth-missing-file")).toThrow("missing");
+  });
+
+  it("ranks queried lessons by file overlap, failure signature, confidence and recency", () => {
+    const cwd = tempProject();
+    const config = defaultConfig();
+    fs.writeFileSync(path.join(cwd, "src/auth/guard.ts"), "export const guard = true;\n");
+    fs.writeFileSync(path.join(cwd, "src/auth/other.ts"), "export const other = true;\n");
+    for (const input of [
+      {
+        lesson_id: "auth-generic-older",
+        files: ["src/auth/other.ts"],
+        confidence: "low" as const,
+        failure_signature: "generic failure",
+        summary: "Auth generic lesson should rank lower because files and signature do not match the query.",
+      },
+      {
+        lesson_id: "auth-targeted-newer",
+        files: ["src/auth/session.ts", "src/auth/guard.ts"],
+        confidence: "high" as const,
+        failure_signature: "TS2322 authorization guard failed",
+        summary: "Auth targeted lesson should rank first because file overlap and failure signature match.",
+      },
+    ]) {
+      captureLesson(cwd, config, {
+        surface: "auth",
+        kind: "failure_pattern",
+        evidence_refs: [".agent-harness/runs/auth.full.json"],
+        ...input,
+      });
+      validateLessonForPromotion(cwd, config, input.lesson_id);
+      promoteLesson(cwd, config, input.lesson_id);
+    }
+    const query = queryLessons(cwd, config, "auth", 3, { files: ["src/auth/session.ts"], failure_signature: "TS2322 guard" });
+    expect(query.lessons[0].lesson_id).toBe("auth-targeted-newer");
+  });
+
   it("marks promoted lessons stale when tracked files change", () => {
     const cwd = tempProject();
     const config = defaultConfig();
@@ -57,6 +131,7 @@ describe("learning memory", () => {
       files: ["src/auth/session.ts"],
       evidence_refs: [".agent-harness/runs/auth.full.json"],
     });
+    validateLessonForPromotion(cwd, config, "auth-stale-check");
     promoteLesson(cwd, config, "auth-stale-check");
     fs.writeFileSync(path.join(cwd, "src/auth/session.ts"), "export const session = 'changed';\n");
     expect(queryLessons(cwd, config, "auth", 3).lessons).toHaveLength(0);

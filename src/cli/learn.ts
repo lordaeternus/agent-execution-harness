@@ -8,6 +8,7 @@ import {
   rejectLesson,
   retireLesson,
   reviewLessons,
+  validateLessonForPromotion,
 } from "../core/learning-memory.js";
 import type { LessonConfidence, LessonKind } from "../core/learning-types.js";
 import { parseFlags, stringFlag } from "./args.js";
@@ -68,6 +69,19 @@ export function learnCommand(args: string[], cwd = process.cwd()): void {
     return;
   }
 
+  if (verb === "validate") {
+    const lesson = validateLessonForPromotion(cwd, config, stringFlag(flags, "lesson-id", true)!);
+    writeCompactJson({
+      status: "success",
+      summary: `lesson validated ${lesson.lesson_id}`,
+      artifacts: [{ type: "learning_lesson", path: `${config.learning_memory?.memory_dir ?? ".agent-harness/learning"}/lessons/${lesson.lesson_id}.json` }],
+      next_actions: ["learn promote --lesson-id <lesson_id>", "learn query --surface <surface> --compact"],
+      errors: [],
+      data: { lesson_id: lesson.lesson_id, surface: lesson.surface, status: lesson.status },
+    });
+    return;
+  }
+
   if (verb === "reject") {
     const lesson = rejectLesson(cwd, config, stringFlag(flags, "lesson-id", true)!, stringFlag(flags, "reason", true)!);
     writeCompactJson({
@@ -97,7 +111,10 @@ export function learnCommand(args: string[], cwd = process.cwd()): void {
   if (verb === "query") {
     const surface = stringFlag(flags, "surface", true)!;
     const topK = stringFlag(flags, "top-k") ? Number(stringFlag(flags, "top-k")) : undefined;
-    const result = queryLessons(cwd, config, surface, topK);
+    const result = queryLessons(cwd, config, surface, topK, {
+      files: stringFlag(flags, "files") ? splitCsv(stringFlag(flags, "files")!) : undefined,
+      failure_signature: stringFlag(flags, "failure-signature"),
+    });
     const compact = flags.compact === true;
     if (compact) {
       process.stdout.write(`${JSON.stringify({ surface: result.surface, lessons: result.lessons.map(compactLessonForExecutor), memory_dir: result.memory_dir })}\n`);

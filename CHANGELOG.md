@@ -1,3 +1,10 @@
+## 0.11.0
+
+- Added `learn validate` so evidence-backed lessons must be validated before promotion.
+- Added local `learn query` ranking with optional `--files` and `--failure-signature`.
+- Added short repeated-failure learning hints from `verify`.
+- Added token budgets for validation output and repeated-failure hints.
+
 ## 0.10.1
 
 - Added opt-in micro/compact outputs for token-sensitive agent loops: `next --exact --micro`, `handoff --compact`, `learn query --compact`, and `map query --compact`.

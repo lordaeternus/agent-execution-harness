@@ -11,6 +11,7 @@ import {
   type LessonStatus,
   type LearningMemoryConfig,
 } from "./learning-types.js";
+import type { AgentHarnessRunState } from "./run-types.js";
 import { assertSafeId, assertSafeRelativePath } from "./utils.js";
 
 interface LessonIndex {
@@ -89,6 +90,21 @@ export function promoteLesson(cwd: string, config: AgentHarnessConfig, lessonId:
   return transitionLesson(cwd, config, lessonId, "promoted");
 }
 
+export function validateLessonForPromotion(cwd: string, config: AgentHarnessConfig, lessonId: string): AgentHarnessLesson {
+  const memory = learningConfig(config);
+  assertSafeId(lessonId, "lesson_id");
+  const lesson = readLesson(cwd, memory, lessonId);
+  if (!lesson) throw new Error(`lesson not found: ${lessonId}`);
+  const refreshed = refreshLessonStatus(cwd, memory, lesson);
+  ensureLessonPromotable(cwd, refreshed);
+  refreshed.status = "validated";
+  refreshed.updated_at = now();
+  writeLesson(cwd, memory, refreshed);
+  upsertIndex(cwd, memory, refreshed);
+  appendEvent(cwd, memory, { type: "validate", lesson_id: lessonId });
+  return compactLesson(refreshed, memory);
+}
+
 export function rejectLesson(cwd: string, config: AgentHarnessConfig, lessonId: string, reason: string): AgentHarnessLesson {
   return transitionLesson(cwd, config, lessonId, "rejected", reason);
 }
@@ -97,11 +113,18 @@ export function retireLesson(cwd: string, config: AgentHarnessConfig, lessonId: 
   return transitionLesson(cwd, config, lessonId, "retired", reason);
 }
 
-export function queryLessons(cwd: string, config: AgentHarnessConfig, surface: string, topK?: number): LessonQueryResult {
+export function queryLessons(
+  cwd: string,
+  config: AgentHarnessConfig,
+  surface: string,
+  topK?: number,
+  options: { files?: string[]; failure_signature?: string } = {},
+): LessonQueryResult {
   const memory = learningConfig(config);
   const limit = Math.max(1, Math.min(topK ?? memory.top_k, memory.top_k));
   const lessons = reviewLessons(cwd, config, surface)
     .filter((lesson) => lesson.status === "promoted" || lesson.status === "validated")
+    .sort((a, b) => rankLesson(b, options) - rankLesson(a, options) || byUpdatedDesc(a, b))
     .slice(0, limit)
     .map((lesson) => compactLesson(lesson, memory));
   return { surface, lessons, memory_dir: memory.memory_dir };
@@ -145,14 +168,28 @@ export function pruneLessons(cwd: string, config: AgentHarnessConfig): { retired
   return { retired, removed };
 }
 
+export function buildRepeatedFailureLearningHint(
+  state: AgentHarnessRunState,
+  input: { task_id: string; check: string; repair_kind: string; max_chars?: number },
+): string | undefined {
+  const task = state.tasks.find((item) => item.task_id === input.task_id);
+  if (!task) return undefined;
+  const failures = state.evidence.filter((evidence) => task.evidence_ids.includes(evidence.evidence_id) && evidence.result === "fail" && evidence.check === input.check);
+  if (failures.length < 2) return undefined;
+  const surface = task.surface ?? "generic";
+  return truncate(`repeated_failure:${input.repair_kind}; learn query --surface ${surface} --top-k 3 --compact; capture only after proven fix.`, input.max_chars ?? 180);
+}
+
 function transitionLesson(cwd: string, config: AgentHarnessConfig, lessonId: string, status: LessonStatus, reason?: string): AgentHarnessLesson {
   const memory = learningConfig(config);
   assertSafeId(lessonId, "lesson_id");
   const lesson = readLesson(cwd, memory, lessonId);
   if (!lesson) throw new Error(`lesson not found: ${lessonId}`);
   const refreshed = refreshLessonStatus(cwd, memory, lesson);
-  if (status === "promoted" && refreshed.status === "stale") throw new Error("stale lesson cannot be promoted");
-  if (status === "promoted" && refreshed.evidence_refs.length === 0) throw new Error("lesson requires evidence_refs before promotion");
+  if (status === "promoted") {
+    if (refreshed.status !== "validated") throw new Error("lesson must be validated before promotion");
+    ensureLessonPromotable(cwd, refreshed);
+  }
   refreshed.status = status === "promoted" ? "promoted" : status;
   refreshed.reason = reason ? normalizeAndRedact(reason) : refreshed.reason;
   refreshed.updated_at = now();
@@ -166,6 +203,17 @@ function validateLesson(lesson: AgentHarnessLesson): void {
   if (!lesson.files.length) throw new Error("lesson files are required");
   if (!lesson.evidence_refs.length) throw new Error("lesson evidence_refs are required");
   for (const file of [...lesson.files, ...lesson.evidence_refs]) assertSafeRelativePath(file, "lesson file");
+}
+
+function ensureLessonPromotable(cwd: string, lesson: AgentHarnessLesson): void {
+  if (["stale", "rejected", "retired"].includes(lesson.status)) throw new Error(`lesson status ${lesson.status} cannot be promoted`);
+  if (!lesson.evidence_refs.length) throw new Error("lesson requires evidence_refs before validation");
+  if (lesson.kind === "failure_pattern" && !lesson.failure_signature) throw new Error("failure_pattern lesson requires failure_signature before validation");
+  for (const file of [...lesson.files, ...lesson.evidence_refs]) {
+    assertSafeRelativePath(file, "lesson file");
+    if (!fs.existsSync(path.resolve(cwd, file))) throw new Error(`lesson file missing: ${file}`);
+  }
+  if (containsSecret(JSON.stringify(lesson))) throw new Error("lesson contains unredacted secret");
 }
 
 function learningConfig(config: AgentHarnessConfig): LearningMemoryConfig {
@@ -209,6 +257,29 @@ function compactLesson(lesson: AgentHarnessLesson, memory: LearningMemoryConfig)
     ...lesson,
     summary: lesson.summary.length > memory.max_summary_chars ? lesson.summary.slice(0, memory.max_summary_chars) : lesson.summary,
   };
+}
+
+function rankLesson(lesson: AgentHarnessLesson, options: { files?: string[]; failure_signature?: string }): number {
+  let score = 0;
+  const files = normalizeFiles(options.files ?? []);
+  const overlap = files.filter((file) => lesson.files.includes(file)).length;
+  score += overlap * 20;
+  score += signatureOverlap(options.failure_signature, `${lesson.failure_signature ?? ""} ${lesson.summary}`) * 10;
+  score += lesson.confidence === "high" ? 6 : lesson.confidence === "medium" ? 3 : 1;
+  score += lesson.status === "promoted" ? 4 : 2;
+  score += Math.max(0, 2 - Math.floor((Date.now() - new Date(lesson.updated_at).getTime()) / (7 * 24 * 60 * 60 * 1000)));
+  return score;
+}
+
+function signatureOverlap(input: string | undefined, lessonText: string): number {
+  if (!input) return 0;
+  const wanted = new Set(tokens(input));
+  if (!wanted.size) return 0;
+  return tokens(lessonText).filter((token) => wanted.has(token)).length;
+}
+
+function tokens(value: string): string[] {
+  return value.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length >= 3);
 }
 
 function readAllLessons(cwd: string, memory: LearningMemoryConfig): AgentHarnessLesson[] {
@@ -300,6 +371,18 @@ function normalizeAndRedact(value: string): string {
   let output = value.trim().replace(/\s+/g, " ");
   for (const pattern of SECRET_PATTERNS) output = output.replace(pattern, "[REDACTED]");
   return output;
+}
+
+function containsSecret(value: string): boolean {
+  return SECRET_PATTERNS.some((pattern) => {
+    pattern.lastIndex = 0;
+    return pattern.test(value);
+  });
+}
+
+function truncate(value: string, maxChars: number): string {
+  if (value.length <= maxChars) return value;
+  return value.slice(0, Math.max(0, maxChars - 1));
 }
 
 function expiresAt(ttlDays: number): string {

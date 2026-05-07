@@ -13,6 +13,17 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.11.0
+
+This release improves the harness learning loop without adding embeddings, extra AI agents, or long reports.
+
+- `learn validate`: lessons must be validated before promotion.
+- Smarter `learn query`: rank lessons by touched files and failure signature.
+- Repeated failure hint: `verify` can suggest a short learning action after equivalent failures.
+- Token budgets: validation output and learning hints are capped so routine agent output stays compact.
+
+In plain language: the harness remembers useful lessons more safely, but still talks to the agent in short, cheap messages.
+
 ## Works With Non-Frontier Agents Too
 
 You do not need a frontier model to benefit from this harness.
@@ -184,7 +195,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.10.1.md)
+- [Release notes](docs/release-notes/v0.11.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -476,16 +487,18 @@ It is useful when the agent finds a recurring bug, fixes a fragile area, or disc
 Flow:
 
 ```txt
-capture -> review -> promote -> query -> prune
+capture -> validate -> promote -> query -> prune
 ```
 
 - `capture`: save a candidate lesson from evidence.
-- `review`: inspect candidates and stale records.
+- `validate`: prove the lesson has evidence, existing files, safe text, and required failure details.
 - `promote`: allow a specific lesson to appear in future queries.
-- `query`: return only the most relevant lessons for one surface.
+- `query`: return only the most relevant lessons for one surface, optionally ranked by touched files and failure signature.
 - `prune`: retire expired or noisy lessons.
 
 Lessons are intentionally small. The default query returns only `top_k = 3`, so the agent gets useful context without spending tokens on old history.
+
+This is not model training. It is an evidence-backed memory notebook. Routine output stays compact: no embeddings, no extra reviewing agent, and no long learning report unless a human asks for audit detail.
 
 Truth priority:
 
@@ -1249,13 +1262,14 @@ Maintains governed lessons from real evidence.
 
 ```bash
 agent-harness learn capture --surface auth --kind failure_pattern --summary "Auth fixes must verify authorization guards after session edits." --files src/auth/session.ts --evidence-ref .agent-harness/runs/fix.full.json
+agent-harness learn validate --lesson-id auth-failure-pattern-20260502
 agent-harness learn review --surface auth
 agent-harness learn promote --lesson-id auth-failure-pattern-20260502
-agent-harness learn query --surface auth --top-k 3
+agent-harness learn query --surface auth --top-k 3 --compact --files src/auth/session.ts --failure-signature "guard failed"
 agent-harness learn prune
 ```
 
-Use `learn query` for repeated failures or known-risk surfaces. Use `learn capture` only after evidence exists. Do not store secrets or generic notes.
+Use `learn query` for repeated failures or known-risk surfaces. Use `learn capture` only after evidence exists, `learn validate` before promotion, and compact queries for weak agents. Do not store secrets or generic notes.
 
 ### `run`
 
@@ -1443,7 +1457,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.10.1
+0.11.0
 ```
 
 Package:

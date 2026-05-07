@@ -12,6 +12,7 @@ import { classifyRepair } from "../core/repair-playbooks.js";
 import { effectiveExecutionProfile } from "../core/execution-profile.js";
 import { applyScopeGuardToState, collectGitTouchedFilesResult } from "../core/scope-guard.js";
 import { executeGateCommand } from "../core/command-execution.js";
+import { buildRepeatedFailureLearningHint } from "../core/learning-memory.js";
 
 export function verifyCommand(args: string[], cwd = process.cwd()): void {
   const flags = parseFlags(args);
@@ -83,6 +84,10 @@ export function verifyCommand(args: string[], cwd = process.cwd()): void {
   const artifactPath = saveRun(cwd, context.artifactDir, state);
   const profile = effectiveExecutionProfile(context.mode, context.config);
   const repair = exitCode === 0 ? undefined : classifyRepair(command, output, profile.repairHintMaxChars);
+  const learningHint = repair ? buildRepeatedFailureLearningHint(state, { task_id: taskId, check: command, repair_kind: repair.kind, max_chars: 180 }) : undefined;
+  const learningActions = learningHint
+    ? [`learn query --surface ${surfaceForTask(state, taskId)} --top-k 3 --compact`, "learn capture after proven fix"]
+    : [];
   writeCompactJson({
     status: exitCode === 0 ? "success" : "warning",
     summary: `${state.phase} evidence=${evidenceId} exit=${exitCode}`,
@@ -90,10 +95,14 @@ export function verifyCommand(args: string[], cwd = process.cwd()): void {
       { type: "run_state", path: path.relative(cwd, artifactPath) },
       { type: "evidence_log", path: outputRef },
     ],
-    next_actions: state.phase === "report" ? ["claim auto", "finish"] : ["next"],
+    next_actions: [...(state.phase === "report" ? ["claim auto", "finish"] : ["next"]), ...learningActions],
     errors: state.errors,
-    data: { evidence_id: evidenceId, output_ref: outputRef, sha256, ...(repair ? { repair_hint: repair } : {}) },
+    data: { evidence_id: evidenceId, output_ref: outputRef, sha256, ...(repair ? { repair_hint: repair } : {}), ...(learningHint ? { learning_hint: learningHint } : {}) },
   });
+}
+
+function surfaceForTask(state: { tasks: Array<{ task_id: string; surface?: string }> }, taskId: string): string {
+  return state.tasks.find((task) => task.task_id === taskId)?.surface ?? "generic";
 }
 
 function writeEvidenceLog(cwd: string, artifactDir: string, runId: string, evidenceId: string, output: string): string {
