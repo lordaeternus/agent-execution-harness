@@ -78,7 +78,7 @@ function buildUserMessage(apply: boolean, agentsMode: AgentsMode, backupDir: str
 
 function renderInitResult(result: CliEnvelope, apply: boolean, agentsMode: AgentsMode, backupDir: string, manifest: InstallAction[]): string[] {
   if (!apply) {
-    const planned = manifest.map((item) => `- ${item.action}: ${item.path}`);
+    const planned = manifest.map((item) => `- ${describeInstallAction(item.action)} ${item.path}`);
     return [
       "Agent Execution Harness preview complete.",
       "No files were changed.",
@@ -89,8 +89,7 @@ function renderInitResult(result: CliEnvelope, apply: boolean, agentsMode: Agent
       "To install or update:",
       "npx agent-execution-harness@latest init --apply --agents-mode append",
       "",
-      "For JSON output:",
-      "npx agent-execution-harness@latest init --json",
+      "Advanced: add --json for automation.",
     ];
   }
   const agentsAction = manifest.find((item) => item.path === "AGENTS.md")?.action;
@@ -99,13 +98,13 @@ function renderInitResult(result: CliEnvelope, apply: boolean, agentsMode: Agent
   else if (agentsMode === "append") agentsText = "AGENTS.md appended; existing rules kept.";
   else if (agentsMode === "overwrite") agentsText = "AGENTS.md overwritten by explicit request.";
   else if (agentsMode === "skip") agentsText = "AGENTS.md skipped; existing rules kept unchanged.";
-  const changed = result.artifacts.filter((artifact) => artifact.type !== "backup").map((artifact) => `- ${artifact.type}: ${artifact.path ?? ""}`);
+  const changed = result.artifacts.filter((artifact) => artifact.type !== "backup").map((artifact) => `- ${artifact.path ?? ""}`);
   return [
     "Agent Execution Harness installed successfully.",
     agentsText,
     `Backup saved at: ${backupDir}`,
     "",
-    "Files checked:",
+    "Files updated safely:",
     ...changed,
     "",
     "Next step:",
@@ -114,9 +113,17 @@ function renderInitResult(result: CliEnvelope, apply: boolean, agentsMode: Agent
     "Rollback if needed:",
     `npx agent-execution-harness@latest init --rollback ${backupDir}`,
     "",
-    "For JSON output:",
-    "npx agent-execution-harness@latest init --json --apply",
+    "Advanced: add --json for automation.",
   ];
+}
+
+function describeInstallAction(action: string): string {
+  if (action === "create") return "create";
+  if (action === "merge") return "update safely";
+  if (action === "skip") return "keep";
+  if (action === "overwrite") return "replace";
+  if (action === "conflict") return "needs review";
+  return action;
 }
 
 function applyTemplate(input: { templateRoot: string; target: string; itemPath: string; agentsMode: AgentsMode }): void {

@@ -1,3 +1,8 @@
+## 0.12.2
+
+- Made `init --apply` output even friendlier by replacing technical `merge/create` labels with plain file names.
+- Shortened the advanced JSON hint so first-time users focus on success, backup, next step and rollback.
+
 ## 0.12.1
 
 - Changed `init` and `doctor` to use human-friendly output by default.

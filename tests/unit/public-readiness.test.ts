@@ -67,6 +67,8 @@ describe("public readiness hardening", () => {
     expect(fs.existsSync(path.join(tmp, ".agent-harness", "backups"))).toBe(true);
     expect(output).toContain("Agent Execution Harness installed successfully.");
     expect(output).toContain("AGENTS.md created.");
+    expect(output).toContain("Files updated safely:");
+    expect(output).not.toContain("merge:");
     expect(output).toContain("Next step:");
     const jsonOutput = execFileSync("node", ["dist/cli/index.js", "init", "--adapter", "generic", "--cwd", tmp, "--apply", "--json"], { encoding: "utf8" });
     const result = JSON.parse(jsonOutput) as { data: { user_message: string } };
@@ -107,6 +109,8 @@ describe("public readiness hardening", () => {
 
     expect(output).toContain("Agent Execution Harness installed successfully.");
     expect(output).toContain("AGENTS.md appended; existing rules kept.");
+    expect(output).toContain("Files updated safely:");
+    expect(output).toContain("Advanced: add --json for automation.");
     expect(output).toContain("npx agent-execution-harness@latest doctor --harnessability --cwd .");
 
     const agents = fs.readFileSync(path.join(tmp, "AGENTS.md"), "utf8");
