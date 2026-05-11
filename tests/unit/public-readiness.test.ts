@@ -65,6 +65,7 @@ describe("public readiness hardening", () => {
     expect(fs.existsSync(path.join(tmp, "AGENTS.md"))).toBe(true);
     expect(fs.existsSync(path.join(tmp, "docs", "agent-runtime.md"))).toBe(true);
     expect(fs.existsSync(path.join(tmp, ".agent-harness", "backups"))).toBe(true);
+    expect(JSON.parse(fs.readFileSync(path.join(tmp, "package.json"), "utf8")).scripts["agent:harness"]).toBe("agent-harness");
     expect(output).toContain("Agent Execution Harness installed successfully.");
     expect(output).toContain("AGENTS.md created.");
     expect(output).toContain("Files updated safely:");
@@ -81,6 +82,24 @@ describe("public readiness hardening", () => {
     execFileSync("node", [path.resolve("dist/cli/index.js"), "init", "--adapter", "generic", "--cwd", tmp, "--apply"], { cwd: tmp, stdio: "pipe" });
     expect(fs.existsSync(path.join(tmp, "AGENTS.md"))).toBe(true);
     expect(fs.existsSync(path.join(tmp, "agent-harness.config.json"))).toBe(true);
+    expect(JSON.parse(fs.readFileSync(path.join(tmp, "package.json"), "utf8")).scripts["agent:harness"]).toBe("agent-harness");
+  });
+
+  it("upgrades the legacy agent:harness run script without overwriting custom scripts", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-init-script-upgrade-"));
+    fs.writeFileSync(
+      path.join(tmp, "package.json"),
+      `${JSON.stringify({ name: "target", private: true, scripts: { "agent:harness": "agent-harness run", "agent:report": "custom-report" } }, null, 2)}\n`,
+    );
+
+    execFileSync("node", [path.resolve("dist/cli/index.js"), "init", "--adapter", "generic", "--cwd", tmp, "--apply", "--agents-mode", "append"], {
+      cwd: tmp,
+      stdio: "pipe",
+    });
+
+    const scripts = JSON.parse(fs.readFileSync(path.join(tmp, "package.json"), "utf8")).scripts;
+    expect(scripts["agent:harness"]).toBe("agent-harness");
+    expect(scripts["agent:report"]).toBe("custom-report");
   });
 
   it("does not overwrite an existing AGENTS.md unless explicitly requested", () => {

@@ -1,5 +1,5 @@
 {
-  "agent:harness": "agent-harness run",
+  "agent:harness": "agent-harness",
   "agent:plan:lint": "agent-harness plan-lint",
   "agent:execute": "agent-harness execute",
   "agent:report": "agent-harness report",

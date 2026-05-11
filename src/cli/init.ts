@@ -177,6 +177,9 @@ function mergePackageScripts(templateRoot: string, packagePath: string): void {
   const pkg = JSON.parse(fs.readFileSync(packagePath, "utf8")) as { scripts?: Record<string, string> };
   const scripts = JSON.parse(fs.readFileSync(scriptsPath, "utf8")) as Record<string, string>;
   pkg.scripts = { ...(pkg.scripts ?? {}), ...Object.fromEntries(Object.entries(scripts).filter(([key]) => !pkg.scripts?.[key])) };
+  if (pkg.scripts["agent:harness"] === "agent-harness run" && scripts["agent:harness"] === "agent-harness") {
+    pkg.scripts["agent:harness"] = "agent-harness";
+  }
   fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
 }
 

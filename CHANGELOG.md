@@ -1,3 +1,9 @@
+## 0.12.4
+
+- Fixed `init` templates so `agent:harness` points to the root CLI (`agent-harness`) instead of forcing `agent-harness run`.
+- Added safe migration for existing installs that still have the legacy `agent:harness: agent-harness run` script.
+- Added install tests to prevent `doctor`, `--help`, `--version` and session commands from being hidden behind the `run` subcommand.
+
 ## 0.12.3
 
 - Added plain `--version`, `-v` and `version` output for first-time users testing an install.
