@@ -36,6 +36,10 @@ describe("public readiness hardening", () => {
   it("detects dangerous command variants", () => {
     expect(classifyDangerousCommand("git clean -fdx")).toContain("git clean");
     expect(classifyDangerousCommand("Remove-Item . -Recurse -Force")).toContain("recursive");
+    expect(classifyDangerousCommand("ri . -Recurse -Force")).toContain("recursive");
+    expect(classifyDangerousCommand("cmd /c rmdir /s /q dist")).toContain("cmd destructive");
+    expect(classifyDangerousCommand("powershell.exe -EncodedCommand ZgBvAG8A")).toContain("encoded powershell");
+    expect(classifyDangerousCommand('node -e "require(`fs`).rmSync(`dist`, { recursive: true })"')).toContain("node destructive");
     expect(classifyDangerousCommand("echo secret > .env")).toContain("sensitive");
     expect(evaluateCommandPolicy("pnpm test", { allow: ["pnpm"], deny: ["publish"] }).allowed).toBe(true);
     expect(evaluateCommandPolicy("pnpm publish", { allow: ["pnpm"], deny: ["publish"] }).allowed).toBe(false);

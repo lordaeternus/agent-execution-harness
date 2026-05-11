@@ -8,9 +8,14 @@ const DANGEROUS_PATTERNS: Array<[RegExp, string]> = [
   [/\bgit\s+clean\b[\s\S]*-[a-z]*f/i, "git clean force"],
   [/\bgit\s+push\b[\s\S]*(--force|--force-with-lease)/i, "git force push"],
   [/\brm\s+-rf\b/i, "recursive force remove"],
+  [/\b(cmd|cmd\.exe)\b[\s\S]*\/c[\s\S]*\b(del|rmdir|rd)\b/i, "cmd destructive shell"],
   [/\bdel\b[\s\S]*\/[sq]\b/i, "recursive delete"],
+  [/\brmdir\b[\s\S]*\/[sq]\b/i, "recursive delete"],
   [/[>]{1,2}\s*(\.env|.*secret|.*token)/i, "redirect to sensitive file"],
   [/\bRemove-Item\b[\s\S]*(-Recurse)[\s\S]*(-Force)/i, "recursive force remove"],
+  [/\b(ri|rm|erase)\b[\s\S]*(-Recurse)[\s\S]*(-Force)/i, "recursive force remove"],
+  [/\bpowershell(?:\.exe)?\b[\s\S]*-EncodedCommand\b/i, "encoded powershell command"],
+  [/\bnode\b[\s\S]*\s-e\s[\s\S]*(rmSync|unlinkSync|rmdirSync|writeFileSync\([^)]*\.env|execSync\([^)]*(rm|del|rmdir|Remove-Item))/i, "node destructive eval"],
 ];
 
 export function classifyDangerousCommand(command: string): string | null {

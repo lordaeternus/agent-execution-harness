@@ -80,7 +80,7 @@ export function mapCommand(args: string[], cwd = process.cwd()): void {
       surface,
       files,
       summary,
-      source_files: sourceFiles,
+      source_files: sourceFiles ?? (confidence === "high" ? files : undefined),
       confidence,
       checked_by_main_agent: checked || !subagent,
       subagent,

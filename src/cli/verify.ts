@@ -97,7 +97,14 @@ export function verifyCommand(args: string[], cwd = process.cwd()): void {
     ],
     next_actions: [...(state.phase === "report" ? ["claim auto", "finish"] : ["next"]), ...learningActions],
     errors: state.errors,
-    data: { evidence_id: evidenceId, output_ref: outputRef, sha256, ...(repair ? { repair_hint: repair } : {}), ...(learningHint ? { learning_hint: learningHint } : {}) },
+    data: {
+      evidence_id: evidenceId,
+      output_ref: outputRef,
+      sha256,
+      ...(result.safetyWarning && context.mode === "weak" ? { safety_warning: result.safetyWarning } : {}),
+      ...(repair ? { repair_hint: repair } : {}),
+      ...(learningHint ? { learning_hint: learningHint } : {}),
+    },
   });
 }
 

@@ -36,6 +36,7 @@ if (fs.existsSync("dist/cli/index.js")) {
     ["repeated_failure_hint_chars", 180],
     ["learn_health_compact_chars", 300],
     ["learn_audit_compact_chars", 600],
+    ["smoke_benchmark_chars", 260],
   ];
   for (const [metric, max] of dynamicLimits) {
     if (!Number.isFinite(metrics[metric])) failures.push(`benchmark missing ${metric}`);

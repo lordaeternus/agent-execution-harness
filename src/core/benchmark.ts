@@ -11,7 +11,19 @@ export interface BenchmarkRun {
   unexpected_diff_blocked?: boolean;
 }
 
-export function calculateBenchmark(runs: BenchmarkRun[]) {
+export interface BenchmarkReport {
+  completion_rate: number;
+  "pass@1": number;
+  "pass@3": number;
+  halt_rate: number;
+  false_success_rate: number;
+  repair_success_rate: number;
+  unexpected_diff_block_rate: number;
+  retries_per_task: number;
+  cost_per_successful_task: number;
+}
+
+export function calculateBenchmark(runs: BenchmarkRun[]): BenchmarkReport {
   const total = runs.length || 1;
   const passed = runs.filter((run) => run.status === "pass").length;
   const passAt1 = runs.filter((run) => run.status === "pass" && run.attempt === 1).length / total;
@@ -32,4 +44,11 @@ export function calculateBenchmark(runs: BenchmarkRun[]) {
     retries_per_task: retriesPerTask,
     cost_per_successful_task: costPerSuccess,
   };
+}
+
+export function benchmarkFailures(report: BenchmarkReport): string[] {
+  const failures: string[] = [];
+  if (report.false_success_rate !== 0) failures.push(`false_success_rate=${report.false_success_rate} must be 0`);
+  if (report.unexpected_diff_block_rate !== 1) failures.push(`unexpected_diff_block_rate=${report.unexpected_diff_block_rate} must be 1`);
+  return failures;
 }

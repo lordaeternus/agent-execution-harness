@@ -96,6 +96,53 @@ describe("plan compiler", () => {
     expect(result.tasks[0].allowed_commands).toEqual(["pnpm test:run tests/unit/plan-compiler.test.ts"]);
   });
 
+  it("accepts structured task controls and rejects vague ones", () => {
+    const result = compilePlan(
+      basePlan({
+        gates: ["pnpm lint", "pnpm test"],
+        tasks: [
+          {
+            task_id: "structured",
+            files: ["src/core/plan-compiler.ts"],
+            forbidden_files: ["src/core/plan-compiler.ts", "src/core/runner.ts"],
+            expected_diff: "fix",
+            required_checks: ["focused test"],
+            rollback_command: "revert",
+            required_evidence: ["focused_tests"],
+            acceptance_criteria: "Run `pnpm test:run tests/unit/plan-compiler.test.ts` and pass.",
+          },
+        ],
+      }),
+    );
+
+    expect(result.status).toBe("error");
+    expect(result.diagnostics.map((item) => item.code)).toEqual(
+      expect.arrayContaining(["file_both_allowed_and_forbidden", "vague_expected_diff", "vague_required_check", "vague_rollback_command"]),
+    );
+  });
+
+  it("uses required_checks as allowed commands when task commands are omitted", () => {
+    const result = compilePlan(
+      basePlan({
+        gates: ["pnpm lint", "pnpm test"],
+        tasks: [
+          {
+            task_id: "required-checks",
+            files: ["src/core/plan-compiler.ts"],
+            required_checks: ["pnpm test:run tests/unit/plan-compiler.test.ts"],
+            required_evidence: ["focused_tests"],
+            expected_diff: "Add structured validation coverage for compiler task contracts.",
+            rollback_command: "git diff -- src/core/plan-compiler.ts",
+            acceptance_criteria: "Run `pnpm test:run tests/unit/plan-compiler.test.ts` and pass.",
+          },
+        ],
+      }),
+    );
+
+    expect(result.status).toBe("success");
+    expect(result.tasks[0].allowed_commands).toEqual(["pnpm test:run tests/unit/plan-compiler.test.ts"]);
+  });
+
   it("rejects invalid dependency graphs", () => {
     const result = compilePlan(
       basePlan({

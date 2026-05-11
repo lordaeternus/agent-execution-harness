@@ -6,6 +6,8 @@
     {"fixture_path": "tests/fixtures/benchmark/scenarios/dangerous-command-smoke.json"},
     {"fixture_path": "tests/fixtures/benchmark/scenarios/constrained-mode-smoke.json"},
     {"fixture_path": "tests/fixtures/benchmark/scenarios/strict-shell-blocked-smoke.json"},
-    {"fixture_path": "tests/fixtures/benchmark/scenarios/out-of-plan-diff-smoke.json"}
+    {"fixture_path": "tests/fixtures/benchmark/scenarios/out-of-plan-diff-smoke.json"},
+    {"fixture_path": "tests/fixtures/benchmark/scenarios/weak-fake-evidence-smoke.json"},
+    {"fixture_path": "tests/fixtures/benchmark/scenarios/weak-out-of-scope-smoke.json"}
   ]
 }

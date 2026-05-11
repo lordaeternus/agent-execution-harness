@@ -1,3 +1,14 @@
+## 0.13.0
+
+- Stabilized default test execution with a higher Vitest timeout for CLI-heavy integration tests.
+- Updated `ajv` lock state to remove vulnerable `fast-uri` transitive versions.
+- Added `secret-scan` and `pnpm audit --audit-level=moderate` to CI and release workflows.
+- Added weak-agent command safety diagnostics and stronger dangerous-command detection.
+- Added optional structured plan controls: `forbidden_files`, `expected_diff`, `required_checks` and `rollback_command`.
+- Added weak-agent benchmark scenarios and failure thresholds for false success and missed out-of-plan diff blocking.
+- Tightened high-confidence codebase memory so it requires source files and main-agent validation.
+- Updated token budgets, runtime docs and README for safer low-token execution.
+
 ## 0.12.4
 
 - Fixed `init` templates so `agent:harness` points to the root CLI (`agent-harness`) instead of forcing `agent-harness run`.

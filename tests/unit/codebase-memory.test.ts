@@ -39,6 +39,8 @@ describe("codebase memory", () => {
       files: ["src/auth/session.ts"],
       summary: "Session auth surface owns login state contracts and must be checked against authorization call sites before edits.",
       confidence: "high",
+      source_files: ["src/auth/session.ts"],
+      checked_by_main_agent: true,
     });
     expect(record.status).toBe("fresh");
   });
@@ -52,6 +54,8 @@ describe("codebase memory", () => {
       files: ["src/auth/session.ts", "src/auth/guard.ts", "src/auth/policy.ts"],
       summary: "Session auth surface owns login state contracts and must be checked against authorization call sites before edits.",
       confidence: "high",
+      source_files: ["src/auth/session.ts"],
+      checked_by_main_agent: true,
     });
     const compact = compactSurfaceMemoryForExecutor(record, 2);
     expect(compact).toEqual({
@@ -85,5 +89,24 @@ describe("codebase memory", () => {
         confidence: "medium",
       }),
     ).toThrow("subagent memory requires");
+    expect(() =>
+      recordMemory(cwd, config, {
+        surface: "auth",
+        files: ["src/auth/session.ts"],
+        summary: "Auth session contract summary should not become high confidence without explicit source and main-agent check.",
+        confidence: "high",
+      }),
+    ).toThrow("high confidence memory requires");
+    const valid = recordMemory(cwd, config, {
+      surface: "auth",
+      files: ["src/auth/session.ts"],
+      source_files: ["src/auth/session.ts"],
+      summary: "Auth session contract summary produced by a read-only subagent and checked by the main agent before reuse.",
+      subagent: true,
+      confidence: "high",
+      checked_by_main_agent: true,
+    });
+    expect(valid.confidence).toBe("high");
+    expect(valid.checked_by_main_agent).toBe(true);
   });
 });

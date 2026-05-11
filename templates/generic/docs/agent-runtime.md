@@ -14,7 +14,7 @@ Use this file for execution. Use `README.md` only for human learning.
 - For critical behavior fixtures, run `agent-harness fixtures validate --file <fixture.json>`.
 - After durable structural code changes, run `agent-harness map update --files <files>` and `agent-harness map record --surface <surface> --files <files> --summary "<durable fact>"`.
 - After durable fixes or incidents, use `agent-harness learn capture`, then `agent-harness learn validate`, then promote only specific lessons with evidence.
-- Prefer `agent-harness verify --task-id <id> --type <evidence_type> --cmd "<command>"`.
+- Prefer `agent-harness verify --task-id <id> --type <evidence_type> --exec <bin> --args-json "[...]"`; use `--cmd` only when shell behavior is required.
 - Use `--types a,b` when one command proves multiple evidence types.
 - `verify` stores long logs by `output_ref` + `sha256` and records evidence.
 - Do not say completed unless artifact status is `completed`.
@@ -22,6 +22,8 @@ Use this file for execution. Use `README.md` only for human learning.
 - Evidence needs `evidence_type` or `evidence_types`.
 - Keep summaries short. Do not paste long logs when `output_ref` exists.
 - Lessons are hints, not truth. Source code and current tests win.
+- High-confidence memory requires source files and main-agent validation.
+- Benchmark smoke must keep `false_success_rate=0` and `unexpected_diff_block_rate=1`.
 - No embeddings, no extra reviewing agent, no long learning report in routine execution.
 - HALT on destructive risk, unsafe ambiguity or repeated failure.
 

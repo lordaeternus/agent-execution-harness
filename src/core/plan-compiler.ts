@@ -26,7 +26,7 @@ const EVIDENCE_BY_SURFACE: Record<TaskSurface, string[]> = {
 
 const MAX_FILES_BY_RISK: Record<RiskLevel, number> = { L1: 3, L2: 3, L3: 2 };
 const VAGUE_WORDS = /^(fix|adjust|improve|change|update|make it work|works|done|ok|corrigir|ajustar|melhorar|alterar|funcionar)$/i;
-const COMMAND_HINT = /`[^`]+`|\b(pnpm|npm|node|npx|tsc|vitest|playwright|deno|cargo|go test|pytest|make)\b/i;
+const COMMAND_HINT = /`[^`]+`|\b(pnpm|npm|node|npx|git|tsc|vitest|playwright|deno|cargo|go test|pytest|make)\b/i;
 
 export function compilePlan(plan: AgentHarnessPlan): CompiledPlan {
   const diagnostics: PlanCompilerDiagnostic[] = [];
@@ -54,14 +54,25 @@ export function compilePlan(plan: AgentHarnessPlan): CompiledPlan {
 
 function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: number, planGates: string[], diagnostics: PlanCompilerDiagnostic[], profile?: string): CompiledTaskContract {
   const files = unique(task.files ?? []);
+  const forbiddenFiles = unique(task.forbidden_files ?? []);
   const surface = task.surface ?? inferSurface(files);
   const requiredEvidence = unique(task.required_evidence?.length ? task.required_evidence : EVIDENCE_BY_SURFACE[surface]);
-  const allowedCommands = unique(task.allowed_commands?.length ? task.allowed_commands : planGates.length === 1 ? planGates : []);
+  const allowedCommands = unique(task.allowed_commands?.length ? task.allowed_commands : task.required_checks?.length ? task.required_checks : planGates.length === 1 ? planGates : []);
   const criteria = task.acceptance_criteria.trim();
 
   if (files.length === 0) diagnostics.push(error(task, "missing_files", "Task must declare exact files before execution."));
   if (files.length > maxFiles) diagnostics.push(error(task, "too_many_files", `Task touches ${files.length} files; max for ${riskLevel} is ${maxFiles}.`));
   if (criteria.length < 18 || VAGUE_WORDS.test(criteria)) diagnostics.push(error(task, "vague_acceptance", "Acceptance criteria is too vague for autonomous execution."));
+  if (task.expected_diff && (task.expected_diff.trim().length < 16 || VAGUE_WORDS.test(task.expected_diff.trim()))) {
+    diagnostics.push(error(task, "vague_expected_diff", "expected_diff is too vague for autonomous execution."));
+  }
+  for (const file of files) {
+    if (forbiddenFiles.includes(file)) diagnostics.push(error(task, "file_both_allowed_and_forbidden", `File is both allowed and forbidden: ${file}.`));
+  }
+  for (const check of task.required_checks ?? []) {
+    if (!COMMAND_HINT.test(check)) diagnostics.push(error(task, "vague_required_check", `required_check is not command-like: ${check}.`));
+  }
+  if (task.rollback_command && !COMMAND_HINT.test(task.rollback_command)) diagnostics.push(error(task, "vague_rollback_command", "rollback_command must be command-like."));
   if (riskLevel !== "L1" && !COMMAND_HINT.test(criteria) && requiredEvidence.length === 0) {
     diagnostics.push(error(task, "missing_verifiable_dod", "Task needs command-backed criteria or required evidence."));
   }

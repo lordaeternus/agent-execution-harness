@@ -13,6 +13,21 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.13.0
+
+This release hardens the harness for weaker agents and safer public use.
+
+- stable test timeout for slower machines
+- dependency audit clean at moderate severity
+- CI/release now run secret scan and dependency audit
+- stronger dangerous-command detection
+- safer command guidance: prefer `--exec` + `--args-json` over free shell
+- richer optional plan controls: forbidden files, expected diff, required checks and rollback command
+- stricter high-confidence memory: source files and main-agent validation are required
+- benchmark smoke now fails if false success appears or out-of-plan diff is not blocked
+
+In plain language: the harness now does more to stop weaker agents from guessing, touching the wrong files, or claiming success without proof.
+
 ## What's New In v0.12.4
 
 This patch fixes install/update scripts for existing projects.
@@ -254,7 +269,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.12.4.md)
+- [Release notes](docs/release-notes/v0.13.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -1528,7 +1543,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.12.4
+0.13.0
 ```
 
 Package:

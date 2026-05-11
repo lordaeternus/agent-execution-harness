@@ -214,6 +214,10 @@ export function recordMemory(
     throw new Error("subagent memory requires source_files, confidence and checked_by_main_agent=true");
   }
   const files = normalizeFiles(input.files);
+  const sourceFiles = input.source_files ? normalizeFiles(input.source_files) : input.confidence === "high" ? [] : files;
+  if (input.confidence === "high" && (!sourceFiles.length || input.checked_by_main_agent !== true)) {
+    throw new Error("high confidence memory requires source_files and checked_by_main_agent=true");
+  }
   const record: SurfaceMemory = {
     schema_version: MEMORY_SCHEMA_VERSION,
     surface: input.surface,
@@ -222,8 +226,8 @@ export function recordMemory(
     files,
     updated_at: now(),
     confidence: input.confidence ?? "medium",
-    source_files: input.source_files ? normalizeFiles(input.source_files) : files,
-    checked_by_main_agent: input.checked_by_main_agent ?? true,
+    source_files: sourceFiles,
+    checked_by_main_agent: input.checked_by_main_agent ?? false,
   };
   writeSurface(cwd, memory, record);
   upsertIndexSurface(cwd, memory, record);

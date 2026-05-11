@@ -14,6 +14,8 @@ export interface CommandExecutionResult {
   stderr: string;
   output: string;
   exitCode: number;
+  shellUsed: boolean;
+  safetyWarning?: string;
 }
 
 export function executeGateCommand(request: CommandExecutionRequest): CommandExecutionResult {
@@ -21,17 +23,25 @@ export function executeGateCommand(request: CommandExecutionRequest): CommandExe
   const check = request.exec ? [request.exec, ...args].join(" ") : request.command ?? "";
   if (request.exec) {
     const result = spawnSync(request.exec, args, { cwd: request.cwd, shell: false, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 });
-    return resultFromSpawn(check, result);
+    return resultFromSpawn(check, result, false);
   }
   if (!request.command) throw new Error("--cmd or --exec is required");
   if (!request.allowShell) throw new Error("shell command is blocked in strict mode; use --exec and --args-json");
   const result = spawnSync(request.command, { cwd: request.cwd, shell: true, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 });
-  return resultFromSpawn(check, result);
+  return resultFromSpawn(check, result, true);
 }
 
-function resultFromSpawn(check: string, result: ReturnType<typeof spawnSync>): CommandExecutionResult {
+function resultFromSpawn(check: string, result: ReturnType<typeof spawnSync>, shellUsed: boolean): CommandExecutionResult {
   const stdout = String(result.stdout ?? "");
   const stderr = String(result.stderr ?? "");
   const output = `${stdout}${stderr}`;
-  return { check, stdout, stderr, output, exitCode: typeof result.status === "number" ? result.status : 1 };
+  return {
+    check,
+    stdout,
+    stderr,
+    output,
+    exitCode: typeof result.status === "number" ? result.status : 1,
+    shellUsed,
+    ...(shellUsed ? { safetyWarning: "shell command used; prefer --exec and --args-json for weak/strict agents" } : {}),
+  };
 }

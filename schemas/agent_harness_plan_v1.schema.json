@@ -87,7 +87,25 @@
               "minLength": 1
             }
           },
+          "forbidden_files": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "expected_diff": {
+            "type": "string",
+            "minLength": 1
+          },
           "required_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required_checks": {
             "type": "array",
             "items": {
               "type": "string",
@@ -100,6 +118,10 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          "rollback_command": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }

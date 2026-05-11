@@ -9,8 +9,12 @@ export interface AgentHarnessTask {
   depends_on?: string[];
   surface?: TaskSurface;
   files?: string[];
+  forbidden_files?: string[];
+  expected_diff?: string;
   required_evidence?: string[];
+  required_checks?: string[];
   allowed_commands?: string[];
+  rollback_command?: string;
 }
 
 export interface AgentHarnessPlan {

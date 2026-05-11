@@ -11,7 +11,16 @@ const plan = {
   risk_level: "L2",
   rollback_expectation: "Remove generated files.",
   gates: ["node --version"],
-  tasks: [{ task_id: "bench-task", files: ["created.txt"], acceptance_criteria: "node version gate passes.", required_evidence: ["focused_tests"] }],
+  tasks: [{
+    task_id: "bench-task",
+    files: ["created.txt"],
+    forbidden_files: ["outside.txt"],
+    expected_diff: "Create or update only the benchmark target file.",
+    acceptance_criteria: "node version gate passes.",
+    required_evidence: ["focused_tests"],
+    required_checks: ["node --version"],
+    rollback_command: "git diff -- created.txt",
+  }],
 };
 fs.writeFileSync(path.join(tmp, "plan.json"), JSON.stringify(plan));
 fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
@@ -169,7 +178,8 @@ const learnCompactReduction = Math.round(((learnQuery.totalChars - learnQueryCom
 const mapCompactReduction = Math.round(((mapQuery.totalChars - mapQueryCompact.totalChars) / mapQuery.totalChars) * 100);
 const nextMicroReduction = Math.round(((weakNextExact.totalChars - nextMicro.totalChars) / weakNextExact.totalChars) * 100);
 const handoffCompactReduction = Math.round(((handoff.totalChars - handoffCompact.totalChars) / handoff.totalChars) * 100);
-console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} validate_output_chars=${validateOutput.totalChars} repeated_failure_hint_chars=${repeatedFailureHint.length} learn_query_chars=${learnQuery.totalChars} learn_query_compact_chars=${learnQueryCompact.totalChars} learn_health_compact_chars=${learnHealthCompact.totalChars} learn_audit_compact_chars=${learnAuditCompact.totalChars} learn_query_compact_reduction_pct=${learnCompactReduction} map_query_chars=${mapQuery.totalChars} map_query_compact_chars=${mapQueryCompact.totalChars} map_query_compact_reduction_pct=${mapCompactReduction} standard_next_chars=${standardNext.totalChars} weak_next_chars=${weakNext.totalChars} weak_reduction_pct=${weakReduction} weak_next_exact_chars=${weakNextExact.totalChars} next_micro_chars=${nextMicro.totalChars} next_micro_reduction_pct=${nextMicroReduction} handoff_chars=${handoff.totalChars} handoff_compact_chars=${handoffCompact.totalChars} handoff_compact_reduction_pct=${handoffCompactReduction}`);
+const smokeBenchmark = execFileSync(process.execPath, [cli, "benchmark", "--mode", "smoke"], { cwd: root, encoding: "utf8" });
+console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} validate_output_chars=${validateOutput.totalChars} repeated_failure_hint_chars=${repeatedFailureHint.length} learn_query_chars=${learnQuery.totalChars} learn_query_compact_chars=${learnQueryCompact.totalChars} learn_health_compact_chars=${learnHealthCompact.totalChars} learn_audit_compact_chars=${learnAuditCompact.totalChars} learn_query_compact_reduction_pct=${learnCompactReduction} map_query_chars=${mapQuery.totalChars} map_query_compact_chars=${mapQueryCompact.totalChars} map_query_compact_reduction_pct=${mapCompactReduction} standard_next_chars=${standardNext.totalChars} weak_next_chars=${weakNext.totalChars} weak_reduction_pct=${weakReduction} weak_next_exact_chars=${weakNextExact.totalChars} next_micro_chars=${nextMicro.totalChars} next_micro_reduction_pct=${nextMicroReduction} handoff_chars=${handoff.totalChars} handoff_compact_chars=${handoffCompact.totalChars} handoff_compact_reduction_pct=${handoffCompactReduction} smoke_benchmark_chars=${smokeBenchmark.length}`);
 if (weakReduction < 10) {
   console.error("weak next benchmark requires at least 10% output reduction");
   process.exitCode = 1;

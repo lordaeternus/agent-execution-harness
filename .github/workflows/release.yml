@@ -20,6 +20,8 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      - run: pnpm secret-scan
+      - run: pnpm audit --audit-level=moderate
       - run: pnpm test
       - run: pnpm test:integration
       - run: pnpm token-budget
