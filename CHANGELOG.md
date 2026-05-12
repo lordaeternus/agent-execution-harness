@@ -1,3 +1,9 @@
+## 0.13.1
+
+- Added compact operating rules to the installed `AGENTS.md` templates.
+- The rules guide agents to think/read before coding, keep changes surgical, define success criteria, surface risky ambiguity, and avoid silent skips.
+- Kept the template rules inside the token budget so installs remain lightweight.
+
 ## 0.13.0
 
 - Stabilized default test execution with a higher Vitest timeout for CLI-heavy integration tests.

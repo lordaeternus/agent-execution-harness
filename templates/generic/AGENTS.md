@@ -1,13 +1,17 @@
 # Agent Harness
 
-- Read `docs/agent-runtime.md`; README is human docs.
-- L2/L3, multi-step, delegated: run `agent-harness` automatically; user should not need to ask.
-- Flow: `session start` -> `next --exact` -> `verify` -> `claim auto` -> `finish`.
-- Weak: `--mode weak`; 1 task, <=2 files, typed evidence.
-- `claim auto` batches internally; run once.
-- Scope guard blocks `finish` if product/source diff is outside declared files.
-- Risky/unclear: `map query`; durable structure: `map update` + `map record`.
-- If `learning_health=needs_audit`, run `learn audit --compact`; no auto-delete.
-- No success claim without completed artifact, evidence and claims.
-- Failed verify/CLI order returns `repair_hint`; max 3 tries, then HALT.
-- UI/layout needs smoke/visual assertion; long logs by `output_ref` + `sha256`.
+- Runtime: `docs/agent-runtime.md`.
+- Auto-run on L2/L3, multi-step or delegated work.
+- Think/read first: assumptions, exports, callers, utilities.
+- Risky ambiguity -> ask/HALT; else smallest conservative path.
+- Surgical: no speculation, refactor, unrelated cleanup.
+- Define success; tests prove acceptance/regression/contract.
+- Flow: `session start` -> `next --exact --micro` -> `verify` -> `claim auto` -> `finish`.
+- Weak: `--mode weak`; <=2 files; typed evidence; prefer `verify --exec`.
+- Scope guard blocks out-of-plan product/source diff.
+- Risky/unclear: `map query`; durable: `map update`/`map record`.
+- Audit noisy memory with `learn audit --compact`; no auto-delete.
+- Conflicts: newer/tested/local wins; mention rejected.
+- No silent skips/success without artifact/evidence/claims.
+- Repair hints: max 3, then HALT.
+- UI needs smoke/visual; long logs by ref.

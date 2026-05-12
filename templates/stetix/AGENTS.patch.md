@@ -1,13 +1,18 @@
-# Stetix Adapter Patch
+# Stetix Harness
 
-- L2/L3, multi-step/delegated: require `pnpm agent:harness` automatically; user should not need to ask.
-- Read `docs/process/agent-runtime.md`; avoid long docs.
-- Flow: session start -> next --exact -> verify -> claim auto -> finish.
-- Weak: `--mode weak`, <=2 files/task, typed evidence; claim auto batches.
-- Scope guard blocks finish when product/source diff is outside declared files.
-- Canonical memory: `docs/historico.md`; risky/unclear: query harness memory.
-- Durable structure: update memory after edit; memory is cache, source/docs win.
-- If `learning_health=needs_audit`, run compact audit; never delete lessons automatically.
-- No success claim without completed artifact, evidence and claims.
-- Failed verify/CLI order returns repair hint; max 3 tries, then HALT.
-- UI/layout needs smoke/visual assertion; long logs by reference/hash.
+- Auto-run on L2/L3, multi-step/delegated.
+- Runtime: `docs/process/agent-runtime.md`.
+- Think/read first: assumptions, exports, callers.
+- Risky ambiguity -> ask/HALT; else conservative path.
+- Surgical: no speculation, refactor, unrelated cleanup.
+- Define success; tests prove acceptance/contract.
+- Flow: session -> next --exact --micro -> verify -> claim auto -> finish.
+- Weak: `--mode weak`, <=2 files, typed evidence, prefer verify --exec.
+- Scope guard blocks out-of-plan product/source diff.
+- Memory: `docs/historico.md` is truth; harness memory is cache.
+- Durable: `map update`/`map record` after structural edit.
+- Audit noisy memory with compact audit; no auto-delete.
+- Conflicts: newer/tested/local wins; mention rejected.
+- No silent skips/success without artifact/evidence/claims.
+- Repair hints: max 3, then HALT.
+- UI needs smoke/visual; long logs by ref.

@@ -13,6 +13,18 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.13.1
+
+This patch improves the instructions installed into `AGENTS.md`.
+
+- agents are reminded to read before writing
+- risky ambiguity should stop or ask instead of guessing
+- changes should stay surgical and avoid unrelated refactors
+- success criteria and evidence come before claiming completion
+- the rules stay compact so the install does not waste tokens
+
+In plain language: new installs and updates give the coding agent clearer rails without turning `AGENTS.md` into a long manifesto.
+
 ## What's New In v0.13.0
 
 This release hardens the harness for weaker agents and safer public use.
@@ -269,7 +281,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.13.0.md)
+- [Release notes](docs/release-notes/v0.13.1.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -1543,7 +1555,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.13.0
+0.13.1
 ```
 
 Package:
