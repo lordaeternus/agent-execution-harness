@@ -13,6 +13,17 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.13.2
+
+This patch improves how agents react to repeated failures.
+
+- repeated failures now tell agents to inspect local code/history first
+- docs or web research is reserved for external dependency behavior
+- agents should compare two possible fixes instead of guessing repeatedly
+- the rule stays compact and keeps the install token budget intact
+
+In plain language: when the same error appears again, the agent should stop guessing, look locally first, research only when needed, then choose the smallest safe fix.
+
 ## What's New In v0.13.1
 
 This patch improves the instructions installed into `AGENTS.md`.
@@ -281,7 +292,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.13.1.md)
+- [Release notes](docs/release-notes/v0.13.2.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -1555,7 +1566,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.13.1
+0.13.2
 ```
 
 Package:

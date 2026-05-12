@@ -1,3 +1,9 @@
+## 0.13.2
+
+- Added compact repeated-failure guidance to runtime docs and installed `AGENTS.md` templates.
+- The rule tells agents to inspect local code/history first, use docs or web only for external dependency behavior, compare two fixes, and stop after repeated equivalent failures.
+- Kept all updated instruction templates inside the token budget.
+
 ## 0.13.1
 
 - Added compact operating rules to the installed `AGENTS.md` templates.

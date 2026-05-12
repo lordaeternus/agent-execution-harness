@@ -9,7 +9,7 @@ Execution only.
 - Weak/strict: prefer `verify --exec <bin> --args-json "[...]"`.
 - `claim auto` batches internally; run once.
 - Scope guard: `finish` blocks diff outside declared files.
-- Follow `repair_hint`; max 3 equivalent failures, then HALT.
+- Repeat failure: local first; docs/web only for deps; compare 2 fixes; max 3 then HALT.
 - L2 unclear/L3: `map query`; durable: `map update` + `map record`.
 - Repeated/risky: `learn query --surface <s> --top-k 3 --compact --files <f> --failure-signature <sig>`.
 - Fix/incident: `learn capture` -> `learn validate` -> `learn promote`.
