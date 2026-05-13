@@ -1,6 +1,6 @@
 # Configuration
 
-`agent-harness.config.json` defines `artifact_dir`, `product_paths`, `required_scripts`, `doctor_profile`, `command_policy`, `token_budget`, `codebase_memory`, and `learning_memory`.
+`agent-harness.config.json` defines `artifact_dir`, `product_paths`, `required_scripts`, `doctor_profile`, `command_policy`, `token_budget`, `codebase_memory`, `learning_memory`, and optional `architecture_rules`.
 
 `command_policy.deny` wins over allow.
 
@@ -70,13 +70,35 @@ Use these commands to keep the harness cheap and practical:
 
 ```bash
 agent-harness doctor --harnessability --cwd .
+agent-harness doctor --coverage --architecture --cwd .
 agent-harness doctor --steering --cwd .
 ```
 
 - `doctor --harnessability` scores local rails such as scripts, tests, `AGENTS.md`, runtime docs and command policy.
+- `doctor --coverage` shows compact control gaps for weak-agent work.
+- `doctor --architecture` checks optional path/import boundary rules.
 - `doctor --steering` scans recent artifacts and suggests a small control only when failures repeat.
 
 The goal is not to add sensors everywhere. Cheap deterministic checks should run early. Expensive checks should be reserved for risky work.
+
+## Architecture Rules
+
+Use `architecture_rules` only for simple boundaries that weak agents often cross:
+
+```json
+{
+  "architecture_rules": [
+    {
+      "id": "no_client_secret_import",
+      "from": "src/**/*.ts",
+      "forbid_import": "**/service-role**",
+      "reason": "client code must not import server-only secrets"
+    }
+  ]
+}
+```
+
+Rules are string/glob checks, not a full architecture framework.
 
 ## Approved Fixtures
 

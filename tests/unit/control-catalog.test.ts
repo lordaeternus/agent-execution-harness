@@ -18,6 +18,11 @@ describe("control catalog", () => {
 
   it("documents the core low-token safety controls", () => {
     const ids = listControls().map((control) => control.id);
-    expect(ids).toEqual(expect.arrayContaining(["plan_lint", "scope_guard", "evidence_policy", "strict_command_policy", "handoff_validate"]));
+    expect(ids).toEqual(expect.arrayContaining(["plan_lint", "scope_guard", "evidence_policy", "strict_command_policy", "handoff_validate", "coding_discipline"]));
+    expect(listControls().find((control) => control.id === "coding_discipline")).toMatchObject({
+      type: "feedforward",
+      execution: "computational",
+      cost: "low",
+    });
   });
 });

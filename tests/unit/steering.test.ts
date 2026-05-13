@@ -21,9 +21,27 @@ describe("repeated failure steering", () => {
     const result = analyzeRepeatedFailures(cwd, config);
     expect(result.suggestions[0]).toMatchObject({ key: "unexpected_file_changed", count: 3 });
   });
+
+  it("suggests compact controls for critical and boundary failures", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-steering-controls-"));
+    const config = defaultConfig();
+    fs.mkdirSync(path.join(cwd, config.artifact_dir), { recursive: true });
+
+    writeRun(cwd, config.artifact_dir, "one", [], ["architecture boundary violation"]);
+    writeRun(cwd, config.artifact_dir, "two", [], ["architecture boundary violation"]);
+    writeRun(cwd, config.artifact_dir, "three", [], ["architecture boundary violation"]);
+    const architecture = analyzeRepeatedFailures(cwd, config).suggestions;
+    expect(architecture.map((item) => item.key)).toContain("architecture_rule");
+
+    writeRun(cwd, config.artifact_dir, "four", [], ["fixture missing"]);
+    writeRun(cwd, config.artifact_dir, "five", [], ["fixture missing"]);
+    writeRun(cwd, config.artifact_dir, "six", [], ["fixture missing"]);
+    const fixture = analyzeRepeatedFailures(cwd, config).suggestions;
+    expect(fixture.map((item) => item.key)).toContain("approved_fixture");
+  });
 });
 
-function writeRun(cwd: string, artifactDir: string, runId: string, unexpectedFiles: string[]): void {
+function writeRun(cwd: string, artifactDir: string, runId: string, unexpectedFiles: string[], errors = ["unexpected file changed"]): void {
   const state: AgentHarnessRunState = {
     schema_version: RUN_SCHEMA_VERSION,
     run_id: runId,
@@ -46,7 +64,7 @@ function writeRun(cwd: string, artifactDir: string, runId: string, unexpectedFil
     evidence: [],
     claims: [],
     verified_claims: [],
-    errors: ["unexpected file changed"],
+    errors,
     final_report: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),

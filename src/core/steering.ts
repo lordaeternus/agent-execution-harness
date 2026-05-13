@@ -57,12 +57,18 @@ function failureKeys(state: AgentHarnessRunState): string[] {
   for (const error of state.errors) {
     const normalized = error.toLowerCase();
     if (normalized.includes("dangerous")) keys.add("dangerous_command");
+    else if (normalized.includes("architecture") || normalized.includes("boundary") || normalized.includes("forbidden import")) keys.add("architecture_rule");
     else if (normalized.includes("scope") || normalized.includes("unexpected")) keys.add("unexpected_file_changed");
     else if (normalized.includes("evidence")) keys.add("missing_required_evidence");
+    else if (normalized.includes("fixture")) keys.add("approved_fixture");
     else keys.add("generic_failure");
   }
   for (const evidence of state.evidence) {
-    if (evidence.result !== "pass") keys.add(`gate_failed:${evidence.check}`);
+    if (evidence.result !== "pass") {
+      const check = evidence.check.toLowerCase();
+      if (/(auth|billing|payment|clinical|security|golden|fixture)/.test(check)) keys.add("approved_fixture");
+      else keys.add(`gate_failed:${evidence.check}`);
+    }
   }
   return [...keys];
 }
@@ -71,6 +77,8 @@ function suggestionForKey(key: string): string {
   if (key === "unexpected_file_changed") return "Make file_scope mandatory for similar L2/L3 plans and run scope guard before finish.";
   if (key === "missing_required_evidence") return "Declare required_evidence per task and block finish until evidence_policy is satisfied.";
   if (key === "dangerous_command") return "Move this flow to strict mode with task allowed_commands.";
+  if (key === "approved_fixture") return "Add an approved fixture or explicit fixture-not-applicable note for the repeated critical behavior.";
+  if (key === "architecture_rule") return "Add one lightweight architecture_rule for the repeated forbidden boundary crossing.";
   if (key.startsWith("gate_failed:")) return "Add a focused repair hint or cheaper preflight for the repeatedly failing gate.";
   if (key === "halt") return "Review halted artifacts and add the smallest feedforward rule that would have stopped the repeated failure earlier.";
   return "Review repeated failures and add one small control, test, or doc rule only if it prevents recurrence.";
@@ -80,6 +88,8 @@ function priority(key: string): number {
   if (key === "unexpected_file_changed") return 1;
   if (key === "missing_required_evidence") return 2;
   if (key === "dangerous_command") return 3;
+  if (key === "approved_fixture") return 4;
+  if (key === "architecture_rule") return 5;
   if (key.startsWith("gate_failed:")) return 4;
   if (key === "halt") return 9;
   return 8;

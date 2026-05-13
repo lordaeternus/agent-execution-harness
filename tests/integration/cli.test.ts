@@ -366,9 +366,19 @@ describe("cli integration", () => {
   it("reports harnessability, controls and plan warnings", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-doctor-controls-"));
     fs.mkdirSync(path.join(tmp, "docs"), { recursive: true });
+    fs.mkdirSync(path.join(tmp, "src", "client"), { recursive: true });
     fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "target", scripts: { lint: "eslint .", "test:run": "vitest run", typecheck: "tsc --noEmit" } }, null, 2)}\n`);
-    fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# Rules\n");
-    fs.writeFileSync(path.join(tmp, "agent-harness.config.json"), "{}\n");
+    fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# Rules\nSmallest surgical change with evidence and success criteria.\n");
+    fs.writeFileSync(path.join(tmp, "src", "client", "view.ts"), "import { secret } from '../server/secret';\n");
+    fs.writeFileSync(path.join(tmp, "agent-harness.config.json"), `${JSON.stringify({
+      schema_version: "agent_harness_config_v1",
+      artifact_dir: ".agent-harness/runs",
+      product_paths: ["src/"],
+      required_scripts: [],
+      doctor_profile: "generic",
+      command_policy: { deny: ["DROP"], strict_requires_allowed_command: true, strict_disallow_shell: true },
+      architecture_rules: [{ id: "no_client_server", from: "src/client/*.ts", forbid_import: "../server/*" }],
+    })}\n`);
     fs.writeFileSync(path.join(tmp, "docs", "agent-runtime.md"), "# Runtime\n");
     fs.writeFileSync(path.join(tmp, ".gitignore"), ".agent-harness/runs/\n");
 
@@ -379,6 +389,14 @@ describe("cli integration", () => {
     const doctor = JSON.parse(execFileSync("node", [bin, "doctor", "--json", "--harnessability", "--controls", "--cwd", tmp], { encoding: "utf8" }));
     expect(doctor.data.harnessability.score).toBeGreaterThan(50);
     expect(doctor.data.controls.map((control: { id: string }) => control.id)).toContain("scope_guard");
+    const coverageHuman = execFileSync("node", [bin, "doctor", "--coverage", "--cwd", tmp], { encoding: "utf8" });
+    expect(coverageHuman).toContain("Coverage:");
+    const coverage = JSON.parse(execFileSync("node", [bin, "doctor", "--json", "--coverage", "--cwd", tmp], { encoding: "utf8" }));
+    expect(coverage.data.coverage.covered_controls).toContain("coding_discipline");
+    const architectureHuman = execFileSync("node", [bin, "doctor", "--architecture", "--cwd", tmp], { encoding: "utf8" });
+    expect(architectureHuman).toContain("Architecture:");
+    const architecture = JSON.parse(execFileSync("node", [bin, "doctor", "--json", "--architecture", "--cwd", tmp], { encoding: "utf8" }));
+    expect(architecture.data.architecture.violations[0].rule_id).toBe("no_client_server");
 
     const plan = {
       schema_version: "agent_harness_plan_v1",

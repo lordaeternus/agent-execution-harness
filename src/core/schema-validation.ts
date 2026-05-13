@@ -97,6 +97,17 @@ export function validateConfig(config: unknown): asserts config is AgentHarnessC
     requireBoolean(scope, "enabled");
     requireArray(scope, "generated_allowlist");
   }
+  if (value.architecture_rules !== undefined) {
+    requireArray(value, "architecture_rules");
+    for (const rule of value.architecture_rules as unknown[]) {
+      const record = asRecord(rule, "config.architecture_rules[]");
+      requireString(record, "id");
+      requireSafeId(record, "id");
+      requireString(record, "from");
+      requireString(record, "forbid_import");
+      if (record.reason !== undefined) requireString(record, "reason");
+    }
+  }
 }
 
 export function lintPlan(plan: unknown): ValidationResult {

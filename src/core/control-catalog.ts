@@ -68,6 +68,24 @@ export const CONTROL_CATALOG: HarnessControl[] = [
     risk_covered: "critical behavior is validated by tests generated only by the agent",
     when_to_use: "critical business rules such as auth, billing, clinical AI, or data transforms",
   },
+  {
+    id: "coding_discipline",
+    type: "feedforward",
+    execution: "computational",
+    cost: "low",
+    phase: "before_run",
+    risk_covered: "weak agent overcomplicates, edits adjacent code, or starts without verifiable success criteria",
+    when_to_use: "all non-trivial coding tasks, especially weak or low-context executors",
+  },
+  {
+    id: "architecture_rules",
+    type: "feedback",
+    execution: "computational",
+    cost: "low",
+    phase: "before_finish",
+    risk_covered: "agent crosses lightweight architecture boundaries with forbidden imports",
+    when_to_use: "projects with known boundaries such as client/server, auth, billing, or infra code",
+  },
 ];
 
 export function listControls(): HarnessControl[] {

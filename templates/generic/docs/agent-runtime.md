@@ -10,6 +10,7 @@ Use this file for execution. Use `README.md` only for human learning.
 - For repeated failures or known-risk surfaces, run `agent-harness learn query --surface <surface> --top-k 3 --compact --files <files> --failure-signature <sig>`.
 - For external weak workers, use `agent-harness handoff --compact --plan <plan> --task-id <id>`.
 - If the project keeps causing agent mistakes, run `agent-harness doctor --harnessability --cwd .`.
+- Before broad/risky work, run `agent-harness doctor --coverage --architecture --cwd .` for compact gaps.
 - After repeated failed runs, run `agent-harness doctor --steering --cwd .` and apply only small evidence-backed controls.
 - For critical behavior fixtures, run `agent-harness fixtures validate --file <fixture.json>`.
 - After durable structural code changes, run `agent-harness map update --files <files>` and `agent-harness map record --surface <surface> --files <files> --summary "<durable fact>"`.

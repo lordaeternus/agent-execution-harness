@@ -94,6 +94,7 @@ describe("plan compiler", () => {
     );
     expect(result.status).toBe("success");
     expect(result.tasks[0].allowed_commands).toEqual(["pnpm test:run tests/unit/plan-compiler.test.ts"]);
+    expect(result.diagnostics.map((item) => item.code)).toContain("acceptance_should_name_verification");
   });
 
   it("accepts structured task controls and rejects vague ones", () => {

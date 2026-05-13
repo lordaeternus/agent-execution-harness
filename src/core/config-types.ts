@@ -42,6 +42,13 @@ export interface ScopeGuardSettings {
   generated_allowlist: string[];
 }
 
+export interface ArchitectureRule {
+  id: string;
+  from: string;
+  forbid_import: string;
+  reason?: string;
+}
+
 export interface AgentHarnessConfig {
   schema_version: typeof CONFIG_SCHEMA_VERSION;
   artifact_dir: string;
@@ -54,4 +61,5 @@ export interface AgentHarnessConfig {
   learning_memory?: LearningMemoryConfig;
   weak_model?: WeakModelProfile;
   scope_guard?: ScopeGuardSettings;
+  architecture_rules?: ArchitectureRule[];
 }

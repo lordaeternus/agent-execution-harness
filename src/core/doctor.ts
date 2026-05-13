@@ -25,6 +25,35 @@ export interface HarnessabilityReport {
   weak: string[];
 }
 
+export type ProjectTopology = "cli-package" | "web-app" | "supabase-app" | "api-service" | "generic";
+
+export interface CoverageGap {
+  id: string;
+  severity: "info" | "warning";
+  control: string;
+  action: string;
+}
+
+export interface CoverageReport {
+  topology: ProjectTopology;
+  covered_controls: string[];
+  gaps: CoverageGap[];
+  recommended_controls: string[];
+}
+
+export interface ArchitectureViolation {
+  rule_id: string;
+  file: string;
+  forbidden_import: string;
+  reason?: string;
+}
+
+export interface ArchitectureReport {
+  checked_rules: number;
+  scanned_files: number;
+  violations: ArchitectureViolation[];
+}
+
 export function runDoctor(cwd: string, config: AgentHarnessConfig): { status: "success" | "error"; findings: DoctorFinding[] } {
   const findings: DoctorFinding[] = [];
   const exists = (file: string) => fs.existsSync(path.join(cwd, file));
@@ -75,6 +104,67 @@ export function doctorControls(): HarnessControl[] {
   return listControls();
 }
 
+export function detectProjectTopology(cwd: string): ProjectTopology {
+  const pkg = readPackage(cwd) as { bin?: unknown; scripts?: Record<string, string>; dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+  if (pkg.bin && (typeof pkg.bin === "string" || Object.keys(pkg.bin as object).length > 0)) return "cli-package";
+  if (existsAny(cwd, ["supabase/functions", "supabase/migrations"])) return "supabase-app";
+  if (existsAny(cwd, ["vite.config.ts", "vite.config.js", "next.config.js", "next.config.mjs"])) return "web-app";
+  if (existsAny(cwd, ["src/routes", "src/controllers", "src/server.ts", "src/server.js"])) return "api-service";
+  return "generic";
+}
+
+export function assessCoverage(cwd: string, config: AgentHarnessConfig): CoverageReport {
+  const covered = new Set<string>(["plan_lint", "evidence_policy", "handoff_validate"]);
+  const gaps: CoverageGap[] = [];
+  const topology = detectProjectTopology(cwd);
+  const recommended = recommendedControls(topology);
+  const agentsText = readOptional(cwd, "AGENTS.md").toLowerCase();
+
+  if (config.scope_guard?.enabled !== false) covered.add("scope_guard");
+  else gaps.push(gap("scope_guard", "warning", "Enable scope_guard to block out-of-plan file changes."));
+
+  if (config.command_policy.strict_requires_allowed_command && config.command_policy.strict_disallow_shell) covered.add("strict_command_policy");
+  else gaps.push(gap("strict_command_policy", "warning", "Enable strict allowed commands for weak or sensitive runs."));
+
+  if (existsAny(cwd, ["tests/fixtures/approved", "fixtures/approved"])) covered.add("approved_fixtures");
+  else if (["supabase-app", "api-service"].includes(topology)) gaps.push(gap("approved_fixtures", "info", "Add approved fixtures for auth, billing, clinical, payment, or critical transforms."));
+
+  if (/(surgical|smallest|menor|assumption|assumptions|success criteria|criterio|critério|evidence|evidencia|evidência)/i.test(agentsText)) {
+    covered.add("coding_discipline");
+  } else {
+    gaps.push(gap("coding_discipline", "info", "Add compact coding discipline rules to AGENTS.md for weak agents."));
+  }
+
+  if ((config.architecture_rules ?? []).length > 0) covered.add("architecture_rules");
+  else if (["supabase-app", "api-service", "web-app"].includes(topology)) gaps.push(gap("architecture_rules", "info", "Add lightweight architecture_rules for known client/server or sensitive boundaries."));
+
+  return {
+    topology,
+    covered_controls: [...covered].sort(),
+    gaps,
+    recommended_controls: recommended.filter((control) => !covered.has(control)),
+  };
+}
+
+export function assessArchitecture(cwd: string, config: AgentHarnessConfig): ArchitectureReport {
+  const rules = config.architecture_rules ?? [];
+  const files = collectProjectFiles(cwd, config);
+  const violations: ArchitectureViolation[] = [];
+  for (const rule of rules) {
+    const from = globToRegExp(rule.from);
+    const forbidden = globToRegExp(rule.forbid_import);
+    for (const file of files) {
+      if (!from.test(file)) continue;
+      const content = readOptional(cwd, file);
+      const imports = importSpecifiers(content);
+      if (imports.some((specifier) => forbidden.test(specifier))) {
+        violations.push({ rule_id: rule.id, file, forbidden_import: rule.forbid_import, reason: rule.reason });
+      }
+    }
+  }
+  return { checked_rules: rules.length, scanned_files: files.length, violations };
+}
+
 function finding(severity: DoctorFinding["severity"], code: string, message: string, remediation: string): DoctorFinding {
   return {
     severity,
@@ -97,6 +187,66 @@ function readPackage(cwd: string): { scripts?: Record<string, string> } {
   } catch {
     return {};
   }
+}
+
+function existsAny(cwd: string, entries: string[]): boolean {
+  return entries.some((entry) => fs.existsSync(path.join(cwd, entry)));
+}
+
+function readOptional(cwd: string, file: string): string {
+  try {
+    return fs.readFileSync(path.join(cwd, file), "utf8");
+  } catch {
+    return "";
+  }
+}
+
+function gap(control: string, severity: CoverageGap["severity"], action: string): CoverageGap {
+  return { id: `missing_${control}`, severity, control, action };
+}
+
+function recommendedControls(topology: ProjectTopology): string[] {
+  const common = ["coding_discipline", "scope_guard", "evidence_policy"];
+  if (topology === "cli-package") return [...common, "strict_command_policy"];
+  if (topology === "web-app") return [...common, "architecture_rules"];
+  if (topology === "supabase-app") return [...common, "strict_command_policy", "approved_fixtures", "architecture_rules"];
+  if (topology === "api-service") return [...common, "strict_command_policy", "approved_fixtures", "architecture_rules"];
+  return common;
+}
+
+function collectProjectFiles(cwd: string, config: AgentHarnessConfig): string[] {
+  const roots = config.product_paths.length ? config.product_paths : ["src/"];
+  const files: string[] = [];
+  for (const root of roots) walk(path.join(cwd, root), cwd, files);
+  return files.filter((file) => /\.(tsx?|jsx?|mjs|cjs)$/.test(file)).sort();
+}
+
+function walk(dir: string, cwd: string, files: string[]): void {
+  if (!fs.existsSync(dir)) return;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if ([".git", "node_modules", "dist", "coverage"].includes(entry.name)) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full, cwd, files);
+    else files.push(path.relative(cwd, full).replace(/\\/g, "/"));
+  }
+}
+
+function importSpecifiers(content: string): string[] {
+  const specs: string[] = [];
+  for (const match of content.matchAll(/\bimport\s+(?:[^'"]+\s+from\s+)?["']([^"']+)["']|\brequire\(["']([^"']+)["']\)/g)) {
+    specs.push(match[1] ?? match[2]);
+  }
+  return specs;
+}
+
+function globToRegExp(glob: string): RegExp {
+  const escaped = glob
+    .replace(/\*\*/g, "__DOUBLE_STAR__")
+    .replace(/\*/g, "__STAR__")
+    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    .replace(/__DOUBLE_STAR__/g, ".*")
+    .replace(/__STAR__/g, "[^/]*");
+  return new RegExp(`^${escaped}$`);
 }
 
 function hasScript(scripts: Record<string, string>, names: string[]): boolean {

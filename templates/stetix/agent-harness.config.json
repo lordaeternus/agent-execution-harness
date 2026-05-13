@@ -80,5 +80,13 @@
     "output_excerpt_max_chars": 360,
     "repair_hint_max_chars": 280,
     "next_output_format": "ultra_compact"
-  }
+  },
+  "architecture_rules": [
+    {
+      "id": "no_client_service_role",
+      "from": "src/**/*.ts",
+      "forbid_import": "**service-role**",
+      "reason": "Stetix client code must not import service-role or server-only secrets"
+    }
+  ]
 }

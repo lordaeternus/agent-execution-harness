@@ -17,6 +17,14 @@ describe("repository contracts", () => {
     expect(() => validateConfig(config)).toThrow("audit_compact_max_chars");
   });
 
+  it("validates lightweight architecture rules", () => {
+    const config = JSON.parse(fs.readFileSync("templates/generic/agent-harness.config.json", "utf8"));
+    config.architecture_rules = [{ id: "no_client_secret", from: "src/client/*.ts", forbid_import: "../server/*" }];
+    expect(() => validateConfig(config)).not.toThrow();
+    config.architecture_rules = [{ id: "bad" }];
+    expect(() => validateConfig(config)).toThrow("forbid_import");
+  });
+
   it("keeps L3 sensor gaps as warnings, not structural errors", () => {
     const result = lintPlan({
       schema_version: "agent_harness_plan_v1",

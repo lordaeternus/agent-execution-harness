@@ -58,6 +58,13 @@ export function sensorWarningsForPlan(plan: AgentHarnessPlan): string[] {
     if (!/(smoke|browser|e2e|integration|api|db|auth)/.test(gateText)) warnings.push("L3 plan should include a runtime, integration, smoke, auth, API, or DB gate when applicable.");
     for (const task of plan.tasks) {
       if (!task.required_evidence?.length) warnings.push(`${task.task_id}: L3 task should declare required_evidence.`);
+      const surface = task.surface;
+      const critical = surface && ["auth", "db", "api", "ai"].includes(surface);
+      const evidence = (task.required_evidence ?? []).join(" ").toLowerCase();
+      const text = `${task.acceptance_criteria} ${(task.required_checks ?? []).join(" ")}`.toLowerCase();
+      if (critical && !/(approved_fixture|fixture)/.test(evidence) && !/(fixture not applicable|fixture_not_applicable|approved fixture not applicable)/.test(text)) {
+        warnings.push(`${task.task_id}: L3 critical surface should use approved_fixture evidence or explain why not applicable.`);
+      }
     }
   }
   if (plan.execution_profile === "strict") {

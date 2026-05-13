@@ -1,3 +1,12 @@
+## 0.14.0
+
+- Added token-first `doctor --coverage` for compact weak-agent control gaps.
+- Added `doctor --architecture` with lightweight path/import boundary rules.
+- Added optional `architecture_rules` config without new dependencies.
+- Added compact coding-discipline control for surgical, verifiable execution.
+- Improved repeated-failure steering with more specific small-control suggestions.
+- Added token budgets for new doctor outputs.
+
 ## 0.13.2
 
 - Added compact repeated-failure guidance to runtime docs and installed `AGENTS.md` templates.

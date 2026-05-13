@@ -10,6 +10,7 @@ Use this file for routine harness execution in Stetix. Do not load long docs unl
 - For repeated failures or known-risk surfaces, run `pnpm agent:harness learn query --surface <surface> --top-k 3 --compact --files <files> --failure-signature <sig>`.
 - For external weak workers, use `pnpm agent:harness handoff --compact --plan <plan> --task-id <id>`.
 - If the project keeps causing agent mistakes, run `pnpm agent:harness doctor --harnessability --cwd .`.
+- Before broad/risky work, run `pnpm agent:harness doctor --coverage --architecture --cwd .` for compact gaps.
 - After repeated failed runs, run `pnpm agent:harness doctor --steering --cwd .` and apply only small evidence-backed controls.
 - For critical behavior fixtures, run `pnpm agent:harness fixtures validate --file <fixture.json>`.
 - After durable structural code changes, run `pnpm agent:harness map update --files <files>` and `pnpm agent:harness map record --surface <surface> --files <files> --summary "<durable fact>"`.

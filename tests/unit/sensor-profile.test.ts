@@ -27,4 +27,22 @@ describe("sensor profile", () => {
     expect(warnings.join("\n")).toContain("L3 task should declare required_evidence");
     expect(warnings.join("\n")).toContain("build, typecheck, or contract gate");
   });
+
+  it("warns when L3 critical surfaces omit approved fixture evidence or justification", () => {
+    const warnings = sensorWarningsForPlan({
+      schema_version: PLAN_SCHEMA_VERSION,
+      plan_id: "l3-fixture-warning",
+      risk_level: "L3",
+      rollback_expectation: "Revert files.",
+      gates: ["pnpm exec tsc --noEmit", "pnpm test"],
+      tasks: [{
+        task_id: "auth-risk",
+        surface: "auth",
+        files: ["src/auth/session.ts"],
+        acceptance_criteria: "Run `pnpm test` and pass auth behavior.",
+        required_evidence: ["focused_tests", "authz_negative_test"],
+      }],
+    });
+    expect(warnings.join("\n")).toContain("approved_fixture");
+  });
 });

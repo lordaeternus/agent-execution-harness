@@ -77,5 +77,13 @@
     "output_excerpt_max_chars": 360,
     "repair_hint_max_chars": 280,
     "next_output_format": "ultra_compact"
-  }
+  },
+  "architecture_rules": [
+    {
+      "id": "no_client_secret_import",
+      "from": "src/**/*.ts",
+      "forbid_import": "**/service-role**",
+      "reason": "client or shared code must not import server-only secrets"
+    }
+  ]
 }

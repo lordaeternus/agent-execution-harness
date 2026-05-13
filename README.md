@@ -13,6 +13,18 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.14.0
+
+This release makes the harness more token-first for weaker agents.
+
+- `doctor --coverage`: shows compact gaps in project safety controls.
+- `doctor --architecture`: checks lightweight boundary rules without new dependencies.
+- topology detection helps recommend controls for CLI, web, API and Supabase projects.
+- plan lint and templates now reinforce surgical coding discipline with short rules.
+- token benchmarks cap the new doctor outputs so routine agent loops stay cheap.
+
+In plain language: weaker agents get clearer rails and shorter diagnostics before they guess, over-edit or claim success without proof.
+
 ## What's New In v0.13.2
 
 This patch improves how agents react to repeated failures.
@@ -252,6 +264,7 @@ After installation, your project gets:
 - governed learning loop for evidence-backed lessons
 - control catalog showing which risks each harness control covers
 - harnessability scoring to show how ready a project is for AI-agent execution
+- coverage and architecture diagnostics for compact risk gaps
 - repeated-failure steering to suggest small controls after recurring mistakes
 - optional approved fixtures for critical behavior that must not be guessed
 
@@ -292,7 +305,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.13.2.md)
+- [Release notes](docs/release-notes/v0.14.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -343,6 +356,18 @@ agent-harness doctor --json --harnessability --cwd .
 ```
 
 It scores cheap local signals such as scripts, `AGENTS.md`, harness config, tests, runtime docs, artifact policy and command policy. A low score does not mean the project is bad. It means agents have fewer rails and may need smaller plans or stronger review.
+
+## Coverage And Architecture
+
+Use these before broad, risky or weak-agent work:
+
+```bash
+agent-harness doctor --coverage --architecture --cwd .
+```
+
+`--coverage` shows which cheap controls are present and which are missing. `--architecture` checks optional boundary rules from `agent-harness.config.json`, such as client code importing server-only secrets.
+
+Both outputs are short by default. Use `--json` only for automation.
 
 ## Repeated Failure Steering
 
@@ -1463,7 +1488,15 @@ Example:
     "ttl_days": 60,
     "max_summary_chars": 500,
     "max_lessons_per_surface": 20
-  }
+  },
+  "architecture_rules": [
+    {
+      "id": "no_client_secret_import",
+      "from": "src/**/*.ts",
+      "forbid_import": "**/service-role**",
+      "reason": "client code must not import server-only secrets"
+    }
+  ]
 }
 ```
 
@@ -1477,6 +1510,7 @@ Important fields:
 - `token_budget`: controls compact output and log excerpt limits
 - `codebase_memory`: controls selective repository mapping and memory freshness
 - `learning_memory`: controls evidence-backed lessons from fixes and failures
+- `architecture_rules`: optional compact path/import boundary checks for `doctor --architecture`
 
 Deny rules take priority over allow rules.
 
@@ -1566,7 +1600,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.13.2
+0.14.0
 ```
 
 Package:

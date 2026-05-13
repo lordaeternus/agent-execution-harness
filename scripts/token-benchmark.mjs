@@ -5,6 +5,19 @@ import path from "node:path";
 
 const root = process.cwd();
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-token-bench-"));
+fs.writeFileSync(path.join(tmp, "package.json"), `${JSON.stringify({ name: "bench", scripts: { "test:run": "vitest run", typecheck: "tsc --noEmit" } })}\n`);
+fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# Rules\nSmallest surgical change with evidence and success criteria.\n");
+fs.writeFileSync(path.join(tmp, ".gitignore"), ".agent-harness/runs/\n");
+fs.writeFileSync(path.join(tmp, "vite.config.ts"), "export default {};\n");
+fs.writeFileSync(path.join(tmp, "agent-harness.config.json"), `${JSON.stringify({
+  schema_version: "agent_harness_config_v1",
+  artifact_dir: ".agent-harness/runs",
+  product_paths: ["src/"],
+  required_scripts: [],
+  doctor_profile: "generic",
+  command_policy: { deny: ["DROP"], strict_requires_allowed_command: true, strict_disallow_shell: true },
+  architecture_rules: [{ id: "no_client_server", from: "src/auth/*.ts", forbid_import: "../server/*" }],
+})}\n`);
 const plan = {
   schema_version: "agent_harness_plan_v1",
   plan_id: "token-bench",
@@ -171,6 +184,8 @@ run([
 ]);
 const learnHealthCompact = run(["learn", "health", "--compact"]);
 const learnAuditCompact = run(["learn", "audit", "--compact"]);
+const doctorCoverage = run(["doctor", "--coverage", "--cwd", "."]);
+const doctorArchitecture = run(["doctor", "--architecture", "--cwd", "."]);
 const reduction = Math.round(((oldRun - compactRun) / oldRun) * 100);
 
 const weakReduction = Math.round(((standardNext.totalChars - weakNext.totalChars) / standardNext.totalChars) * 100);
@@ -179,7 +194,7 @@ const mapCompactReduction = Math.round(((mapQuery.totalChars - mapQueryCompact.t
 const nextMicroReduction = Math.round(((weakNextExact.totalChars - nextMicro.totalChars) / weakNextExact.totalChars) * 100);
 const handoffCompactReduction = Math.round(((handoff.totalChars - handoffCompact.totalChars) / handoff.totalChars) * 100);
 const smokeBenchmark = execFileSync(process.execPath, [cli, "benchmark", "--mode", "smoke"], { cwd: root, encoding: "utf8" });
-console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} validate_output_chars=${validateOutput.totalChars} repeated_failure_hint_chars=${repeatedFailureHint.length} learn_query_chars=${learnQuery.totalChars} learn_query_compact_chars=${learnQueryCompact.totalChars} learn_health_compact_chars=${learnHealthCompact.totalChars} learn_audit_compact_chars=${learnAuditCompact.totalChars} learn_query_compact_reduction_pct=${learnCompactReduction} map_query_chars=${mapQuery.totalChars} map_query_compact_chars=${mapQueryCompact.totalChars} map_query_compact_reduction_pct=${mapCompactReduction} standard_next_chars=${standardNext.totalChars} weak_next_chars=${weakNext.totalChars} weak_reduction_pct=${weakReduction} weak_next_exact_chars=${weakNextExact.totalChars} next_micro_chars=${nextMicro.totalChars} next_micro_reduction_pct=${nextMicroReduction} handoff_chars=${handoff.totalChars} handoff_compact_chars=${handoffCompact.totalChars} handoff_compact_reduction_pct=${handoffCompactReduction} smoke_benchmark_chars=${smokeBenchmark.length}`);
+console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} validate_output_chars=${validateOutput.totalChars} repeated_failure_hint_chars=${repeatedFailureHint.length} learn_query_chars=${learnQuery.totalChars} learn_query_compact_chars=${learnQueryCompact.totalChars} learn_health_compact_chars=${learnHealthCompact.totalChars} learn_audit_compact_chars=${learnAuditCompact.totalChars} doctor_coverage_chars=${doctorCoverage.totalChars} doctor_architecture_chars=${doctorArchitecture.totalChars} learn_query_compact_reduction_pct=${learnCompactReduction} map_query_chars=${mapQuery.totalChars} map_query_compact_chars=${mapQueryCompact.totalChars} map_query_compact_reduction_pct=${mapCompactReduction} standard_next_chars=${standardNext.totalChars} weak_next_chars=${weakNext.totalChars} weak_reduction_pct=${weakReduction} weak_next_exact_chars=${weakNextExact.totalChars} next_micro_chars=${nextMicro.totalChars} next_micro_reduction_pct=${nextMicroReduction} handoff_chars=${handoff.totalChars} handoff_compact_chars=${handoffCompact.totalChars} handoff_compact_reduction_pct=${handoffCompactReduction} smoke_benchmark_chars=${smokeBenchmark.length}`);
 if (weakReduction < 10) {
   console.error("weak next benchmark requires at least 10% output reduction");
   process.exitCode = 1;

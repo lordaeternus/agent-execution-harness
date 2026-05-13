@@ -73,6 +73,9 @@ function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: num
     if (!COMMAND_HINT.test(check)) diagnostics.push(error(task, "vague_required_check", `required_check is not command-like: ${check}.`));
   }
   if (task.rollback_command && !COMMAND_HINT.test(task.rollback_command)) diagnostics.push(error(task, "vague_rollback_command", "rollback_command must be command-like."));
+  if (riskLevel !== "L1" && !COMMAND_HINT.test(criteria) && !task.required_checks?.length) {
+    diagnostics.push(warning(task, "acceptance_should_name_verification", "Non-trivial tasks should name the focused verification command or required_checks."));
+  }
   if (riskLevel !== "L1" && !COMMAND_HINT.test(criteria) && requiredEvidence.length === 0) {
     diagnostics.push(error(task, "missing_verifiable_dod", "Task needs command-backed criteria or required evidence."));
   }
@@ -145,6 +148,10 @@ function inferSurface(files: string[]): TaskSurface {
 
 function error(task: AgentHarnessTask, code: string, message: string): PlanCompilerDiagnostic {
   return { code, severity: "error", message, task_id: task.task_id };
+}
+
+function warning(task: AgentHarnessTask, code: string, message: string): PlanCompilerDiagnostic {
+  return { code, severity: "warning", message, task_id: task.task_id };
 }
 
 function unique(values: string[]): string[] {

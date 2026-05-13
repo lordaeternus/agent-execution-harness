@@ -33,6 +33,13 @@ Breaking schema changes require golden artifact compatibility tests.
 - `output_excerpt_max_chars`
 - `report_compact_max_chars`
 
+`agent_harness_config_v1` also supports optional `architecture_rules`:
+
+- `id`: safe rule id
+- `from`: file glob to scan
+- `forbid_import`: import glob to reject
+- `reason`: optional short human explanation
+
 `agent_harness_lesson_v1` supports governed learning records with:
 
 - `lesson_id`: safe stable id
