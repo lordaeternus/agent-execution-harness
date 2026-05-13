@@ -13,6 +13,16 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.14.1
+
+This patch removes ambiguity from the prompt users give to coding agents.
+
+- added a copy-paste execution prompt with the real harness command
+- clarified that Stetix-style projects use `pnpm agent:harness`
+- added a test so public docs/templates do not reintroduce missing-command placeholders
+
+In plain language: weaker agents should receive the exact command to run, not a placeholder they need to interpret.
+
 ## What's New In v0.14.0
 
 This release makes the harness more token-first for weaker agents.
@@ -305,7 +315,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.14.0.md)
+- [Release notes](docs/release-notes/v0.14.1.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -1600,7 +1610,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.14.0
+0.14.1
 ```
 
 Package:

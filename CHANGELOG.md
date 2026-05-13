@@ -1,3 +1,9 @@
+## 0.14.1
+
+- Added a copy-paste execution prompt with real harness commands, so users do not pass empty command placeholders to coding agents.
+- Added readiness coverage to keep public docs and templates free of missing-command placeholders.
+- Kept the change documentation-only for runtime behavior: existing CLI commands and outputs remain compatible.
+
 ## 0.14.0
 
 - Added token-first `doctor --coverage` for compact weak-agent control gaps.

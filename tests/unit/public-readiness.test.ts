@@ -296,6 +296,24 @@ describe("public readiness hardening", () => {
     expect(quickstart).toContain("agent-harness learn capture");
     expect(quickstart).toContain("agent-harness learn promote");
   });
+
+  it("does not publish placeholder harness commands for agents", () => {
+    const publicFiles = [
+      "README.md",
+      "docs/quickstart.md",
+      "templates/generic/docs/agent-runtime.md",
+      "templates/stetix/docs/process/agent-runtime.md",
+    ];
+
+    for (const file of publicFiles) {
+      const content = fs.readFileSync(file, "utf8");
+      expect(content).not.toMatch(/\[INSERIR COMANDO|Comando do Harness:\s*\[/i);
+      expect(content).not.toMatch(/Custom Harness.*placeholder/i);
+    }
+
+    expect(fs.readFileSync("docs/quickstart.md", "utf8")).toContain("Harness command for this project:");
+    expect(fs.readFileSync("docs/quickstart.md", "utf8")).toContain("pnpm agent:harness");
+  });
 });
 
 function runFailingCli(args: string[], cwd: string): { data: { repair_hint: { kind: string } } } {

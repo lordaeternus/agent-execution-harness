@@ -2,6 +2,7 @@
 
 Use this file for execution. Use `README.md` only for human learning.
 
+- Harness command for this project: `agent-harness`.
 - For L2/L3, multi-step, delegated or risky work, run the harness automatically; user should not need to ask.
 - If the plan has `depends_on`, run `agent-harness plan waves --plan <plan>` and follow only unblocked tasks from `next --exact --micro`.
 - Start with `agent-harness session start`, then use `agent-harness next --exact --micro` for weak agents.

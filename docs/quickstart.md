@@ -57,14 +57,28 @@ By default, install and doctor commands print human-readable messages. Use `--js
 
 ## 5. Tell The Agent To Use It
 
-Use this prompt:
+Use this prompt. It intentionally names the real harness command so weaker agents do not need to guess:
 
 ```txt
-Use the agent harness for approved plans, multi-step work, risky changes, and any task where you need to prove completion.
-For L2/L3 tasks, run the harness automatically. The user should not need to remember to ask for it.
+Use Agent Execution Harness for approved plans, multi-step work, risky changes, and any task where you need to prove completion.
+
+Harness command for this project:
+pnpm agent:harness
+
+Before executing, run:
+pnpm agent:harness doctor --harnessability --cwd .
+
+For L2/L3 tasks, run the harness automatically. Do not replace it with a generic test command unless the harness tells you to verify with that command.
 Read docs/agent-runtime.md first.
 Do not claim success unless the artifact is completed and includes evidence plus verified claims.
 In the final answer, include run_id, artifact path, status, gates, evidence, verified claims, and rollback notes.
+```
+
+If your project does not use pnpm, replace only the script runner. For example:
+
+```txt
+Harness command for this project:
+npx agent-execution-harness@latest
 ```
 
 ## AGENTS.md Modes
@@ -90,6 +104,13 @@ For a Stetix-style project, use:
 
 ```bash
 npx agent-execution-harness@latest init --adapter stetix --cwd . --apply --agents-mode append
+```
+
+After install, tell the agent to use:
+
+```txt
+Harness command for this project:
+pnpm agent:harness
 ```
 
 ## What To Ask The Agent
