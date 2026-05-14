@@ -142,13 +142,34 @@ describe("cli integration", () => {
     );
     fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
 
-    const imported = JSON.parse(execFileSync("node", [bin, "plan", "import", "--from", "backlog.md", "--out", "plan.json", "--plan-id", "import-demo", "--risk", "L2", "--rollback", "Delete generated files."], { cwd: tmp, encoding: "utf8" }));
+    const outputPlan = "plans with space/plan file.json";
+    const imported = JSON.parse(execFileSync("node", [bin, "plan", "import", "--from", "backlog.md", "--out", outputPlan, "--plan-id", "import-demo", "--risk", "L2", "--rollback", "Delete generated files."], { cwd: tmp, encoding: "utf8" }));
     expect(imported.status).toBe("success");
-    expect(fs.existsSync(path.join(tmp, "plan.json"))).toBe(true);
-    execFileSync("node", [bin, "plan-lint", "--plan", "plan.json"], { cwd: tmp, stdio: "pipe" });
-    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "import-demo", "--mode", "weak"], { cwd: tmp, stdio: "pipe" });
+    expect(imported.next_actions).toContain('agent-harness plan-lint --plan "plans with space/plan file.json"');
+    expect(imported.next_actions).toContain('agent-harness session start --plan "plans with space/plan file.json" --run-id import-demo --mode weak');
+    expect(fs.existsSync(path.join(tmp, outputPlan))).toBe(true);
+    execFileSync("node", [bin, "plan-lint", "--plan", outputPlan], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [bin, "session", "start", "--plan", outputPlan, "--run-id", "import-demo", "--mode", "weak"], { cwd: tmp, stdio: "pipe" });
     const next = JSON.parse(execFileSync("node", [bin, "next", "--exact", "--micro"], { cwd: tmp, encoding: "utf8" }));
     expect(next.command).toContain("agent-harness files declare");
+  });
+
+  it("fails plan import before writing compiler-invalid plans", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-plan-import-invalid-"));
+    fs.writeFileSync(
+      path.join(tmp, "backlog.md"),
+      [
+        "- [ ] **Tarefa [1]**: Editar arquivos em `a.ts`, `b.ts`, `c.ts`, `d.ts`.",
+        "  - **Dependência:** Nenhum",
+        "  - **DoD:** `node --version` passa.",
+      ].join("\n"),
+    );
+
+    const output = tryCli(["plan", "import", "--from", "backlog.md", "--out", "plan.json", "--plan-id", "invalid-import", "--risk", "L2", "--rollback", "Delete generated files."], tmp);
+    expect(output.status).toBe("error");
+    expect(output.summary).toBe("imported plan invalid");
+    expect(JSON.stringify(output.errors)).toContain("too_many_files");
+    expect(fs.existsSync(path.join(tmp, "plan.json"))).toBe(false);
   });
 
   it("guides agents to import a markdown backlog when session plan is missing", () => {
@@ -521,12 +542,13 @@ describe("cli integration", () => {
   });
 });
 
-function tryCli(args: string[], cwd: string): { status: string; summary: string; data: { repair_hint: { kind: string; stop_after_attempts: number } } } {
+function tryCli(args: string[], cwd: string): { status: string; summary: string; errors: string[]; data: { repair_hint: { kind: string; stop_after_attempts: number } } } {
   try {
     execFileSync("node", [bin, ...args], { cwd, encoding: "utf8", stdio: "pipe" });
     throw new Error("expected command to fail");
   } catch (error) {
     const stderr = (error as { stderr?: Buffer }).stderr?.toString("utf8") ?? "";
-    return JSON.parse(stderr);
+    const stdout = (error as { stdout?: Buffer }).stdout?.toString("utf8") ?? "";
+    return JSON.parse(stderr || stdout);
   }
 }

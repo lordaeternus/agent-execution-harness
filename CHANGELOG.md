@@ -1,6 +1,7 @@
 ## 0.14.2
 
 - Added `plan import` to convert the approved atomic Markdown backlog format into `plan.json`.
+- Hardened `plan import` so invalid dependencies and compiler-invalid plans fail before execution.
 - Improved missing-plan guidance so agents know how to create, lint and start a plan instead of recreating it freely.
 - Added unit and integration coverage for Markdown backlog import and missing-plan recovery.
 

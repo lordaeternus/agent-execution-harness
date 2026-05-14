@@ -17,7 +17,6 @@ export interface ImportMarkdownPlanOptions {
 
 interface DraftTask {
   number: number;
-  line: string;
   files: string[];
   dependency?: string;
   dod?: string;
@@ -67,7 +66,6 @@ function parseTasks(markdown: string): DraftTask[] {
     if (taskMatch) {
       current = {
         number: Number(taskMatch[1]),
-        line,
         files: extractBacktickValues(taskMatch[2]),
       };
       tasks.push(current);
@@ -90,8 +88,13 @@ function extractBacktickValues(value: string): string[] {
 }
 
 function parseDependency(value: string | undefined): string[] {
-  if (!value || /^nenhum$/i.test(value.trim())) return [];
-  return unique([...value.matchAll(/Tarefa\s*(\d+)/gi)].map((match) => taskId(Number(match[1]))));
+  const normalized = value?.trim();
+  if (!normalized || /^nenhum$/i.test(normalized)) return [];
+  const matches = [...normalized.matchAll(/Tarefa\s*(\d+)/gi)];
+  if (!matches.length) {
+    throw new Error(`Unrecognized dependency "${normalized}". Use "Nenhum" or "Tarefa N".`);
+  }
+  return unique(matches.map((match) => taskId(Number(match[1]))));
 }
 
 function extractCommand(value: string): string | undefined {

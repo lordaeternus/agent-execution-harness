@@ -63,15 +63,36 @@ function importPlanCommand(args: string[], cwd: string): void {
     rollback_expectation: rollback,
     gate: stringFlag(flags, "gate"),
   });
+  const compiled = compilePlan(plan);
+  const errors = compiled.diagnostics.filter((item) => item.severity === "error");
+  if (errors.length) {
+    writeJson({
+      status: "error",
+      summary: "imported plan invalid",
+      artifacts: [],
+      next_actions: ["fix_backlog", "rerun plan import"],
+      errors: errors.map((item) => `${item.task_id ? `${item.task_id}: ` : ""}${item.code}: ${item.message}`),
+      data: { warnings: compiled.diagnostics.filter((item) => item.severity === "warning") },
+    });
+    process.exitCode = 1;
+    return;
+  }
   const outputPath = path.resolve(cwd, out);
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, `${JSON.stringify(plan, null, 2)}\n`);
+  const outArg = formatCliArg(out);
+  const planIdArg = formatCliArg(planId);
   writeJson({
     status: "success",
     summary: "markdown backlog imported",
     artifacts: [{ type: "plan", path: path.relative(cwd, outputPath) }],
-    next_actions: [`agent-harness plan-lint --plan ${out}`, `agent-harness session start --plan ${out} --run-id ${planId} --mode weak`],
+    next_actions: [`agent-harness plan-lint --plan ${outArg}`, `agent-harness session start --plan ${outArg} --run-id ${planIdArg} --mode weak`],
     errors: [],
-    data: { tasks: plan.tasks.length, gates: plan.gates },
+    data: { tasks: plan.tasks.length, gates: plan.gates, warnings: compiled.diagnostics.filter((item) => item.severity === "warning") },
   });
+}
+
+function formatCliArg(value: string): string {
+  if (!/[\s"]/u.test(value)) return value;
+  return `"${value.replace(/"/g, '\\"')}"`;
 }

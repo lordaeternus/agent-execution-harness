@@ -138,6 +138,8 @@ agent-harness plan import --from backlog.md --out plan.json --plan-id fix-login 
 agent-harness plan-lint --plan plan.json
 ```
 
+The importer accepts only the atomic checklist format. Dependencies must be `Nenhum` or `Tarefa N`.
+
 ```bash
 agent-harness session start --plan plan.json --run-id fix-login --summary "ctx"
 agent-harness next

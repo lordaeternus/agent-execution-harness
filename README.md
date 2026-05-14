@@ -355,6 +355,7 @@ Supported task format:
 ```
 
 The importer is intentionally narrow. It converts the known backlog format; it does not infer plans from free-form chat.
+Dependencies must be `Nenhum` or `Tarefa N`; invalid dependency text fails instead of being ignored.
 
 ## Which Mode Should I Use?
 

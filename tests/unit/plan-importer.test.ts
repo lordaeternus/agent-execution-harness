@@ -81,4 +81,17 @@ describe("plan importer", () => {
       ),
     ).toThrow("task-1 must include a DoD line");
   });
+
+  it("fails when a dependency is not Nenhum or Tarefa N", () => {
+    expect(() =>
+      importMarkdownPlan(
+        [
+          "- [ ] **Tarefa [1]**: Ajustar runtime em `docs/agent-runtime.md`.",
+          "  - **Dependência:** tarefa anterior aprovada",
+          "  - **DoD:** `pnpm test:run tests/unit/runtime.test.ts` passa.",
+        ].join("\n"),
+        baseOptions,
+      ),
+    ).toThrow('Unrecognized dependency "tarefa anterior aprovada"');
+  });
 });
