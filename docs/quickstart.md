@@ -131,6 +131,13 @@ Show the run_id, artifact path, status, evidence, verified claims, and rollback.
 
 You do not need to memorize this. It shows what the agent should run behind the scenes:
 
+If the approved plan exists only as an atomic Markdown backlog, first convert it:
+
+```bash
+agent-harness plan import --from backlog.md --out plan.json --plan-id fix-login --risk L2 --rollback "Delete generated files."
+agent-harness plan-lint --plan plan.json
+```
+
 ```bash
 agent-harness session start --plan plan.json --run-id fix-login --summary "ctx"
 agent-harness next

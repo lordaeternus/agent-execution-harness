@@ -3,6 +3,7 @@
 Use this file for routine harness execution in Stetix. Do not load long docs unless needed.
 
 - Harness command for this project: `pnpm agent:harness`.
+- If approved backlog is Markdown-only, run `pnpm agent:harness plan import --from backlog.md --out plan.json --plan-id <id> --risk L2 --rollback "<rollback>"`, then `pnpm agent:harness plan-lint --plan plan.json`.
 - For approved L2/L3, multi-step or delegated work, run `pnpm agent:harness` or token-light commands automatically; user should not need to ask.
 - If the plan has `depends_on`, run `pnpm agent:harness plan waves --plan <plan>` and follow only unblocked tasks from `next --exact --micro`.
 - Start with `pnpm agent:harness session start`, then use `pnpm agent:harness next --exact --micro` for weak agents.

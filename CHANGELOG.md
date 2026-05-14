@@ -1,3 +1,9 @@
+## 0.14.2
+
+- Added `plan import` to convert the approved atomic Markdown backlog format into `plan.json`.
+- Improved missing-plan guidance so agents know how to create, lint and start a plan instead of recreating it freely.
+- Added unit and integration coverage for Markdown backlog import and missing-plan recovery.
+
 ## 0.14.1
 
 - Added a copy-paste execution prompt with real harness commands, so users do not pass empty command placeholders to coding agents.

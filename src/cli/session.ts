@@ -10,6 +10,7 @@ import { writeCompactJson } from "./output.js";
 import { saveActiveSession } from "./session-store.js";
 import { applyScopeBaselineToState, collectGitTouchedFilesResult } from "../core/scope-guard.js";
 import { checkLearningHealth } from "../core/learning-memory.js";
+import { MISSING_PLAN_GUIDANCE } from "./context.js";
 
 export function sessionCommand(args: string[], cwd = process.cwd()): void {
   const [verb, ...rest] = args;
@@ -18,7 +19,8 @@ export function sessionCommand(args: string[], cwd = process.cwd()): void {
   const config = loadConfig(cwd, stringFlag(flags, "config") ?? "agent-harness.config.json");
   config.token_budget.observation_format = "ultra_compact";
   const artifactDir = stringFlag(flags, "artifact-dir") ?? config.artifact_dir;
-  const planPath = stringFlag(flags, "plan", true)!;
+  const planPath = stringFlag(flags, "plan");
+  if (!planPath) throw new Error(MISSING_PLAN_GUIDANCE);
   const runId = stringFlag(flags, "run-id", true)!;
   const mode = stringFlag(flags, "mode") ?? "constrained";
   const plan = readJson<AgentHarnessPlan>(path.resolve(cwd, planPath));

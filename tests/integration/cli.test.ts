@@ -130,6 +130,37 @@ describe("cli integration", () => {
     expect(next.data.exact.command).toContain("task start --task-id dependent");
   });
 
+  it("imports an atomic markdown backlog into an executable plan", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-plan-import-"));
+    fs.writeFileSync(
+      path.join(tmp, "backlog.md"),
+      [
+        "- [ ] **Tarefa [1]**: Criar arquivo em `created.txt`.",
+        "  - **Dependência:** Nenhum",
+        "  - **DoD:** `node --version` passa.",
+      ].join("\n"),
+    );
+    fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+
+    const imported = JSON.parse(execFileSync("node", [bin, "plan", "import", "--from", "backlog.md", "--out", "plan.json", "--plan-id", "import-demo", "--risk", "L2", "--rollback", "Delete generated files."], { cwd: tmp, encoding: "utf8" }));
+    expect(imported.status).toBe("success");
+    expect(fs.existsSync(path.join(tmp, "plan.json"))).toBe(true);
+    execFileSync("node", [bin, "plan-lint", "--plan", "plan.json"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "import-demo", "--mode", "weak"], { cwd: tmp, stdio: "pipe" });
+    const next = JSON.parse(execFileSync("node", [bin, "next", "--exact", "--micro"], { cwd: tmp, encoding: "utf8" }));
+    expect(next.command).toContain("agent-harness files declare");
+  });
+
+  it("guides agents to import a markdown backlog when session plan is missing", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-missing-plan-"));
+    const output = tryCli(["session", "start", "--run-id", "missing-plan"], tmp);
+    expect(output.summary).toContain("No plan was provided.");
+    expect(output.summary).toContain("plan import");
+    expect(output.summary).toContain("plan-lint");
+    expect(output.summary).toContain("session start --plan");
+    expect(output.summary).not.toContain("recreate");
+  });
+
   it("guides a strict session with structured exact verify commands", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-strict-exact-"));
     fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));
@@ -490,7 +521,7 @@ describe("cli integration", () => {
   });
 });
 
-function tryCli(args: string[], cwd: string): { status: string; data: { repair_hint: { kind: string; stop_after_attempts: number } } } {
+function tryCli(args: string[], cwd: string): { status: string; summary: string; data: { repair_hint: { kind: string; stop_after_attempts: number } } } {
   try {
     execFileSync("node", [bin, ...args], { cwd, encoding: "utf8", stdio: "pipe" });
     throw new Error("expected command to fail");

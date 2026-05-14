@@ -13,6 +13,16 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.14.2
+
+This patch helps agents turn an approved text backlog into an executable `plan.json`.
+
+- added `plan import` for the atomic Markdown backlog format
+- missing-plan errors now show the import -> lint -> session flow
+- the harness still does not guess from chat history; the backlog must be saved to a file
+
+In plain language: a plan in chat can now become a real Harness plan without the agent recreating it freely.
+
 ## What's New In v0.14.1
 
 This patch removes ambiguity from the prompt users give to coding agents.
@@ -315,7 +325,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.14.1.md)
+- [Release notes](docs/release-notes/v0.14.2.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -325,6 +335,26 @@ If the agent cannot show evidence, the work is not complete.
 Use this if you want to try the harness in an existing project.
 
 AI agents should read [`docs/agent-runtime.md`](docs/agent-runtime.md) for the short runtime protocol. This README is for humans.
+
+## Text Backlog To Plan
+
+If Codex or another planner already produced an approved atomic Markdown backlog, save it as `backlog.md`, then run:
+
+```bash
+agent-harness plan import --from backlog.md --out plan.json --plan-id my-plan --risk L2 --rollback "Delete generated files."
+agent-harness plan-lint --plan plan.json
+agent-harness session start --plan plan.json --run-id my-plan --mode weak
+```
+
+Supported task format:
+
+```md
+- [ ] **Tarefa [1]**: Ajustar arquivo em `src/file.ts`.
+  - **Dependência:** Nenhum
+  - **DoD:** `pnpm test:run tests/unit/file.test.ts` passa.
+```
+
+The importer is intentionally narrow. It converts the known backlog format; it does not infer plans from free-form chat.
 
 ## Which Mode Should I Use?
 
@@ -1610,7 +1640,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.14.1
+0.14.2
 ```
 
 Package:

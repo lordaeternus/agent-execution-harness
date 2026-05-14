@@ -8,6 +8,15 @@ import type { AgentHarnessRunState } from "../core/run-types.js";
 import { stringFlag } from "./args.js";
 import { loadActiveSession } from "./session-store.js";
 
+export const MISSING_PLAN_GUIDANCE = [
+  "No plan was provided.",
+  "If you already have an approved backlog in Markdown, create plan.json first:",
+  'agent-harness plan import --from backlog.md --out plan.json --plan-id <id> --risk L2 --rollback "<rollback>"',
+  "Then run:",
+  "agent-harness plan-lint --plan plan.json",
+  "agent-harness session start --plan plan.json --run-id <id> --mode weak",
+].join("\n");
+
 export interface CliRunContext {
   planPath: string;
   runId: string;
@@ -27,7 +36,7 @@ export function resolveCliRunContext(flags: Record<string, string | boolean>, cw
   const planPath = stringFlag(flags, "plan") ?? session?.plan_path;
   const runId = stringFlag(flags, "run-id") ?? session?.run_id;
   const mode = stringFlag(flags, "mode") ?? session?.mode ?? "constrained";
-  if (!planPath) throw new Error("--plan is required when no active session exists");
+  if (!planPath) throw new Error(MISSING_PLAN_GUIDANCE);
   if (!runId) throw new Error("--run-id is required when no active session exists");
   const plan = readJson<AgentHarnessPlan>(path.resolve(cwd, planPath));
   const state = loadRun(cwd, artifactDir, runId);
