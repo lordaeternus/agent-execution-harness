@@ -510,6 +510,67 @@ describe("cli integration", () => {
     expect(fixtureOutput.status).toBe("success");
   });
 
+  it("reports dispatch batches with serial fallback and subagent packets", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-dispatch-"));
+    fs.writeFileSync(
+      path.join(tmp, "plan.json"),
+      `${JSON.stringify({
+        schema_version: "agent_harness_plan_v1",
+        plan_id: "dispatch-cli",
+        risk_level: "L2",
+        rollback_expectation: "Delete dispatch CLI test files.",
+        gates: ["node --version"],
+        tasks: [
+          {
+            task_id: "task-a",
+            acceptance_criteria: "Run `node --version` and pass task A.",
+            files: ["a.txt"],
+            allowed_commands: ["node --version"],
+            parallel_safe: true,
+          },
+          {
+            task_id: "task-b",
+            acceptance_criteria: "Run `node --version` and pass task B.",
+            files: ["b.txt"],
+            allowed_commands: ["node --version"],
+            parallel_safe: true,
+          },
+        ],
+      }, null, 2)}\n`,
+    );
+    const serial = JSON.parse(execFileSync("node", [bin, "dispatch", "plan", "--plan", "plan.json"], { cwd: tmp, encoding: "utf8" }));
+    expect(serial.data.batches[0].mode).toBe("serial");
+    expect(serial.data.batches[0].tasks.map((item: { task_id: string }) => item.task_id)).toEqual(["task-a"]);
+
+    const parallel = JSON.parse(execFileSync("node", [bin, "dispatch", "plan", "--plan", "plan.json", "--runtime", "subagents"], { cwd: tmp, encoding: "utf8" }));
+    expect(parallel.data.batches[0].mode).toBe("parallel");
+    expect(parallel.data.batches[0].tasks[0].packet.allowed_files).toEqual(["a.txt"]);
+    expect(parallel.next_actions.join(" ")).not.toContain("dispatch validate");
+    expect(parallel.next_actions.join(" ")).toContain("handoff validate");
+
+    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "dispatch-cli", "--mode", "standard"], { cwd: tmp });
+    const next = JSON.parse(execFileSync("node", [bin, "dispatch", "next", "--batch", "--runtime", "subagents"], { cwd: tmp, encoding: "utf8" }));
+    expect(next.data.batch.mode).toBe("parallel");
+    expect(next.next_actions).toContain("spawn_subagents");
+    expect(next.next_actions.join(" ")).not.toContain("dispatch validate");
+    expect(next.next_actions.join(" ")).toContain("handoff validate");
+
+    const runFile = path.join(tmp, ".agent-harness/runs/dispatch-cli.full.json");
+    const state = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    state.phase = "gate";
+    state.current_task_id = "task-a";
+    state.tasks[0].status = "in_progress";
+    state.updated_at = new Date().toISOString();
+    fs.writeFileSync(runFile, `${JSON.stringify(state, null, 2)}\n`);
+    fs.writeFileSync(path.join(tmp, ".agent-harness/runs/dispatch-cli.json"), `${JSON.stringify(state, null, 2)}\n`);
+
+    const active = JSON.parse(execFileSync("node", [bin, "dispatch", "next", "--batch", "--runtime", "subagents"], { cwd: tmp, encoding: "utf8" }));
+    expect(active.status).toBe("warning");
+    expect(active.summary).toContain("task already in progress");
+    expect(active.next_actions).toEqual(["next --exact"]);
+    expect(active.data.batch).toBeNull();
+  });
+
   it("generates and validates weak worker handoff output", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-handoff-"));
     fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));

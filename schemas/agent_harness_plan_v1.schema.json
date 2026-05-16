@@ -122,6 +122,36 @@
           "rollback_command": {
             "type": "string",
             "minLength": 1
+          },
+          "parallel_safe": {
+            "type": "boolean"
+          },
+          "agent_role": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]+$",
+            "minLength": 1
+          },
+          "context_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "shared_resources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "isolation": {
+            "enum": [
+              "same_workspace",
+              "git_worktree",
+              "forked_workspace",
+              "external_patch"
+            ]
           }
         }
       }

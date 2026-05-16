@@ -36,6 +36,7 @@ export function buildHandoffPacket(plan: AgentHarnessPlan, taskId: string): Hand
     blocks_tasks: context.blocksTasks,
     allowed_files: context.task.files ?? [],
     allowed_commands: allowedCommands(context),
+    context_refs: context.task.context_refs,
     forbidden_actions: FORBIDDEN_ACTIONS,
     blocked_if: BLOCKED_IF,
     exact_steps: EXACT_STEPS,

@@ -132,7 +132,7 @@ function collectPlanErrors(plan: unknown): string[] {
     requireSafeId(value, "plan_id");
     requireEnum(value, "risk_level", ["L1", "L2", "L3"]);
     requireString(value, "rollback_expectation");
-  if (value.execution_profile !== undefined) requireEnum(value, "execution_profile", ["standard", "constrained", "weak", "strict"]);
+    if (value.execution_profile !== undefined) requireEnum(value, "execution_profile", ["standard", "constrained", "weak", "strict"]);
     requireArray(value, "gates");
     requireArray(value, "tasks");
     if ((value.gates as unknown[]).length === 0) throw new Error("plan.gates must be non-empty");
@@ -154,6 +154,14 @@ function collectPlanErrors(plan: unknown): string[] {
       if (record.files !== undefined) requireArray(record, "files");
       if (record.required_evidence !== undefined) requireArray(record, "required_evidence");
       if (record.allowed_commands !== undefined) requireArray(record, "allowed_commands");
+      if (record.parallel_safe !== undefined) requireBoolean(record, "parallel_safe");
+      if (record.agent_role !== undefined) {
+        requireString(record, "agent_role");
+        requireSafeId(record, "agent_role");
+      }
+      if (record.context_refs !== undefined) requireStringArray(record, "context_refs");
+      if (record.shared_resources !== undefined) requireStringArray(record, "shared_resources");
+      if (record.isolation !== undefined) requireEnum(record, "isolation", ["same_workspace", "git_worktree", "forked_workspace", "external_patch"]);
       if (seenTasks.has(record.task_id as string)) throw new Error(`duplicate task_id: ${String(record.task_id)}`);
       seenTasks.add(record.task_id as string);
     }
@@ -190,6 +198,13 @@ function requireString(value: Record<string, unknown>, field: string, expected?:
 
 function requireArray(value: Record<string, unknown>, field: string): void {
   if (!Array.isArray(value[field])) throw new Error(`${field} must be an array`);
+}
+
+function requireStringArray(value: Record<string, unknown>, field: string): void {
+  requireArray(value, field);
+  for (const item of value[field] as unknown[]) {
+    if (typeof item !== "string" || item.trim().length === 0) throw new Error(`${field} entries must be non-empty strings`);
+  }
 }
 
 function requireEnum(value: Record<string, unknown>, field: string, allowed: string[]): void {

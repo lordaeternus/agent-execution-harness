@@ -176,6 +176,24 @@ agent-harness handoff validate --plan plan.json --task-id login-fix --input work
 
 Paste the generated `data.prompt` into the worker. Keep what passes validation; repair or discard the rest.
 
+Optional dispatch guidance for agents that may or may not have subagents:
+
+```bash
+agent-harness dispatch plan --plan plan.json
+agent-harness dispatch plan --plan plan.json --runtime subagents
+agent-harness dispatch next --batch --runtime subagents
+```
+
+Dispatch is runtime-agnostic. With `--runtime subagents`, it can return a parallel batch with one handoff packet per safe task. Without subagents, it falls back to one serial task, so agents can keep using the normal `next --exact` flow.
+
+Dispatch does not spawn or validate workers itself. Save each worker JSON response and validate it with:
+
+```bash
+agent-harness handoff validate --plan plan.json --task-id task-id --input worker-output.json
+```
+
+The optional task `isolation` field is advisory metadata in this version. It records the intended isolation model, but dispatch does not automatically create worktrees, forked workspaces, or sandboxes.
+
 Optional cheap project readiness and steering checks:
 
 ```bash

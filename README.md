@@ -13,6 +13,18 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.14.3
+
+This patch adds dispatch guidance for agents that may have subagents.
+
+- added `dispatch plan` and `dispatch next --batch`
+- dispatch returns safe serial fallback or parallel handoff packets
+- worker JSON validation stays with `handoff validate`
+- dispatch refuses to create a new batch while a run already has active work
+- runnable tasks are no longer also reported as blocked
+
+In plain language: the harness can now tell an agent when to use subagents and when to stay serial, without inventing worker validation commands.
+
 ## What's New In v0.14.2
 
 This patch helps agents turn an approved text backlog into an executable `plan.json`.
@@ -325,7 +337,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.14.2.md)
+- [Release notes](docs/release-notes/v0.14.3.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -522,6 +534,7 @@ For weak, local, low-context or cost-sensitive executors, use the micro/compact 
 
 ```bash
 agent-harness next --exact --micro
+agent-harness dispatch next --batch --runtime subagents
 agent-harness handoff --compact --plan plan.json --task-id task-id
 agent-harness map query --surface auth --compact
 agent-harness learn query --surface auth --top-k 3 --compact
@@ -545,6 +558,26 @@ For low-context agents, use `next --exact --micro`. It returns the exact next ha
 For multi-step plans, tasks can declare `depends_on`. Run `agent-harness plan waves --plan plan.json` to preview safe execution order. `next --exact` then guides the agent only to tasks whose dependencies already passed evidence.
 
 The scope guard also checks the real git diff before `finish`. If the agent changed a product/source file outside the plan, the run stops with a `repair_hint` instead of pretending success. In plain language: the agent can only finish if the files it touched match the files it declared.
+
+### Dispatch Guidance
+
+Use dispatch when the agent may have subagents but should not guess what can run in parallel.
+
+```bash
+agent-harness dispatch plan --plan plan.json
+agent-harness dispatch plan --plan plan.json --runtime subagents
+agent-harness dispatch next --batch --runtime subagents
+```
+
+Dispatch does not spawn workers itself. It inspects the plan, dependencies and task metadata, then returns either a safe parallel batch with handoff packets or a serial fallback task. If the runtime has no subagents, omit `--runtime subagents` and continue with the normal serial `next --exact` flow.
+
+After a worker returns JSON, validate that output with the existing handoff validator:
+
+```bash
+agent-harness handoff validate --plan plan.json --task-id task-id --input worker-output.json
+```
+
+The optional task `isolation` field is advisory metadata in this version. It documents the intended worker isolation model, but the harness does not automatically create worktrees, fork workspaces, or sandboxes for dispatch.
 
 ### Weak Worker Handoff
 
@@ -1379,6 +1412,17 @@ Shows dependency waves from optional task `depends_on` fields.
 agent-harness plan waves --plan plan.json
 ```
 
+### `dispatch`
+
+Guides serial fallback or safe subagent batches without spawning workers directly.
+
+```bash
+agent-harness dispatch plan --plan plan.json
+agent-harness dispatch next --batch --runtime subagents
+```
+
+Validate returned worker JSON with `agent-harness handoff validate --plan plan.json --task-id task-id --input worker-output.json`. Dispatch does not have a separate validate command.
+
 ### `execute`
 
 Initializes or resumes a run.
@@ -1641,7 +1685,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.14.2
+0.14.3
 ```
 
 Package:

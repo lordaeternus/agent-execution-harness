@@ -2,6 +2,7 @@ import type { PLAN_SCHEMA_VERSION } from "./constants.js";
 
 export type RiskLevel = "L1" | "L2" | "L3";
 export type TaskSurface = "ui_layout" | "ui" | "backend" | "api" | "auth" | "db" | "ai" | "docs" | "generic";
+export type TaskDispatchIsolation = "same_workspace" | "git_worktree" | "forked_workspace" | "external_patch";
 
 export interface AgentHarnessTask {
   task_id: string;
@@ -15,6 +16,11 @@ export interface AgentHarnessTask {
   required_checks?: string[];
   allowed_commands?: string[];
   rollback_command?: string;
+  parallel_safe?: boolean;
+  agent_role?: string;
+  context_refs?: string[];
+  shared_resources?: string[];
+  isolation?: TaskDispatchIsolation;
 }
 
 export interface AgentHarnessPlan {

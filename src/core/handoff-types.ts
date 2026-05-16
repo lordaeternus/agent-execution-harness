@@ -10,6 +10,7 @@ export interface HandoffPacket {
   blocks_tasks: string[];
   allowed_files: string[];
   allowed_commands: string[];
+  context_refs?: string[];
   forbidden_actions: string[];
   blocked_if: string[];
   exact_steps: string[];

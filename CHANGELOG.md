@@ -1,3 +1,12 @@
+## 0.14.3
+
+- Added `dispatch plan` and `dispatch next --batch` to guide safe serial fallback or subagent batches.
+- Added dispatch handoff packets so parent agents can delegate only scoped task context.
+- Removed invalid dispatch follow-up guidance and route worker validation through `handoff validate`.
+- Blocked new dispatch batches while a run already has an active task, gate or incompatible phase.
+- Ensured runnable dispatch tasks are not also reported as blocked.
+- Documented dispatch behavior and the advisory nature of task `isolation`.
+
 ## 0.14.2
 
 - Added `plan import` to convert the approved atomic Markdown backlog format into `plan.json`.

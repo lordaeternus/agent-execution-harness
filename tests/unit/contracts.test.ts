@@ -38,6 +38,49 @@ describe("repository contracts", () => {
     expect(result.warnings.join("\n")).toContain("L3 task should declare required_evidence");
   });
 
+  it("accepts safe optional dispatch task metadata", () => {
+    const result = lintPlan({
+      schema_version: "agent_harness_plan_v1",
+      plan_id: "dispatch-metadata",
+      risk_level: "L2",
+      rollback_expectation: "Revert dispatch metadata test files.",
+      gates: ["pnpm test"],
+      tasks: [
+        {
+          task_id: "task-a",
+          files: ["src/a.ts"],
+          acceptance_criteria: "Run `pnpm test` and confirm task A behavior passes.",
+          parallel_safe: true,
+          agent_role: "implementation_worker",
+          context_refs: ["docs/agent-runtime.md"],
+          shared_resources: ["unit-test-runner"],
+          isolation: "same_workspace",
+        },
+      ],
+    });
+    expect(result.status).toBe("success");
+  });
+
+  it("rejects malformed dispatch task metadata", () => {
+    const result = lintPlan({
+      schema_version: "agent_harness_plan_v1",
+      plan_id: "bad-dispatch-metadata",
+      risk_level: "L2",
+      rollback_expectation: "Revert dispatch metadata test files.",
+      gates: ["pnpm test"],
+      tasks: [
+        {
+          task_id: "task-a",
+          files: ["src/a.ts"],
+          acceptance_criteria: "Run `pnpm test` and confirm task A behavior passes.",
+          parallel_safe: "yes",
+        },
+      ],
+    });
+    expect(result.status).toBe("error");
+    expect(result.errors.join("\n")).toContain("parallel_safe");
+  });
+
   it("keeps required docs and templates present", () => {
     for (const file of [
       "README.md",
