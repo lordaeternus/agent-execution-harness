@@ -46,6 +46,7 @@
     "token-budget": "node scripts/token-budget.mjs",
     "doctor": "pnpm build && node dist/cli/index.js doctor",
     "secret-scan": "node scripts/secret-scan.mjs",
+    "prepare": "node scripts/build.mjs",
     "pack:dry": "pnpm build && node scripts/pack-check.mjs",
     "audit:release-readiness": "node scripts/audit-release-readiness.mjs"
   },
