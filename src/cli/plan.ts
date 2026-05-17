@@ -7,12 +7,12 @@ import { validatePlan } from "../core/schema-validation.js";
 import { readJson } from "../core/utils.js";
 import { parseFlags, stringFlag } from "./args.js";
 import { writeJson } from "./output.js";
-import { importMarkdownPlan } from "../core/plan-importer.js";
+import { importFeatureListPlan, importMarkdownPlan } from "../core/plan-importer.js";
 
 export function planCommand(args: string[], cwd = process.cwd()): void {
   const [subcommand, ...rest] = args;
   if (subcommand === "import") return importPlanCommand(rest, cwd);
-  if (subcommand !== "waves") throw new Error("plan command must be: plan waves --plan <path> OR plan import --from <md|-> --out <json> --plan-id <id> --risk <L1|L2|L3> --rollback <text> [--overwrite]");
+  if (subcommand !== "waves") throw new Error("plan command must be: plan waves --plan <path> OR plan import --from <md|-> --out <json> --plan-id <id> --risk <L1|L2|L3> --rollback <text> [--kind atomic|feature-list] [--overwrite]");
   const flags = parseFlags(rest);
   const planPath = stringFlag(flags, "plan", true)!;
   const plan = readJson<AgentHarnessPlan>(path.resolve(cwd, planPath));
@@ -55,13 +55,16 @@ function importPlanCommand(args: string[], cwd: string): void {
   const planId = stringFlag(flags, "plan-id", true)!;
   const risk = stringFlag(flags, "risk", true)!;
   const rollback = stringFlag(flags, "rollback", true)!;
+  const kind = stringFlag(flags, "kind") ?? "atomic";
   if (!["L1", "L2", "L3"].includes(risk)) throw new Error("--risk must be one of L1, L2, L3");
+  if (!["atomic", "feature-list"].includes(kind)) throw new Error("--kind must be atomic or feature-list");
   const outputPath = path.resolve(cwd, out);
   if (fs.existsSync(outputPath) && flags.overwrite !== true) {
     throw new Error(`output plan already exists: ${out}. Use --overwrite to replace it.`);
   }
   const markdown = readMarkdownInput(cwd, from);
-  const plan = importMarkdownPlan(markdown, {
+  const importPlan = kind === "feature-list" ? importFeatureListPlan : importMarkdownPlan;
+  const plan = importPlan(markdown, {
     plan_id: planId,
     risk_level: risk as "L1" | "L2" | "L3",
     rollback_expectation: rollback,
@@ -87,11 +90,11 @@ function importPlanCommand(args: string[], cwd: string): void {
   const planIdArg = formatCliArg(planId);
   writeJson({
     status: "success",
-    summary: "markdown backlog imported",
+    summary: kind === "feature-list" ? "feature list imported" : "markdown backlog imported",
     artifacts: [{ type: "plan", path: path.relative(cwd, outputPath) }],
     next_actions: [`agent-harness plan-lint --plan ${outArg}`, `agent-harness session start --plan ${outArg} --run-id ${planIdArg} --mode weak`],
     errors: [],
-    data: { tasks: plan.tasks.length, gates: plan.gates, input_source: from === "-" ? "stdin" : "file", warnings: compiled.diagnostics.filter((item) => item.severity === "warning") },
+    data: { kind, tasks: plan.tasks.length, gates: plan.gates, input_source: from === "-" ? "stdin" : "file", warnings: compiled.diagnostics.filter((item) => item.severity === "warning") },
   });
 }
 

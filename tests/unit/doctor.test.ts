@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { defaultConfig } from "../../src/core/config.js";
-import { assessArchitecture, assessCoverage, assessHarnessability, detectProjectTopology, doctorControls } from "../../src/core/doctor.js";
+import { assessArchitecture, assessCoverage, assessHarnessability, assessQuality, detectProjectTopology, doctorControls } from "../../src/core/doctor.js";
 
 describe("doctor harnessability", () => {
   it("scores sparse projects lower than configured projects", () => {
@@ -72,5 +72,35 @@ describe("doctor harnessability", () => {
     expect(report.violations).toEqual([
       expect.objectContaining({ rule_id: "no_client_server", file: "src/client/view.ts" }),
     ]);
+  });
+
+  it("reports quality as blocked when base doctor has errors", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-quality-blocked-"));
+    fs.writeFileSync(path.join(cwd, "package.json"), `${JSON.stringify({ name: "target", scripts: {} })}\n`);
+
+    const quality = assessQuality(cwd, defaultConfig());
+    expect(quality.status).toBe("blocked");
+    expect(quality.signals.doctor_status).toBe("error");
+    expect(quality.score).toBeLessThan(80);
+    expect(quality.next_actions.length).toBeGreaterThan(0);
+  });
+
+  it("reports compact quality for configured projects", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-quality-"));
+    fs.mkdirSync(path.join(cwd, "docs"), { recursive: true });
+    fs.mkdirSync(path.join(cwd, "tests"), { recursive: true });
+    fs.writeFileSync(
+      path.join(cwd, "package.json"),
+      `${JSON.stringify({ name: "configured", scripts: { lint: "eslint .", "test:run": "vitest run", typecheck: "tsc --noEmit" } }, null, 2)}\n`,
+    );
+    fs.writeFileSync(path.join(cwd, "AGENTS.md"), "# Rules\nSmallest change with evidence and success criteria.\n");
+    fs.writeFileSync(path.join(cwd, "agent-harness.config.json"), "{}\n");
+    fs.writeFileSync(path.join(cwd, "docs", "agent-runtime.md"), "# Runtime\n");
+    fs.writeFileSync(path.join(cwd, ".gitignore"), ".agent-harness/runs/\n");
+
+    const quality = assessQuality(cwd, defaultConfig());
+    expect(quality.status).not.toBe("blocked");
+    expect(quality.signals.harnessability_score).toBeGreaterThan(70);
+    expect(JSON.stringify(quality).length).toBeLessThan(1600);
   });
 });

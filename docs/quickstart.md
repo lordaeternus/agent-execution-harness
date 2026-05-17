@@ -147,6 +147,15 @@ agent-harness plan-lint --plan plan.json
 
 The importer accepts only the atomic checklist format. Dependencies must be `Nenhum` or `Tarefa N`. It will not overwrite an existing `plan.json` unless you pass `--overwrite`.
 
+If the approved input is a simple feature list instead of the atomic checklist, use Markdown bullets plus `--kind feature-list`:
+
+```bash
+agent-harness plan import --kind feature-list --from features.md --out plan.json --plan-id fix-login --risk L2 --rollback "Delete generated files." --gate "pnpm test"
+agent-harness plan-lint --plan plan.json
+```
+
+Feature-list import is intentionally Markdown-only in this version. It does not add a new JSON schema.
+
 ```bash
 agent-harness session start --plan plan.json --run-id fix-login --summary "ctx"
 agent-harness next
@@ -154,6 +163,7 @@ agent-harness files declare --files src/login.ts
 agent-harness task start --task-id login-fix --files src/login.ts
 agent-harness verify --task-id login-fix --type focused_tests --cmd "pnpm test"
 agent-harness claim auto
+agent-harness finish --check
 agent-harness finish --summary "Login fix validated."
 agent-harness report --run-id fix-login --format compact
 ```
@@ -214,9 +224,10 @@ Optional cheap project readiness and steering checks:
 ```bash
 agent-harness doctor --harnessability --cwd .
 agent-harness doctor --steering --cwd .
+agent-harness doctor --quality --cwd .
 ```
 
-Use `doctor --harnessability` when agents keep struggling in a project. Use `doctor --steering` after repeated failures to see whether one small rule, test or sensor would prevent recurrence.
+Use `doctor --harnessability` when agents keep struggling in a project. Use `doctor --steering` after repeated failures to see whether one small rule, test or sensor would prevent recurrence. Use `doctor --quality` for a compact snapshot that combines existing doctor, harnessability, coverage, architecture and steering signals.
 
 Optional approved fixtures for critical behavior:
 

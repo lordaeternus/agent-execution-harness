@@ -31,7 +31,7 @@ export function buildExactNextCommand(state: AgentHarnessRunState): ExactNextCom
   }
   if (state.phase === "report") {
     return state.verified_claims.length
-      ? exact("run_exact_command", "agent-harness finish --summary \"validated\"", "exit_code_not_zero")
+      ? exact("run_exact_command", "agent-harness finish --check", "exit_code_not_zero")
       : exact("run_exact_command", "agent-harness claim auto", "exit_code_not_zero");
   }
   return exact("none", "", "no actionable command");

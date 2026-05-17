@@ -73,6 +73,9 @@ describe("cli integration", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-exact-"));
     fs.copyFileSync("tests/fixtures/plans/basic-plan.json", path.join(tmp, "plan.json"));
     fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+    execFileSync("git", ["init"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "add", "plan.json", "created.txt"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "baseline"], { cwd: tmp, stdio: "pipe" });
     execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "exact-smoke", "--mode", "weak"], { cwd: tmp });
     let next = JSON.parse(execFileSync("node", [bin, "next", "--exact"], { cwd: tmp, encoding: "utf8" }));
     expect(next.data.exact.command).toBe('agent-harness files declare --files "created.txt"');
@@ -87,10 +90,27 @@ describe("cli integration", () => {
     expect(next.data.exact.command).toBe("agent-harness claim auto");
     execFileSync("node", [bin, "claim", "auto"], { cwd: tmp });
     next = JSON.parse(execFileSync("node", [bin, "next", "--exact"], { cwd: tmp, encoding: "utf8" }));
-    expect(next.data.exact.command).toBe('agent-harness finish --summary "validated"');
+    expect(next.data.exact.command).toBe("agent-harness finish --check");
+    const checked = JSON.parse(execFileSync("node", [bin, "finish", "--check"], { cwd: tmp, encoding: "utf8" }));
+    expect(checked.status).toBe("success");
+    expect(checked.next_actions).toEqual(['finish --summary "validated"']);
     execFileSync("node", [bin, "finish", "--summary", "validated"], { cwd: tmp });
     const report = execFileSync("node", [bin, "report", "--run-id", "exact-smoke", "--format", "compact"], { cwd: tmp, encoding: "utf8" });
     expect(report).toContain("status: completed");
+  });
+
+  it("checks finish readiness without mutating a pending run", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-finish-check-"));
+    fs.copyFileSync("tests/fixtures/plans/basic-plan.json", path.join(tmp, "plan.json"));
+    execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "finish-check-smoke"], { cwd: tmp });
+    const runFile = path.join(tmp, ".agent-harness/runs/finish-check-smoke.full.json");
+    const before = fs.readFileSync(runFile, "utf8");
+    const blocked = tryCli(["finish", "--check"], tmp);
+
+    expect(blocked.status).toBe("error");
+    expect(blocked.errors.join("\n")).toContain("pending_tasks");
+    expect(blocked.next_actions).toEqual(["next --exact"]);
+    expect(fs.readFileSync(runFile, "utf8")).toBe(before);
   });
 
   it("reports dependency waves and guides only unblocked tasks", () => {
@@ -175,6 +195,27 @@ describe("cli integration", () => {
     expect(imported.data.input_source).toBe("stdin");
     expect(fs.existsSync(path.join(tmp, "plan.json"))).toBe(true);
     execFileSync("node", [bin, "plan-lint", "--plan", "plan.json"], { cwd: tmp, stdio: "pipe" });
+  });
+
+  it("imports a simple feature list from markdown and stdin", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-feature-list-"));
+    const markdown = [
+      "- Add finish check in `src/cli/macro.ts`",
+      "  - **DoD:** `node --version` passa.",
+      "- Document finish check in `README.md`",
+      "  - **Dependência:** Feature 1",
+      "  - **DoD:** README mentions finish --check.",
+    ].join("\n");
+    fs.writeFileSync(path.join(tmp, "features.md"), markdown);
+
+    const fromFile = JSON.parse(execFileSync("node", [bin, "plan", "import", "--kind", "feature-list", "--from", "features.md", "--out", "feature-plan.json", "--plan-id", "feature-list", "--risk", "L2", "--rollback", "Revert changed files.", "--gate", "node --version"], { cwd: tmp, encoding: "utf8" }));
+    expect(fromFile.summary).toBe("feature list imported");
+    expect(fromFile.data.kind).toBe("feature-list");
+    execFileSync("node", [bin, "plan-lint", "--plan", "feature-plan.json"], { cwd: tmp, stdio: "pipe" });
+
+    const fromStdin = JSON.parse(execFileSync("node", [bin, "plan", "import", "--kind", "feature-list", "--from", "-", "--out", "stdin-plan.json", "--plan-id", "feature-list-stdin", "--risk", "L2", "--rollback", "Revert changed files.", "--gate", "node --version"], { cwd: tmp, encoding: "utf8", input: markdown }));
+    expect(fromStdin.status).toBe("success");
+    execFileSync("node", [bin, "plan-lint", "--plan", "stdin-plan.json"], { cwd: tmp, stdio: "pipe" });
   });
 
   it("does not overwrite an existing imported plan unless overwrite is explicit", () => {
@@ -496,6 +537,11 @@ describe("cli integration", () => {
     expect(architectureHuman).toContain("Architecture:");
     const architecture = JSON.parse(execFileSync("node", [bin, "doctor", "--json", "--architecture", "--cwd", tmp], { encoding: "utf8" }));
     expect(architecture.data.architecture.violations[0].rule_id).toBe("no_client_server");
+    const qualityHuman = execFileSync("node", [bin, "doctor", "--quality", "--cwd", tmp], { encoding: "utf8" });
+    expect(qualityHuman).toContain("Quality:");
+    const quality = JSON.parse(execFileSync("node", [bin, "doctor", "--json", "--quality", "--cwd", tmp], { encoding: "utf8" }));
+    expect(quality.data.quality.signals.doctor_status).toBe("success");
+    expect(quality.data.quality.status).not.toBe("blocked");
 
     const plan = {
       schema_version: "agent_harness_plan_v1",
@@ -699,7 +745,7 @@ describe("cli integration", () => {
   });
 });
 
-function tryCli(args: string[], cwd: string): { status: string; summary: string; errors: string[]; data: { repair_hint?: { kind: string; stop_after_attempts: number } } } {
+function tryCli(args: string[], cwd: string): { status: string; summary: string; errors: string[]; next_actions: string[]; data: { repair_hint?: { kind: string; stop_after_attempts: number } } } {
   try {
     execFileSync("node", [bin, ...args], { cwd, encoding: "utf8", stdio: "pipe" });
     throw new Error("expected command to fail");

@@ -1,6 +1,6 @@
 import { loadConfig } from "../core/config.js";
 import { analyzeRepeatedFailures } from "../core/steering.js";
-import { assessArchitecture, assessCoverage, assessHarnessability, doctorControls, runDoctor } from "../core/doctor.js";
+import { assessArchitecture, assessCoverage, assessHarnessability, assessQuality, doctorControls, runDoctor } from "../core/doctor.js";
 import { parseFlags, stringFlag } from "./args.js";
 import { envelope, type CliEnvelope, writeHuman, writeJson } from "./output.js";
 
@@ -15,6 +15,7 @@ export function doctorCommand(args: string[], cwd = process.cwd()): void {
   const steering = flags.steering === true ? analyzeRepeatedFailures(target, config) : undefined;
   const coverage = flags.coverage === true ? assessCoverage(target, config) : undefined;
   const architecture = flags.architecture === true ? assessArchitecture(target, config) : undefined;
+  const quality = flags.quality === true ? assessQuality(target, config) : undefined;
   const output = envelope({
     status: result.status,
     summary: result.status === "success" ? "doctor passed" : "doctor found issues",
@@ -25,9 +26,10 @@ export function doctorCommand(args: string[], cwd = process.cwd()): void {
       ...(steering?.suggestions.map((item) => item.suggestion) ?? []),
       ...(coverage?.gaps.map((item) => item.action) ?? []),
       ...(architecture?.violations.map((item) => `Fix architecture rule ${item.rule_id} in ${item.file}`) ?? []),
+      ...(quality?.next_actions ?? []),
     ],
     errors: result.findings.filter((finding) => ["error", "fatal"].includes(finding.severity)).map((finding) => finding.message),
-    data: { findings: result.findings, harnessability, controls, steering, coverage, architecture },
+    data: { findings: result.findings, harnessability, controls, steering, coverage, architecture, quality },
   });
   if (json) writeJson(output);
   else writeHuman(renderDoctorResult(output));
@@ -42,6 +44,7 @@ function renderDoctorResult(output: CliEnvelope): string[] {
     steering?: { suggestions: Array<{ key: string; suggestion: string }> };
     coverage?: { topology: string; covered_controls: string[]; gaps: Array<{ control: string; action: string }>; recommended_controls: string[] };
     architecture?: { checked_rules: number; scanned_files: number; violations: Array<{ rule_id: string; file: string; forbidden_import: string }> };
+    quality?: { status: string; score: number; summary: string; signals: Record<string, number | string>; risks: string[] };
   };
   const lines: string[] = [
     output.status === "success" ? "Agent Execution Harness doctor passed." : "Agent Execution Harness doctor found issues.",
@@ -69,6 +72,11 @@ function renderDoctorResult(output: CliEnvelope): string[] {
   if (data.architecture) {
     lines.push("", `Architecture: rules=${data.architecture.checked_rules} files=${data.architecture.scanned_files} violations=${data.architecture.violations.length}`);
     for (const violation of data.architecture.violations.slice(0, 5)) lines.push(`- ${violation.rule_id}: ${violation.file} imports ${violation.forbidden_import}`);
+  }
+  if (data.quality) {
+    lines.push("", `Quality: ${data.quality.status} score=${data.quality.score}/100`);
+    lines.push(`Signals: doctor=${data.quality.signals.doctor_status} harnessability=${data.quality.signals.harnessability_score} coverage_gaps=${data.quality.signals.coverage_gaps} architecture_violations=${data.quality.signals.architecture_violations} recurring_risks=${data.quality.signals.recurring_risks}`);
+    for (const risk of data.quality.risks.slice(0, 5)) lines.push(`- ${risk}`);
   }
   if (output.next_actions.length > 0) {
     lines.push("", "Next actions:");

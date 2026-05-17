@@ -9,6 +9,7 @@ export * from "./core/report.js";
 export * from "./core/benchmark.js";
 export * from "./core/auto-claims.js";
 export * from "./core/evidence-policy.js";
+export * from "./core/finish-check.js";
 export * from "./core/codebase-memory.js";
 export * from "./core/learning-types.js";
 export * from "./core/learning-memory.js";

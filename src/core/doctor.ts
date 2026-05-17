@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { AgentHarnessConfig } from "./config-types.js";
 import { listControls, type HarnessControl } from "./control-catalog.js";
+import { analyzeRepeatedFailures } from "./steering.js";
 
 export interface DoctorFinding {
   severity: "info" | "warning" | "error" | "fatal";
@@ -52,6 +53,21 @@ export interface ArchitectureReport {
   checked_rules: number;
   scanned_files: number;
   violations: ArchitectureViolation[];
+}
+
+export interface QualitySnapshot {
+  status: "healthy" | "needs_attention" | "blocked";
+  score: number;
+  summary: string;
+  signals: {
+    doctor_status: "success" | "error";
+    harnessability_score: number;
+    coverage_gaps: number;
+    architecture_violations: number;
+    recurring_risks: number;
+  };
+  risks: string[];
+  next_actions: string[];
 }
 
 export function runDoctor(cwd: string, config: AgentHarnessConfig): { status: "success" | "error"; findings: DoctorFinding[] } {
@@ -165,6 +181,51 @@ export function assessArchitecture(cwd: string, config: AgentHarnessConfig): Arc
   return { checked_rules: rules.length, scanned_files: files.length, violations };
 }
 
+export function assessQuality(cwd: string, config: AgentHarnessConfig): QualitySnapshot {
+  const doctor = runDoctor(cwd, config);
+  const harnessability = assessHarnessability(cwd, config);
+  const coverage = assessCoverage(cwd, config);
+  const architecture = assessArchitecture(cwd, config);
+  const steering = analyzeRepeatedFailures(cwd, config);
+  const risks = [
+    ...doctor.findings.filter((item) => item.severity !== "info").map((item) => `${item.severity}:${item.code}`),
+    ...coverage.gaps.filter((gap) => gap.severity === "warning").map((gap) => `coverage:${gap.control}`),
+    ...architecture.violations.slice(0, 5).map((violation) => `architecture:${violation.rule_id}:${violation.file}`),
+    ...steering.suggestions.slice(0, 5).map((item) => `recurring:${item.key}`),
+  ];
+  const penalty = Math.min(
+    100,
+    doctor.findings.reduce((sum, item) => sum + severityPenalty(item.severity), 0)
+      + Math.max(0, 80 - harnessability.score)
+      + coverage.gaps.reduce((sum, gap) => sum + (gap.severity === "warning" ? 10 : 3), 0)
+      + Math.min(30, architecture.violations.length * 10)
+      + Math.min(20, steering.suggestions.length * 5),
+  );
+  const score = Math.max(0, 100 - penalty);
+  const status = doctor.status === "error" ? "blocked" : score >= 80 ? "healthy" : "needs_attention";
+  const nextActions = [
+    ...doctor.findings.map((finding) => finding.remediation),
+    ...harnessability.weak.slice(0, 5).map((id) => `improve_harnessability:${id}`),
+    ...coverage.gaps.slice(0, 5).map((gap) => gap.action),
+    ...architecture.violations.slice(0, 5).map((violation) => `Fix architecture rule ${violation.rule_id} in ${violation.file}`),
+    ...steering.suggestions.slice(0, 5).map((item) => item.suggestion),
+  ];
+  return {
+    status,
+    score,
+    summary: `quality ${status} score=${score}/100`,
+    signals: {
+      doctor_status: doctor.status,
+      harnessability_score: harnessability.score,
+      coverage_gaps: coverage.gaps.length,
+      architecture_violations: architecture.violations.length,
+      recurring_risks: steering.suggestions.length,
+    },
+    risks: risks.slice(0, 10),
+    next_actions: unique(nextActions).slice(0, 10),
+  };
+}
+
 function finding(severity: DoctorFinding["severity"], code: string, message: string, remediation: string): DoctorFinding {
   return {
     severity,
@@ -173,6 +234,13 @@ function finding(severity: DoctorFinding["severity"], code: string, message: str
     remediation,
     doc_url: `https://github.com/lordaeternus/agent-execution-harness/blob/main/docs/installation.md#${code}`,
   };
+}
+
+function severityPenalty(severity: DoctorFinding["severity"]): number {
+  if (severity === "fatal") return 45;
+  if (severity === "error") return 30;
+  if (severity === "warning") return 10;
+  return 2;
 }
 
 function check(id: string, passed: boolean, weight: number, message: string): HarnessabilityCheck {
@@ -255,4 +323,8 @@ function hasScript(scripts: Record<string, string>, names: string[]): boolean {
 
 function scriptIncludes(scripts: Record<string, string>, pattern: string): boolean {
   return Object.values(scripts).some((script) => script.includes(pattern));
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values.filter(Boolean))];
 }

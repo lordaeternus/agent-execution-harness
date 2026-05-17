@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { importMarkdownPlan } from "../../src/core/plan-importer.js";
+import { importFeatureListPlan, importMarkdownPlan } from "../../src/core/plan-importer.js";
 
 const baseOptions = {
   plan_id: "demo",
@@ -93,5 +93,37 @@ describe("plan importer", () => {
         baseOptions,
       ),
     ).toThrow('Unrecognized dependency "tarefa anterior aprovada"');
+  });
+
+  it("imports a simple markdown feature list into a harness plan", () => {
+    const plan = importFeatureListPlan(
+      [
+        "- Add safe finish check in `src/cli/macro.ts`",
+        "  - **DoD:** `pnpm test:run tests/unit/finish-check.test.ts` passa.",
+        "- Add docs example in `README.md`",
+        "  - **Dependência:** Feature 1",
+        "  - **DoD:** README shows finish --check before finish.",
+      ].join("\n"),
+      { ...baseOptions, gate: "pnpm test:run tests/unit/public-readiness.test.ts" },
+    );
+
+    expect(plan.tasks).toHaveLength(2);
+    expect(plan.tasks[0]).toMatchObject({
+      task_id: "feature-1",
+      files: ["src/cli/macro.ts"],
+      required_checks: ["pnpm test:run tests/unit/finish-check.test.ts"],
+    });
+    expect(plan.tasks[1]).toMatchObject({
+      task_id: "feature-2",
+      depends_on: ["feature-1"],
+      files: ["README.md"],
+    });
+    expect(plan.gates).toEqual(["pnpm test:run tests/unit/finish-check.test.ts", "pnpm test:run tests/unit/public-readiness.test.ts"]);
+  });
+
+  it("requires feature-list files to stay explicit", () => {
+    expect(() =>
+      importFeatureListPlan("- Add safe finish check", { ...baseOptions, gate: "pnpm test:run tests/unit/public-readiness.test.ts" }),
+    ).toThrow("feature-1 must declare at least one file");
   });
 });

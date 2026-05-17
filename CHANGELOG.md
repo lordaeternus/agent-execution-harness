@@ -1,3 +1,11 @@
+## 0.16.0
+
+- Added read-only `finish --check` so agents can prove a run is finalizable before writing the final report.
+- Added `plan import --kind feature-list` for simple Markdown feature lists from files or stdin.
+- Added `doctor --quality` as a compact quality snapshot built from existing doctor, coverage, architecture, harnessability and steering signals.
+- Updated `next --exact` to route near-complete runs through `finish --check` before `finish`.
+- Kept the release compatible: no new public schema, no top-level quality command and no automatic sandbox or worktree behavior.
+
 ## 0.15.0
 
 - Added `patch intake` to validate and optionally apply unified diffs returned by workers.

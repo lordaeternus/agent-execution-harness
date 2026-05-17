@@ -13,6 +13,17 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.16.0
+
+This release tightens the final mile for agents and adds a lighter plan input.
+
+- added `finish --check` so agents can prove a run is ready before finalizing
+- added `plan import --kind feature-list` for simple Markdown feature bullets
+- added `doctor --quality` as a compact snapshot built from existing checks
+- `next --exact` now suggests `finish --check` before `finish`
+
+In plain language: the harness now makes the agent stop and check its homework before writing the final report, and it can turn a simple feature list into a real plan without a new schema.
+
 ## What's New In v0.15.0
 
 This release adds portable patch intake for worker output.
@@ -359,7 +370,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.15.0.md)
+- [Release notes](docs/release-notes/v0.16.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -398,6 +409,22 @@ Supported task format:
 
 The importer is intentionally narrow. It converts the known backlog format from a file or stdin; it does not infer plans from free-form chat.
 Dependencies must be `Nenhum` or `Tarefa N`; invalid dependency text fails instead of being ignored.
+
+For a simpler approved feature list, use `--kind feature-list`:
+
+```md
+- Add finish check in `src/cli/macro.ts`
+  - **DoD:** `pnpm test:run tests/unit/finish-check.test.ts` passes.
+- Document finish check in `README.md`
+  - **Dependência:** Feature 1
+  - **DoD:** README mentions finish --check.
+```
+
+```bash
+agent-harness plan import --kind feature-list --from features.md --out plan.json --plan-id feature-work --risk L2 --rollback "Revert changed files." --gate "pnpm test:run"
+```
+
+Feature-list import is Markdown-only in this version. It does not introduce a new JSON format.
 
 ## Which Mode Should I Use?
 
@@ -439,6 +466,15 @@ agent-harness doctor --json --harnessability --cwd .
 ```
 
 It scores cheap local signals such as scripts, `AGENTS.md`, harness config, tests, runtime docs, artifact policy and command policy. A low score does not mean the project is bad. It means agents have fewer rails and may need smaller plans or stronger review.
+
+For one compact project-quality snapshot, use:
+
+```bash
+agent-harness doctor --quality --cwd .
+agent-harness doctor --json --quality --cwd .
+```
+
+`doctor --quality` reuses existing doctor, harnessability, coverage, architecture and steering signals. It is a snapshot, not an AI score and not a new top-level command.
 
 ## Coverage And Architecture
 
@@ -556,6 +592,7 @@ agent-harness files declare --files src/file.ts
 agent-harness task start --task-id task-id --files src/file.ts
 agent-harness verify --task-id task-id --type focused_tests --cmd "pnpm test"
 agent-harness claim auto
+agent-harness finish --check
 agent-harness finish --summary "Validated."
 agent-harness report --run-id fix-id --format compact
 ```
@@ -1740,7 +1777,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.15.0
+0.16.0
 ```
 
 Package:
@@ -1765,6 +1802,7 @@ agent-harness session start --plan plan.json --run-id my-fix --mode weak
 agent-harness next
 agent-harness verify --task-id task-1 --type focused_tests --cmd "pnpm test"
 agent-harness claim auto
+agent-harness finish --check
 agent-harness finish --summary "validated"
 ```
 

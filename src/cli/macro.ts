@@ -13,6 +13,7 @@ import { parseFlags, stringFlag } from "./args.js";
 import { writeCompactJson } from "./output.js";
 import { loadActiveSession } from "./session-store.js";
 import { applyScopeGuardToState, collectGitTouchedFilesResult } from "../core/scope-guard.js";
+import { assessFinishReadiness } from "../core/finish-check.js";
 
 export function macroCommand(args: string[], cwd = process.cwd()): void {
   const [resource, maybeVerb] = args;
@@ -77,6 +78,26 @@ export function macroCommand(args: string[], cwd = process.cwd()): void {
         { type: "run_state", path: path.relative(cwd, artifactPath) },
       ],
     });
+    return;
+  }
+  if (resource === "finish" && flags.check === true) {
+    if (!previousState) throw new Error("finish --check requires existing run");
+    const touched = config.scope_guard?.enabled === false ? undefined : collectGitTouchedFilesResult(cwd);
+    const readiness = assessFinishReadiness({
+      state: previousState,
+      touchedFiles: touched,
+      generatedAllowlist: config.scope_guard?.generated_allowlist ?? [],
+      strictScope: mode === "strict",
+    });
+    writeCompactJson({
+      status: readiness.ready ? readiness.warnings.length ? "warning" : "success" : "error",
+      summary: readiness.ready ? `finish check passed run=${runId}` : `finish check failed run=${runId}`,
+      artifacts: [{ type: "run_state", run_id: runId }],
+      next_actions: readiness.next_actions,
+      errors: readiness.errors,
+      data: { ...readiness.data, warnings: readiness.warnings },
+    });
+    if (!readiness.ready) process.exitCode = 1;
     return;
   }
   if (resource === "finish" && previousState && config.scope_guard?.enabled !== false) {

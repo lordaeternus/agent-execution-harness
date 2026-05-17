@@ -65,10 +65,11 @@ export function nextCommand(args: string[], cwd = process.cwd()): void {
   });
 }
 
-function nextActionsForState(state: Pick<AgentHarnessRunState, "phase" | "tasks" | "declared_files">): string[] {
+function nextActionsForState(state: Pick<AgentHarnessRunState, "phase" | "tasks" | "declared_files" | "verified_claims">): string[] {
   const task = nextUnblockedTask(state);
   if ((state.phase === "task_start" || state.phase === "report") && task?.files?.some((file) => !state.declared_files.includes(file))) return ["files declare"];
   if (state.phase === "report" && task) return ["task start"];
+  if (state.phase === "report") return state.verified_claims.length ? ["finish --check", "finish"] : ["claim auto"];
   return nextActions(state.phase);
 }
 
@@ -78,7 +79,7 @@ function nextActions(phase: string): string[] {
     task_start: ["task start"],
     gate: ["verify"],
     evidence: ["verify"],
-    report: ["claim auto", "finish"],
+    report: ["claim auto"],
     completed: [],
     halt: [],
   };
