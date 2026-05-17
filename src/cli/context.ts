@@ -12,6 +12,7 @@ export const MISSING_PLAN_GUIDANCE = [
   "No plan was provided.",
   "If you already have an approved backlog in Markdown, create plan.json first:",
   'agent-harness plan import --from backlog.md --out plan.json --plan-id <id> --risk L2 --rollback "<rollback>"',
+  "If the approved plan is in chat, paste or pipe it with --from -.",
   "Then run:",
   "agent-harness plan-lint --plan plan.json",
   "agent-harness session start --plan plan.json --run-id <id> --mode weak",

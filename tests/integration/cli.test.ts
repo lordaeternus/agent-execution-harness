@@ -154,6 +154,52 @@ describe("cli integration", () => {
     expect(next.command).toContain("agent-harness files declare");
   });
 
+  it("imports an approved chat plan from stdin without needing an intermediate file", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-plan-import-stdin-"));
+    const markdown = [
+      "- [ ] **Tarefa [1]**: Criar arquivo em `created.txt`.",
+      "  - **Dependência:** Nenhum",
+      "  - **DoD:** `node --version` passa.",
+    ].join("\n");
+
+    const imported = JSON.parse(
+      execFileSync(
+        "node",
+        [bin, "plan", "import", "--from", "-", "--out", "plan.json", "--plan-id", "chat-plan", "--risk", "L2", "--rollback", "Delete generated files."],
+        { cwd: tmp, encoding: "utf8", input: markdown },
+      ),
+    );
+
+    expect(imported.status).toBe("success");
+    expect(imported.summary).toBe("markdown backlog imported");
+    expect(imported.data.input_source).toBe("stdin");
+    expect(fs.existsSync(path.join(tmp, "plan.json"))).toBe(true);
+    execFileSync("node", [bin, "plan-lint", "--plan", "plan.json"], { cwd: tmp, stdio: "pipe" });
+  });
+
+  it("does not overwrite an existing imported plan unless overwrite is explicit", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-plan-import-no-overwrite-"));
+    const existingPlan = JSON.stringify({ existing: true }, null, 2);
+    fs.writeFileSync(path.join(tmp, "plan.json"), `${existingPlan}\n`);
+    fs.writeFileSync(
+      path.join(tmp, "backlog.md"),
+      [
+        "- [ ] **Tarefa [1]**: Criar arquivo em `created.txt`.",
+        "  - **Dependência:** Nenhum",
+        "  - **DoD:** `node --version` passa.",
+      ].join("\n"),
+    );
+
+    const blocked = tryCli(["plan", "import", "--from", "backlog.md", "--out", "plan.json", "--plan-id", "safe-import", "--risk", "L2", "--rollback", "Delete generated files."], tmp);
+    expect(blocked.status).toBe("error");
+    expect(blocked.summary).toContain("already exists");
+    expect(fs.readFileSync(path.join(tmp, "plan.json"), "utf8")).toBe(`${existingPlan}\n`);
+
+    const overwritten = JSON.parse(execFileSync("node", [bin, "plan", "import", "--from", "backlog.md", "--out", "plan.json", "--plan-id", "safe-import", "--risk", "L2", "--rollback", "Delete generated files.", "--overwrite"], { cwd: tmp, encoding: "utf8" }));
+    expect(overwritten.status).toBe("success");
+    expect(JSON.parse(fs.readFileSync(path.join(tmp, "plan.json"), "utf8")).plan_id).toBe("safe-import");
+  });
+
   it("fails plan import before writing compiler-invalid plans", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-plan-import-invalid-"));
     fs.writeFileSync(
@@ -177,6 +223,7 @@ describe("cli integration", () => {
     const output = tryCli(["session", "start", "--run-id", "missing-plan"], tmp);
     expect(output.summary).toContain("No plan was provided.");
     expect(output.summary).toContain("plan import");
+    expect(output.summary).toContain("--from -");
     expect(output.summary).toContain("plan-lint");
     expect(output.summary).toContain("session start --plan");
     expect(output.summary).not.toContain("recreate");

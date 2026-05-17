@@ -13,6 +13,17 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.14.4
+
+This patch lets agents reuse an approved plan whether it was saved as a file or produced in chat.
+
+- added `plan import --from -` for pasted or piped chat plans
+- kept `plan import --from backlog.md` for file-based plans
+- protected existing `plan.json` files from silent overwrite
+- replacing an existing plan now requires explicit `--overwrite`
+
+In plain language: if Codex or OpenCode already wrote the plan, the harness can turn that approved text into `plan.json` without recreating or overwriting it silently.
+
 ## What's New In v0.14.3
 
 This patch adds dispatch guidance for agents that may have subagents.
@@ -337,7 +348,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.14.3.md)
+- [Release notes](docs/release-notes/v0.14.4.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -358,6 +369,14 @@ agent-harness plan-lint --plan plan.json
 agent-harness session start --plan plan.json --run-id my-plan --mode weak
 ```
 
+If the approved plan exists only in a chat response, paste or pipe that text through stdin:
+
+```bash
+agent-harness plan import --from - --out plan.json --plan-id my-plan --risk L2 --rollback "Delete generated files."
+```
+
+`plan import` does not overwrite an existing output file by default. Use `--overwrite` only when replacing the previous `plan.json` is intentional. Once `plan.json` exists, the harness reuses it through `--plan plan.json`; dispatch, handoff and session commands do not recreate the plan.
+
 Supported task format:
 
 ```md
@@ -366,7 +385,7 @@ Supported task format:
   - **DoD:** `pnpm test:run tests/unit/file.test.ts` passa.
 ```
 
-The importer is intentionally narrow. It converts the known backlog format; it does not infer plans from free-form chat.
+The importer is intentionally narrow. It converts the known backlog format from a file or stdin; it does not infer plans from free-form chat.
 Dependencies must be `Nenhum` or `Tarefa N`; invalid dependency text fails instead of being ignored.
 
 ## Which Mode Should I Use?
@@ -1685,7 +1704,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.14.3
+0.14.4
 ```
 
 Package:

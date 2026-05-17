@@ -12,7 +12,7 @@ import { importMarkdownPlan } from "../core/plan-importer.js";
 export function planCommand(args: string[], cwd = process.cwd()): void {
   const [subcommand, ...rest] = args;
   if (subcommand === "import") return importPlanCommand(rest, cwd);
-  if (subcommand !== "waves") throw new Error("plan command must be: plan waves --plan <path> OR plan import --from <md> --out <json> --plan-id <id> --risk <L1|L2|L3> --rollback <text>");
+  if (subcommand !== "waves") throw new Error("plan command must be: plan waves --plan <path> OR plan import --from <md|-> --out <json> --plan-id <id> --risk <L1|L2|L3> --rollback <text> [--overwrite]");
   const flags = parseFlags(rest);
   const planPath = stringFlag(flags, "plan", true)!;
   const plan = readJson<AgentHarnessPlan>(path.resolve(cwd, planPath));
@@ -56,7 +56,11 @@ function importPlanCommand(args: string[], cwd: string): void {
   const risk = stringFlag(flags, "risk", true)!;
   const rollback = stringFlag(flags, "rollback", true)!;
   if (!["L1", "L2", "L3"].includes(risk)) throw new Error("--risk must be one of L1, L2, L3");
-  const markdown = fs.readFileSync(path.resolve(cwd, from), "utf8");
+  const outputPath = path.resolve(cwd, out);
+  if (fs.existsSync(outputPath) && flags.overwrite !== true) {
+    throw new Error(`output plan already exists: ${out}. Use --overwrite to replace it.`);
+  }
+  const markdown = readMarkdownInput(cwd, from);
   const plan = importMarkdownPlan(markdown, {
     plan_id: planId,
     risk_level: risk as "L1" | "L2" | "L3",
@@ -77,7 +81,6 @@ function importPlanCommand(args: string[], cwd: string): void {
     process.exitCode = 1;
     return;
   }
-  const outputPath = path.resolve(cwd, out);
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, `${JSON.stringify(plan, null, 2)}\n`);
   const outArg = formatCliArg(out);
@@ -88,8 +91,15 @@ function importPlanCommand(args: string[], cwd: string): void {
     artifacts: [{ type: "plan", path: path.relative(cwd, outputPath) }],
     next_actions: [`agent-harness plan-lint --plan ${outArg}`, `agent-harness session start --plan ${outArg} --run-id ${planIdArg} --mode weak`],
     errors: [],
-    data: { tasks: plan.tasks.length, gates: plan.gates, warnings: compiled.diagnostics.filter((item) => item.severity === "warning") },
+    data: { tasks: plan.tasks.length, gates: plan.gates, input_source: from === "-" ? "stdin" : "file", warnings: compiled.diagnostics.filter((item) => item.severity === "warning") },
   });
+}
+
+function readMarkdownInput(cwd: string, from: string): string {
+  if (from !== "-") return fs.readFileSync(path.resolve(cwd, from), "utf8");
+  const input = fs.readFileSync(0, "utf8");
+  if (!input.trim()) throw new Error("stdin plan input is empty");
+  return input;
 }
 
 function formatCliArg(value: string): string {

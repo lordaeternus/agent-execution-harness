@@ -2,11 +2,11 @@
 
 Execution only.
 
-- L2/L3/multi-step: auto. Markdown backlog -> `plan import` -> `plan-lint`.
+- L2/L3: JSON -> `--plan plan.json`; chat/file -> `plan import --from -|file.md` -> `plan-lint`.
 - Flow: `session start --plan plan.json` -> `next --exact --micro`.
-- If `learning_health=needs_audit`, run `learn audit --compact`; no auto-delete.
+- `learning_health=needs_audit`: `learn audit --compact`; no auto-delete.
 - Weak: `--mode weak`; 1 task, <=2 files, typed evidence.
-- External: `handoff --compact`; use compact map/learn queries.
+- External: `handoff --compact`; compact map/learn queries.
 - Weak/strict: prefer `verify --exec <bin> --args-json "[...]"`.
 - `claim auto` batches internally; run once.
 - Scope guard: `finish` blocks diff outside declared files.
@@ -18,4 +18,4 @@ Execution only.
 - Lessons are hints; source/runtime/tests win. No embeddings/extra agent/long report.
 - Prefer `verify --type <type> --exec <bin> --args-json "[...]"`.
 - Long logs: `output_ref` + `sha256`; UI needs smoke/visual.
-- Final: `run_id`, artifact, status, score, missing, claims, rollback.
+- Final: `run_id`, artifact, status, score, missing, claims, rollback

@@ -1,3 +1,9 @@
+## 0.14.4
+
+- Added `plan import --from -` so an approved Codex/OpenCode chat plan can be pasted or piped through stdin.
+- Protected existing imported plans by refusing to overwrite `--out` unless `--overwrite` is explicit.
+- Documented that existing `plan.json` files are reused through `--plan` by session, dispatch and handoff flows.
+
 ## 0.14.3
 
 - Added `dispatch plan` and `dispatch next --batch` to guide safe serial fallback or subagent batches.

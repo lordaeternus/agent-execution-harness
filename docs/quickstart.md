@@ -138,7 +138,14 @@ agent-harness plan import --from backlog.md --out plan.json --plan-id fix-login 
 agent-harness plan-lint --plan plan.json
 ```
 
-The importer accepts only the atomic checklist format. Dependencies must be `Nenhum` or `Tarefa N`.
+If Codex, OpenCode or another agent wrote the approved plan in chat, paste or pipe that same text through stdin:
+
+```bash
+agent-harness plan import --from - --out plan.json --plan-id fix-login --risk L2 --rollback "Delete generated files."
+agent-harness plan-lint --plan plan.json
+```
+
+The importer accepts only the atomic checklist format. Dependencies must be `Nenhum` or `Tarefa N`. It will not overwrite an existing `plan.json` unless you pass `--overwrite`.
 
 ```bash
 agent-harness session start --plan plan.json --run-id fix-login --summary "ctx"
