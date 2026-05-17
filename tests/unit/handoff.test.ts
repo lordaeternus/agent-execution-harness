@@ -50,6 +50,7 @@ describe("weak worker handoff", () => {
     });
     expect(packet.blocked_if.length).toBeGreaterThan(0);
     expect(packet.output_schema.status).toBe("done|blocked|failed");
+    expect(packet.output_schema.patch_file).toBe("string");
     expect(prompt).toContain("Return JSON only");
     expect(prompt.length).toBeLessThan(2500);
   });
@@ -70,6 +71,7 @@ describe("weak worker handoff", () => {
       files_changed: ["created.txt"],
       evidence: [{ command: "node --version", result: "pass", output_excerpt: "v22.0.0" }],
       residual_risk: "none",
+      patch_file: "worker.patch",
     })).toEqual({ valid: true, errors: [] });
   });
 

@@ -14,10 +14,10 @@ import { taskBlockedBy } from "./task-graph.js";
 const ALLOWED: Record<string, string[]> = {
   init: ["read_context", "halt_for_risk"],
   preflight: ["declare_files", "halt_for_risk"],
-  task_start: ["edit_file_ready", "verify_claims", "halt_for_risk"],
+  task_start: ["declare_files", "edit_file_ready", "verify_claims", "halt_for_risk"],
   gate: ["run_gate", "halt_for_risk"],
   evidence: ["record_evidence", "halt_for_risk"],
-  report: ["verify_claims", "final_report", "halt_for_risk"],
+  report: ["declare_files", "edit_file_ready", "verify_claims", "final_report", "halt_for_risk"],
   halt: [],
   completed: [],
 };
@@ -140,8 +140,8 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
     const verified = action.claims.map((claim) => verifyClaim(next, claim, config));
     next.claims = mergeByClaimId(next.claims, action.claims);
     next.verified_claims = mergeByClaimId(next.verified_claims, verified);
-    next.phase = "report";
-    next.status = "ready_for_report";
+    next.phase = hasUnfinishedTasks(next) ? "task_start" : "report";
+    next.status = next.phase === "report" ? "ready_for_report" : "in_progress";
     return next;
   }
   if (action.type === "final_report") {
@@ -162,4 +162,8 @@ function mergeByClaimId<T extends { claim_id: string }>(existing: T[], incoming:
   const byId = new Map(existing.map((item) => [item.claim_id, item]));
   for (const item of incoming) byId.set(item.claim_id, item);
   return [...byId.values()];
+}
+
+function hasUnfinishedTasks(state: AgentHarnessRunState): boolean {
+  return state.tasks.some((task) => ["not_started", "in_progress"].includes(task.status));
 }

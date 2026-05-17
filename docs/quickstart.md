@@ -179,9 +179,10 @@ Optional handoff for DeepSeek, local models, junior agents, or another weak work
 ```bash
 agent-harness handoff --plan plan.json --task-id login-fix
 agent-harness handoff validate --plan plan.json --task-id login-fix --input worker-output.json
+agent-harness patch intake --plan plan.json --task-id login-fix --patch worker.patch --worker-output worker-output.json
 ```
 
-Paste the generated `data.prompt` into the worker. Keep what passes validation; repair or discard the rest.
+Paste the generated `data.prompt` into the worker. Keep JSON that passes `handoff validate`. If the worker also returns a unified diff, run `patch intake` before trusting it. Add `--apply` only when you want the harness to run `git apply --check` and apply the patch in the current Git worktree.
 
 Optional dispatch guidance for agents that may or may not have subagents:
 
@@ -197,6 +198,13 @@ Dispatch does not spawn or validate workers itself. Save each worker JSON respon
 
 ```bash
 agent-harness handoff validate --plan plan.json --task-id task-id --input worker-output.json
+```
+
+If a worker returns a patch, validate and optionally apply it with:
+
+```bash
+agent-harness patch intake --plan plan.json --task-id task-id --patch worker.patch --worker-output worker-output.json
+agent-harness patch intake --plan plan.json --task-id task-id --patch worker.patch --worker-output worker-output.json --apply
 ```
 
 The optional task `isolation` field is advisory metadata in this version. It records the intended isolation model, but dispatch does not automatically create worktrees, forked workspaces, or sandboxes.

@@ -19,13 +19,14 @@ import { handoffCommand } from "./handoff.js";
 import { fixturesCommand } from "./fixtures.js";
 import { planCommand } from "./plan.js";
 import { dispatchCommand } from "./dispatch.js";
+import { patchCommand } from "./patch.js";
 
 const [command, ...args] = process.argv.slice(2);
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 try {
   if (!command || command === "--help" || command === "help") {
-    process.stdout.write("agent-harness commands: run, session, next, verify, handoff, dispatch, fixtures, map, learn, plan, start, files, task, gate, claim, finish, plan-lint, execute, report, doctor, benchmark, init\n");
+    process.stdout.write("agent-harness commands: run, session, next, verify, handoff, dispatch, patch, fixtures, map, learn, plan, start, files, task, gate, claim, finish, plan-lint, execute, report, doctor, benchmark, init\n");
   } else if (command === "--version" || command === "-v" || command === "version") {
     process.stdout.write(`${readPackageVersion()}\n`);
   } else if (command === "run") runCommand(args);
@@ -33,6 +34,7 @@ try {
   else if (command === "next") nextCommand(args);
   else if (command === "verify") verifyCommand(args);
   else if (command === "handoff") handoffCommand(args);
+  else if (command === "patch") patchCommand(args);
   else if (command === "fixtures") fixturesCommand(args);
   else if (command === "dispatch") dispatchCommand(args);
   else if (command === "map") mapCommand(args);

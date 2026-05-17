@@ -1,3 +1,11 @@
+## 0.15.0
+
+- Added `patch intake` to validate and optionally apply unified diffs returned by workers.
+- Scoped worker patches to task `files` and rejected `forbidden_files`, malformed patches and conflict markers.
+- Required `git apply --check` before `patch intake --apply` mutates a Git worktree.
+- Updated handoff guidance so worker JSON validation and patch intake are separate, explicit steps.
+- Kept `claim auto` from moving runs to report while later tasks are still pending.
+
 ## 0.14.4
 
 - Added `plan import --from -` so an approved Codex/OpenCode chat plan can be pasted or piped through stdin.

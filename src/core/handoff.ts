@@ -45,6 +45,7 @@ export function buildHandoffPacket(plan: AgentHarnessPlan, taskId: string): Hand
       files_changed: "string[]",
       evidence: "array",
       residual_risk: "string",
+      patch_file: "string",
     },
   };
 }
@@ -67,6 +68,7 @@ export function validateWeakWorkerOutput(plan: AgentHarnessPlan, taskId: string,
   if (!Array.isArray(output.files_changed) || output.files_changed.some((item) => typeof item !== "string")) errors.push("files_changed must be a string array");
   if (!Array.isArray(output.evidence)) errors.push("evidence must be an array");
   if (typeof output.residual_risk !== "string") errors.push("residual_risk must be a string");
+  if (output.patch_file !== undefined && typeof output.patch_file !== "string") errors.push("patch_file must be a string");
   if (containsPlaceholder(output)) errors.push("worker output contains placeholder text");
 
   const allowedFiles = new Set(context.task.files ?? []);

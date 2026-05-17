@@ -19,6 +19,7 @@ export interface HandoffPacket {
     files_changed: "string[]";
     evidence: "array";
     residual_risk: "string";
+    patch_file: "string";
   };
 }
 
@@ -34,6 +35,7 @@ export interface WeakWorkerOutput {
   files_changed: string[];
   evidence: WeakWorkerEvidence[];
   residual_risk: string;
+  patch_file?: string;
 }
 
 export interface HandoffValidationResult {

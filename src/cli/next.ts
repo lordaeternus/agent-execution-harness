@@ -4,6 +4,7 @@ import { resolveCliRunContext } from "./context.js";
 import { effectiveExecutionProfile } from "../core/execution-profile.js";
 import { buildExactNextCommand, nextUnblockedTask } from "../core/next-command.js";
 import { taskBlockedBy } from "../core/task-graph.js";
+import type { AgentHarnessRunState } from "../core/run-types.js";
 
 export function nextCommand(args: string[], cwd = process.cwd()): void {
   const flags = parseFlags(args);
@@ -18,6 +19,7 @@ export function nextCommand(args: string[], cwd = process.cwd()): void {
   const completed = state.tasks.filter((task) => task.status === "completed").length;
   const missing = nextTask ? state.evidence_policy?.tasks.find((task) => task.task_id === nextTask.task_id)?.missing ?? nextTask.required_evidence ?? [] : [];
   const profile = effectiveExecutionProfile(context.mode, context.config);
+  const actions = nextActionsForState(state);
   const exact = flags.exact === true ? { exact: buildExactNextCommand(state) } : {};
   if (flags.micro === true) {
     const exactCommand = buildExactNextCommand(state);
@@ -35,17 +37,17 @@ export function nextCommand(args: string[], cwd = process.cwd()): void {
     ? {
         task_id: nextTask.task_id,
         files: nextTask.files ?? [],
-        action: nextActions(state.phase)[0] ?? "none",
+        action: actions[0] ?? "none",
         ...(blockedTasks.length ? { blocked_tasks: blockedTasks } : {}),
         ...exact,
         ...(state.phase === "evidence" || state.phase === "report" ? { missing_evidence: missing } : {}),
       }
-    : { missing_evidence: state.evidence_policy?.missing ?? [], action: nextActions(state.phase)[0] ?? "none", ...(blockedTasks.length ? { blocked_tasks: blockedTasks } : {}), ...exact };
+    : { missing_evidence: state.evidence_policy?.missing ?? [], action: actions[0] ?? "none", ...(blockedTasks.length ? { blocked_tasks: blockedTasks } : {}), ...exact };
   writeCompactJson({
     status: state.status === "halt" ? "halt" : state.status === "partial_validated" ? "warning" : "success",
     summary: `${state.phase} ${completed}/${state.tasks.length}`,
     artifacts: [{ type: "run_state", run_id: state.run_id }],
-    next_actions: nextActions(state.phase),
+    next_actions: actions,
     errors: state.errors,
     data:
       profile.observationFormat === "ultra_compact"
@@ -61,6 +63,13 @@ export function nextCommand(args: string[], cwd = process.cwd()): void {
             }
           : { missing_evidence: state.evidence_policy?.missing ?? [], ...(blockedTasks.length ? { blocked_tasks: blockedTasks } : {}), ...exact },
   });
+}
+
+function nextActionsForState(state: Pick<AgentHarnessRunState, "phase" | "tasks" | "declared_files">): string[] {
+  const task = nextUnblockedTask(state);
+  if ((state.phase === "task_start" || state.phase === "report") && task?.files?.some((file) => !state.declared_files.includes(file))) return ["files declare"];
+  if (state.phase === "report" && task) return ["task start"];
+  return nextActions(state.phase);
 }
 
 function nextActions(phase: string): string[] {

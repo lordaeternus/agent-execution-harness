@@ -18,6 +18,8 @@ export * from "./core/execution-profile.js";
 export * from "./core/repair-playbooks.js";
 export * from "./core/handoff-types.js";
 export * from "./core/handoff.js";
+export * from "./core/patch-intake-types.js";
+export * from "./core/patch-intake.js";
 export * from "./core/dispatch-types.js";
 export * from "./core/dispatch.js";
 export * from "./core/control-catalog.js";

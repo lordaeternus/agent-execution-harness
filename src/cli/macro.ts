@@ -51,7 +51,7 @@ export function macroCommand(args: string[], cwd = process.cwd()): void {
     writeCompactJson({
       status: state.status === "halt" ? "halt" : state.status === "partial_validated" ? "warning" : "success",
       summary: `${state.phase} claims=${state.verified_claims.length}`,
-      next_actions: ["final_report"],
+      next_actions: state.phase === "report" ? ["final_report"] : ["next"],
       artifacts: [{ type: "run_state", path: path.relative(cwd, artifactPath) }],
       errors: state.errors,
       data: { batches: Math.ceil(claims.length / chunkSize), claims: state.verified_claims.length },

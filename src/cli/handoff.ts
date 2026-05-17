@@ -47,7 +47,7 @@ function validateCommand(args: string[], cwd: string): void {
     status: "success",
     summary: `handoff validation passed task=${taskId}`,
     artifacts: [{ type: "worker_output", path: inputPath }],
-    next_actions: ["record evidence", "review diff"],
+    next_actions: [`patch intake --plan ${stringFlag(flags, "plan", true)!} --task-id ${taskId} --patch <worker.patch> --worker-output ${inputPath}`, "record evidence"],
     errors: [],
     data: result,
   });

@@ -13,6 +13,12 @@ export function buildExactNextCommand(state: AgentHarnessRunState): ExactNextCom
   if (state.phase === "halt") return exact("halt", "", "run is halted; inspect errors");
   if (state.phase === "completed") return exact("none", "", "run already completed");
   if (state.phase === "preflight") return exact("run_exact_command", `agent-harness files declare --files ${quote(allPlanFiles(state.plan))}`, "exit_code_not_zero");
+  if ((state.phase === "task_start" || state.phase === "report") && task && missingDeclaredFiles(state, task).length) {
+    return exact("run_exact_command", `agent-harness files declare --files ${quote([...new Set([...state.declared_files, ...taskFiles(task).split(",").filter(Boolean)])].join(","))}`, "exit_code_not_zero");
+  }
+  if (state.phase === "report" && task) {
+    return exact("run_exact_command", `agent-harness task start --task-id ${task.task_id} --files ${quote(taskFiles(task))}`, "exit_code_not_zero");
+  }
   if (state.phase === "task_start" && task) {
     return exact("run_exact_command", `agent-harness task start --task-id ${task.task_id} --files ${quote(taskFiles(task))}`, "exit_code_not_zero");
   }
@@ -46,6 +52,10 @@ function allPlanFiles(plan: AgentHarnessPlan): string {
 
 function taskFiles(task: RunTask): string {
   return (task.files ?? []).join(",");
+}
+
+function missingDeclaredFiles(state: AgentHarnessRunState, task: RunTask): string[] {
+  return (task.files ?? []).filter((file) => !state.declared_files.includes(file));
 }
 
 function allowedCommandForTask(plan: AgentHarnessPlan, task: RunTask): string {

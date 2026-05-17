@@ -639,6 +639,7 @@ describe("cli integration", () => {
     })}\n`);
     const valid = JSON.parse(execFileSync("node", [bin, "handoff", "validate", "--plan", "plan.json", "--task-id", "weak-exact-task", "--input", "worker-output.json"], { cwd: tmp, encoding: "utf8" }));
     expect(valid.status).toBe("success");
+    expect(valid.next_actions.join(" ")).toContain("patch intake");
 
     fs.writeFileSync(path.join(tmp, "bad-output.json"), `${JSON.stringify({
       status: "done",
@@ -648,9 +649,57 @@ describe("cli integration", () => {
     })}\n`);
     expect(() => execFileSync("node", [bin, "handoff", "validate", "--plan", "plan.json", "--task-id", "weak-exact-task", "--input", "bad-output.json"], { cwd: tmp, stdio: "pipe" })).toThrow();
   });
+
+  it("validates and applies worker patches only inside task scope", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-patch-intake-"));
+    fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "old\n");
+    execFileSync("git", ["init"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "add", "plan.json", "created.txt"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "baseline"], { cwd: tmp, stdio: "pipe" });
+    fs.writeFileSync(path.join(tmp, "worker.patch"), diffFor("created.txt", "old", "new"));
+    fs.writeFileSync(path.join(tmp, "worker-output.json"), `${JSON.stringify({
+      status: "done",
+      files_changed: ["created.txt"],
+      evidence: [{ command: "node --version", result: "pass", output_excerpt: "v22.0.0" }],
+      residual_risk: "none",
+      patch_file: "worker.patch",
+    })}\n`);
+
+    const accepted = JSON.parse(execFileSync("node", [bin, "patch", "intake", "--plan", "plan.json", "--task-id", "weak-exact-task", "--patch", "worker.patch", "--worker-output", "worker-output.json"], { cwd: tmp, encoding: "utf8" }));
+    expect(accepted.status).toBe("success");
+    expect(accepted.data).toMatchObject({ changed_files: ["created.txt"], applied: false });
+    expect(fs.readFileSync(path.join(tmp, "created.txt"), "utf8")).toBe("old\n");
+
+    const applied = JSON.parse(execFileSync("node", [bin, "patch", "intake", "--plan", "plan.json", "--task-id", "weak-exact-task", "--patch", "worker.patch", "--worker-output", "worker-output.json", "--apply"], { cwd: tmp, encoding: "utf8" }));
+    expect(applied.status).toBe("success");
+    expect(applied.data).toMatchObject({ changed_files: ["created.txt"], applied: true });
+    expect(fs.readFileSync(path.join(tmp, "created.txt"), "utf8").replace(/\r\n/g, "\n")).toBe("new\n");
+
+    fs.writeFileSync(path.join(tmp, "outside.patch"), diffFor("outside.txt", "old", "new"));
+    const rejected = tryCli(["patch", "intake", "--plan", "plan.json", "--task-id", "weak-exact-task", "--patch", "outside.patch"], tmp);
+    expect(rejected.status).toBe("error");
+    expect(rejected.errors.join("\n")).toContain("patch changes file outside allowed_files: outside.txt");
+  });
+
+  it("rejects patch apply when git cannot check the patch context", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-patch-conflict-"));
+    fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "different\n");
+    execFileSync("git", ["init"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "add", "plan.json", "created.txt"], { cwd: tmp, stdio: "pipe" });
+    execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "baseline"], { cwd: tmp, stdio: "pipe" });
+    fs.writeFileSync(path.join(tmp, "worker.patch"), diffFor("created.txt", "old", "new"));
+
+    const rejected = tryCli(["patch", "intake", "--plan", "plan.json", "--task-id", "weak-exact-task", "--patch", "worker.patch", "--apply"], tmp);
+    expect(rejected.status).toBe("error");
+    expect(rejected.summary).toContain("patch apply rejected");
+    expect(rejected.errors.join("\n")).toContain("git apply --check failed");
+    expect(fs.readFileSync(path.join(tmp, "created.txt"), "utf8")).toBe("different\n");
+  });
 });
 
-function tryCli(args: string[], cwd: string): { status: string; summary: string; errors: string[]; data: { repair_hint: { kind: string; stop_after_attempts: number } } } {
+function tryCli(args: string[], cwd: string): { status: string; summary: string; errors: string[]; data: { repair_hint?: { kind: string; stop_after_attempts: number } } } {
   try {
     execFileSync("node", [bin, ...args], { cwd, encoding: "utf8", stdio: "pipe" });
     throw new Error("expected command to fail");
@@ -659,4 +708,16 @@ function tryCli(args: string[], cwd: string): { status: string; summary: string;
     const stdout = (error as { stdout?: Buffer }).stdout?.toString("utf8") ?? "";
     return JSON.parse(stderr || stdout);
   }
+}
+
+function diffFor(file: string, before: string, after: string): string {
+  return [
+    `diff --git a/${file} b/${file}`,
+    `--- a/${file}`,
+    `+++ b/${file}`,
+    "@@ -1 +1 @@",
+    `-${before}`,
+    `+${after}`,
+    "",
+  ].join("\n");
 }

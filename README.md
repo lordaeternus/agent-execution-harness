@@ -13,6 +13,17 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.15.0
+
+This release adds portable patch intake for worker output.
+
+- added `patch intake` to validate worker diffs before trusting them
+- `patch intake --apply` applies only after `git apply --check` passes
+- patch scope is checked against the task `files` and `forbidden_files`
+- `handoff validate` now points the parent agent to the patch intake step
+
+In plain language: a worker can return JSON plus a patch; the harness checks that the patch only touches the task files before it can be applied.
+
 ## What's New In v0.14.4
 
 This patch lets agents reuse an approved plan whether it was saved as a file or produced in chat.
@@ -348,7 +359,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.14.4.md)
+- [Release notes](docs/release-notes/v0.15.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -596,6 +607,13 @@ After a worker returns JSON, validate that output with the existing handoff vali
 agent-harness handoff validate --plan plan.json --task-id task-id --input worker-output.json
 ```
 
+If the worker also produced a unified diff, intake it before trusting or applying the patch:
+
+```bash
+agent-harness patch intake --plan plan.json --task-id task-id --patch worker.patch --worker-output worker-output.json
+agent-harness patch intake --plan plan.json --task-id task-id --patch worker.patch --worker-output worker-output.json --apply
+```
+
 The optional task `isolation` field is advisory metadata in this version. It documents the intended worker isolation model, but the harness does not automatically create worktrees, fork workspaces, or sandboxes for dispatch.
 
 ### Weak Worker Handoff
@@ -612,7 +630,14 @@ Paste `prompt` into the weak worker. It tells the worker exactly which files and
 agent-harness handoff validate --plan plan.json --task-id task-id --input worker-output.json
 ```
 
-This keeps the flow token-light: the weak worker receives one compact task capsule, not the whole repository or a long instruction manual. If it invents a file, command, placeholder, or success without evidence, validation fails.
+If the worker returns a patch, validate the JSON first, then run `patch intake`. Without `--apply`, the harness only checks the patch. With `--apply`, it requires Git and runs `git apply --check` before changing files.
+
+```bash
+agent-harness patch intake --plan plan.json --task-id task-id --patch worker.patch --worker-output worker-output.json
+agent-harness patch intake --plan plan.json --task-id task-id --patch worker.patch --worker-output worker-output.json --apply
+```
+
+This keeps the flow token-light: the weak worker receives one compact task capsule, not the whole repository or a long instruction manual. If it invents a file, command, placeholder, out-of-scope patch, or success without evidence, validation fails.
 
 Codebase memory flow for agents:
 
@@ -1442,6 +1467,17 @@ agent-harness dispatch next --batch --runtime subagents
 
 Validate returned worker JSON with `agent-harness handoff validate --plan plan.json --task-id task-id --input worker-output.json`. Dispatch does not have a separate validate command.
 
+### `patch`
+
+Validates and optionally applies a unified diff produced by a worker.
+
+```bash
+agent-harness patch intake --plan plan.json --task-id task-id --patch worker.patch --worker-output worker-output.json
+agent-harness patch intake --plan plan.json --task-id task-id --patch worker.patch --worker-output worker-output.json --apply
+```
+
+The default mode is validate-only. `--apply` requires a Git worktree and runs `git apply --check` before applying. This is patch intake, not a sandbox: task `isolation` is still advisory metadata unless a runtime creates the isolation itself.
+
 ### `execute`
 
 Initializes or resumes a run.
@@ -1704,7 +1740,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.14.4
+0.15.0
 ```
 
 Package:
