@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { AgentHarnessConfig } from "./config-types.js";
 import { listControls, type HarnessControl } from "./control-catalog.js";
+import { normalizeRuntimeCapabilities, type RuntimeCapabilities } from "./runtime-capabilities.js";
 import { analyzeRepeatedFailures } from "./steering.js";
 
 export interface DoctorFinding {
@@ -70,6 +71,13 @@ export interface QualitySnapshot {
   next_actions: string[];
 }
 
+export interface RuntimeCompatibilityReport {
+  capabilities: RuntimeCapabilities;
+  mode: "serial" | "parallel_candidate";
+  warnings: string[];
+  next_actions: string[];
+}
+
 export function runDoctor(cwd: string, config: AgentHarnessConfig): { status: "success" | "error"; findings: DoctorFinding[] } {
   const findings: DoctorFinding[] = [];
   const exists = (file: string) => fs.existsSync(path.join(cwd, file));
@@ -118,6 +126,23 @@ export function assessHarnessability(cwd: string, config: AgentHarnessConfig): H
 
 export function doctorControls(): HarnessControl[] {
   return listControls();
+}
+
+export function assessRuntimeCompatibility(config: AgentHarnessConfig): RuntimeCompatibilityReport {
+  const capabilities = normalizeRuntimeCapabilities(config.runtime_capabilities);
+  const warnings: string[] = [];
+  if (capabilities.supports_subagents && capabilities.max_parallel < 2) {
+    warnings.push("supports_subagents is true but max_parallel is below 2");
+  }
+  if (capabilities.supports_worktrees) {
+    warnings.push("worktree support is a runtime capability; the harness does not create automatic sandboxes");
+  }
+  return {
+    capabilities,
+    mode: capabilities.supports_subagents ? "parallel_candidate" : "serial",
+    warnings,
+    next_actions: capabilities.supports_subagents ? ["use dispatch next --batch"] : ["use next --exact"],
+  };
 }
 
 export function detectProjectTopology(cwd: string): ProjectTopology {

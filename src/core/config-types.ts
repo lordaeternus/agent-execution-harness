@@ -1,5 +1,6 @@
 import type { CONFIG_SCHEMA_VERSION } from "./constants.js";
 import type { LearningMemoryConfig } from "./learning-types.js";
+import type { RuntimeCapabilities } from "./runtime-capabilities.js";
 
 export interface CommandPolicy {
   allow?: string[];
@@ -62,4 +63,5 @@ export interface AgentHarnessConfig {
   weak_model?: WeakModelProfile;
   scope_guard?: ScopeGuardSettings;
   architecture_rules?: ArchitectureRule[];
+  runtime_capabilities?: Partial<RuntimeCapabilities>;
 }

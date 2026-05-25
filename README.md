@@ -13,6 +13,17 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.17.0
+
+This release makes the harness universal across agent runtimes without creating separate app-specific packages.
+
+- added `runtime_capabilities` to describe what the current agent/runtime can do
+- added `doctor --runtime` to show whether the runtime should use serial flow or subagent dispatch
+- dispatch can now use config capabilities while preserving explicit `--runtime` overrides
+- worktree/sandbox support remains advisory unless a command explicitly implements it
+
+In plain language: there is still one harness. Codex, Claude, OpenCode, Antigravity and other agents are handled by capabilities, not separate versions.
+
 ## What's New In v0.16.0
 
 This release tightens the final mile for agents and adds a lighter plan input.
@@ -370,7 +381,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.16.0.md)
+- [Release notes](docs/release-notes/v0.17.0.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -475,6 +486,33 @@ agent-harness doctor --json --quality --cwd .
 ```
 
 `doctor --quality` reuses existing doctor, harnessability, coverage, architecture and steering signals. It is a snapshot, not an AI score and not a new top-level command.
+
+## Universal Runtime Capabilities
+
+The harness has one universal core. It does not ship separate Codex, Claude, OpenCode or Antigravity versions. Runtime differences are represented as capabilities in `agent-harness.config.json`:
+
+```json
+{
+  "runtime_capabilities": {
+    "instruction_files": ["AGENTS.md"],
+    "supports_subagents": true,
+    "supports_worktrees": false,
+    "supports_json_output": true,
+    "shell_permission_model": "ask",
+    "preferred_output_format": "compact",
+    "max_parallel": 3
+  }
+}
+```
+
+Use `doctor --runtime` to see the active runtime snapshot:
+
+```bash
+agent-harness doctor --runtime --cwd .
+agent-harness doctor --json --runtime --cwd .
+```
+
+When `supports_subagents` is false or absent, dispatch falls back to the serial `next --exact` path. `dispatch --runtime serial_only|subagents` still works as a manual override. `supports_worktrees` describes what the runtime can do; the harness does not create automatic worktrees, forked workspaces or sandboxes unless a command explicitly implements that behavior.
 
 ## Coverage And Architecture
 
@@ -636,7 +674,7 @@ agent-harness dispatch plan --plan plan.json --runtime subagents
 agent-harness dispatch next --batch --runtime subagents
 ```
 
-Dispatch does not spawn workers itself. It inspects the plan, dependencies and task metadata, then returns either a safe parallel batch with handoff packets or a serial fallback task. If the runtime has no subagents, omit `--runtime subagents` and continue with the normal serial `next --exact` flow.
+Dispatch does not spawn workers itself. It inspects the plan, dependencies, runtime capabilities and task metadata, then returns either a safe parallel batch with handoff packets or a serial fallback task. If the runtime has no subagents, omit `--runtime subagents` and continue with the normal serial `next --exact` flow.
 
 After a worker returns JSON, validate that output with the existing handoff validator:
 
@@ -1777,7 +1815,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.16.0
+0.17.0
 ```
 
 Package:

@@ -50,6 +50,40 @@ describe("dispatch planning", () => {
     expect(dispatch.batches[0].tasks[0].packet?.allowed_files).toEqual(["task-a.txt"]);
   });
 
+  it("derives parallel dispatch from runtime capabilities", () => {
+    const dispatch = buildDispatchPlan(plan([task({ task_id: "task-a" }), task({ task_id: "task-b" })]), {
+      runtime_capabilities: {
+        instruction_files: ["AGENTS.md"],
+        supports_subagents: true,
+        supports_worktrees: false,
+        supports_json_output: true,
+        shell_permission_model: "ask",
+        preferred_output_format: "compact",
+        max_parallel: 2,
+      },
+    });
+    expect(dispatch.runtime_capability).toBe("subagents");
+    expect(dispatch.batches[0].mode).toBe("parallel");
+    expect(dispatch.batches[0].tasks.map((item) => item.task_id)).toEqual(["task-a", "task-b"]);
+  });
+
+  it("honors runtime capability max_parallel", () => {
+    const dispatch = buildDispatchPlan(plan([task({ task_id: "task-a" }), task({ task_id: "task-b" })]), {
+      runtime_capabilities: {
+        instruction_files: ["AGENTS.md"],
+        supports_subagents: true,
+        supports_worktrees: false,
+        supports_json_output: true,
+        shell_permission_model: "ask",
+        preferred_output_format: "compact",
+        max_parallel: 1,
+      },
+    });
+    expect(dispatch.batches[0].mode).toBe("serial");
+    expect(dispatch.batches[0].tasks.map((item) => item.task_id)).toEqual(["task-a"]);
+    expect(dispatch.batches[0].blocked_tasks).toContainEqual({ task_id: "task-b", reason: "max_parallel_reached" });
+  });
+
   it("blocks dependency tasks until prerequisites are completed", () => {
     const dispatch = buildDispatchPlan(plan([task({ task_id: "setup" }), task({ task_id: "followup", depends_on: ["setup"] })]), {
       runtime_capability: "subagents",

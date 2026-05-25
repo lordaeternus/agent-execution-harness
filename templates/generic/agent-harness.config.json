@@ -13,6 +13,17 @@
     "agent:harness:doctor"
   ],
   "doctor_profile": "generic",
+  "runtime_capabilities": {
+    "instruction_files": [
+      "AGENTS.md"
+    ],
+    "supports_subagents": false,
+    "supports_worktrees": false,
+    "supports_json_output": true,
+    "shell_permission_model": "unknown",
+    "preferred_output_format": "compact",
+    "max_parallel": 1
+  },
   "token_budget": {
     "observation_format": "ultra_compact",
     "summary_max_chars": 240,

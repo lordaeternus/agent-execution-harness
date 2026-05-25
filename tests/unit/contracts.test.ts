@@ -25,6 +25,23 @@ describe("repository contracts", () => {
     expect(() => validateConfig(config)).toThrow("forbid_import");
   });
 
+  it("accepts optional universal runtime capabilities in config", () => {
+    const config = JSON.parse(fs.readFileSync("templates/generic/agent-harness.config.json", "utf8"));
+    config.runtime_capabilities = {
+      runtime_name: "generic-agent",
+      instruction_files: ["AGENTS.md"],
+      supports_subagents: true,
+      supports_worktrees: false,
+      supports_json_output: true,
+      shell_permission_model: "ask",
+      preferred_output_format: "compact",
+      max_parallel: 2,
+    };
+    expect(() => validateConfig(config)).not.toThrow();
+    config.runtime_capabilities.max_parallel = 0;
+    expect(() => validateConfig(config)).toThrow("max_parallel");
+  });
+
   it("keeps L3 sensor gaps as warnings, not structural errors", () => {
     const result = lintPlan({
       schema_version: "agent_harness_plan_v1",

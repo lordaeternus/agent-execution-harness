@@ -1,8 +1,10 @@
 import path from "node:path";
+import { loadConfig } from "../core/config.js";
 import { buildDispatchPlan } from "../core/dispatch.js";
 import type { DispatchRuntimeCapability } from "../core/dispatch-types.js";
 import type { AgentHarnessPlan } from "../core/plan-types.js";
 import type { AgentHarnessRunState } from "../core/run-types.js";
+import { dispatchRuntimeFromCapabilities } from "../core/runtime-capabilities.js";
 import { readJson } from "../core/utils.js";
 import { parseFlags, stringFlag } from "./args.js";
 import { resolveCliRunContext } from "./context.js";
@@ -20,8 +22,11 @@ function planCommand(args: string[], cwd: string): void {
   const flags = parseFlags(args);
   const planPath = stringFlag(flags, "plan", true)!;
   const plan = readJson<AgentHarnessPlan>(path.resolve(cwd, planPath));
-  const runtime = runtimeCapability(flags);
-  const dispatch = buildDispatchPlan(plan, { runtime_capability: runtime, max_parallel: numberFlag(flags, "max-parallel") });
+  const config = loadConfig(cwd, stringFlag(flags, "config") ?? "agent-harness.config.json");
+  const explicitRuntime = runtimeCapability(flags);
+  const runtime = explicitRuntime ?? dispatchRuntimeFromCapabilities(config.runtime_capabilities!);
+  const maxParallel = numberFlag(flags, "max-parallel") ?? (explicitRuntime ? undefined : config.runtime_capabilities?.max_parallel);
+  const dispatch = buildDispatchPlan(plan, { runtime_capability: runtime, max_parallel: maxParallel });
   writeCompactJson({
     status: "success",
     summary: `dispatch plan batches=${dispatch.batches.length} runtime=${dispatch.runtime_capability}`,
@@ -49,10 +54,12 @@ function nextCommand(args: string[], cwd: string): void {
     return;
   }
   const completed = context.state?.tasks.filter((task) => task.status === "completed").map((task) => task.task_id) ?? [];
-  const runtime = runtimeCapability(flags);
+  const explicitRuntime = runtimeCapability(flags);
+  const runtime = explicitRuntime ?? dispatchRuntimeFromCapabilities(context.config.runtime_capabilities!);
+  const maxParallel = numberFlag(flags, "max-parallel") ?? (explicitRuntime ? undefined : context.config.runtime_capabilities?.max_parallel);
   const dispatch = buildDispatchPlan(context.plan, {
     runtime_capability: runtime,
-    max_parallel: numberFlag(flags, "max-parallel"),
+    max_parallel: maxParallel,
     completed_task_ids: completed,
   });
   const batch = dispatch.batches[0];
@@ -66,8 +73,9 @@ function nextCommand(args: string[], cwd: string): void {
   });
 }
 
-function runtimeCapability(flags: Record<string, string | boolean>): DispatchRuntimeCapability {
-  const value = stringFlag(flags, "runtime") ?? "serial_only";
+function runtimeCapability(flags: Record<string, string | boolean>): DispatchRuntimeCapability | undefined {
+  const value = stringFlag(flags, "runtime");
+  if (!value) return undefined;
   if (value === "serial_only" || value === "subagents") return value;
   throw new Error("--runtime must be serial_only or subagents");
 }

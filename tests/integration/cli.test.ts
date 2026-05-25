@@ -542,6 +542,11 @@ describe("cli integration", () => {
     const quality = JSON.parse(execFileSync("node", [bin, "doctor", "--json", "--quality", "--cwd", tmp], { encoding: "utf8" }));
     expect(quality.data.quality.signals.doctor_status).toBe("success");
     expect(quality.data.quality.status).not.toBe("blocked");
+    const runtimeHuman = execFileSync("node", [bin, "doctor", "--runtime", "--cwd", tmp], { encoding: "utf8" });
+    expect(runtimeHuman).toContain("Runtime:");
+    const runtime = JSON.parse(execFileSync("node", [bin, "doctor", "--json", "--runtime", "--cwd", tmp], { encoding: "utf8" }));
+    expect(runtime.data.runtime.mode).toBe("serial");
+    expect(runtime.next_actions).toContain("use next --exact");
 
     const plan = {
       schema_version: "agent_harness_plan_v1",
@@ -640,6 +645,18 @@ describe("cli integration", () => {
     expect(parallel.data.batches[0].tasks[0].packet.allowed_files).toEqual(["a.txt"]);
     expect(parallel.next_actions.join(" ")).not.toContain("dispatch validate");
     expect(parallel.next_actions.join(" ")).toContain("handoff validate");
+    fs.writeFileSync(path.join(tmp, "agent-harness.config.json"), `${JSON.stringify({
+      schema_version: "agent_harness_config_v1",
+      artifact_dir: ".agent-harness/runs",
+      product_paths: [],
+      required_scripts: [],
+      doctor_profile: "generic",
+      command_policy: { deny: ["DROP"] },
+      runtime_capabilities: { supports_subagents: true, max_parallel: 2 },
+    }, null, 2)}\n`);
+    const fromConfig = JSON.parse(execFileSync("node", [bin, "dispatch", "plan", "--plan", "plan.json"], { cwd: tmp, encoding: "utf8" }));
+    expect(fromConfig.data.runtime_capability).toBe("subagents");
+    expect(fromConfig.data.batches[0].mode).toBe("parallel");
 
     execFileSync("node", [bin, "session", "start", "--plan", "plan.json", "--run-id", "dispatch-cli", "--mode", "standard"], { cwd: tmp });
     const next = JSON.parse(execFileSync("node", [bin, "dispatch", "next", "--batch", "--runtime", "subagents"], { cwd: tmp, encoding: "utf8" }));

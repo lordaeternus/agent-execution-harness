@@ -1,6 +1,7 @@
 import type { AgentHarnessPlan, AgentHarnessTask, TaskSurface } from "./plan-types.js";
 import type { DispatchBatch, DispatchBlockedTask, DispatchOptions, DispatchPlan, DispatchRuntimeCapability, DispatchTaskRef } from "./dispatch-types.js";
 import { buildHandoffPacket } from "./handoff.js";
+import { dispatchRuntimeFromCapabilities } from "./runtime-capabilities.js";
 import { calculateTaskWaves, taskBlockedBy } from "./task-graph.js";
 
 const SENSITIVE_SURFACES: TaskSurface[] = ["auth", "db", "api", "ai"];
@@ -9,7 +10,8 @@ export function buildDispatchPlan(
   plan: AgentHarnessPlan,
   options: DispatchOptions & { completed_task_ids?: string[] } = {},
 ): DispatchPlan {
-  const runtime = options.runtime_capability ?? "serial_only";
+  const runtime = options.runtime_capability ?? (options.runtime_capabilities ? dispatchRuntimeFromCapabilities(options.runtime_capabilities) : "serial_only");
+  const maxParallel = options.max_parallel ?? options.runtime_capabilities?.max_parallel ?? Number.POSITIVE_INFINITY;
   const completed = new Set(options.completed_task_ids ?? []);
   const waves = calculateTaskWaves(plan.tasks);
   const blockedByDependencies = plan.tasks
@@ -32,7 +34,7 @@ export function buildDispatchPlan(
     .map((wave) => wave.task_ids.map((taskId) => executable.find((task) => task.task_id === taskId)).filter((task): task is AgentHarnessTask => Boolean(task)))
     .filter((waveTasks) => waveTasks.length > 0)
     .slice(0, 1)
-    .map((waveTasks) => buildParallelBatch(plan, waveTasks, runtime, options.max_parallel ?? Number.POSITIVE_INFINITY));
+    .map((waveTasks) => buildParallelBatch(plan, waveTasks, runtime, maxParallel));
   if (batches[0] && batches[0].tasks.length === 0 && executable[0]) {
     const serialTask = executable[0];
     batches = [buildSerialBatch(plan, serialTask, [...blockedByDependencies, ...batches[0].blocked_tasks.filter((task) => task.task_id !== serialTask.task_id)])];

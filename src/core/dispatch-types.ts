@@ -1,4 +1,5 @@
 import type { HandoffPacket } from "./handoff-types.js";
+import type { RuntimeCapabilities } from "./runtime-capabilities.js";
 
 export type DispatchRuntimeCapability = "serial_only" | "subagents";
 export type DispatchMode = "serial" | "parallel";
@@ -6,6 +7,7 @@ export type DispatchIsolation = "same_workspace" | "git_worktree" | "forked_work
 
 export interface DispatchOptions {
   runtime_capability?: DispatchRuntimeCapability;
+  runtime_capabilities?: RuntimeCapabilities;
   max_parallel?: number;
 }
 

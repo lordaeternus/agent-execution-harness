@@ -3,6 +3,7 @@ import path from "node:path";
 import { CONFIG_SCHEMA_VERSION, DEFAULT_ARTIFACT_DIR } from "./constants.js";
 import { defaultCodebaseMemoryConfig } from "./codebase-memory.js";
 import { defaultLearningMemoryConfig } from "./learning-memory.js";
+import { normalizeRuntimeCapabilities } from "./runtime-capabilities.js";
 import type { AgentHarnessConfig } from "./config-types.js";
 import { validateConfig } from "./schema-validation.js";
 import { assertSafeRelativePath } from "./utils.js";
@@ -42,6 +43,7 @@ export function defaultConfig(): AgentHarnessConfig {
       generated_allowlist: [".agent-harness/**", "docs/build-report/agent-harness/**", "dist/**", "coverage/**", ".checks/**", ".opencode/**", "planejamentos/**", "plan.json"],
     },
     architecture_rules: [],
+    runtime_capabilities: normalizeRuntimeCapabilities(),
   };
 }
 
@@ -60,6 +62,7 @@ export function loadConfig(cwd = process.cwd(), configPath = "agent-harness.conf
     weak_model: { ...defaults.weak_model, ...(config.weak_model ?? {}) },
     scope_guard: { ...defaults.scope_guard, ...(config.scope_guard ?? {}) },
     architecture_rules: config.architecture_rules ?? defaults.architecture_rules,
+    runtime_capabilities: normalizeRuntimeCapabilities(config.runtime_capabilities),
   };
   validateConfig(merged);
   assertSafeRelativePath(merged.artifact_dir, "artifact_dir");

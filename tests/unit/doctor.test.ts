@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { defaultConfig } from "../../src/core/config.js";
-import { assessArchitecture, assessCoverage, assessHarnessability, assessQuality, detectProjectTopology, doctorControls } from "../../src/core/doctor.js";
+import { assessArchitecture, assessCoverage, assessHarnessability, assessQuality, assessRuntimeCompatibility, detectProjectTopology, doctorControls } from "../../src/core/doctor.js";
 
 describe("doctor harnessability", () => {
   it("scores sparse projects lower than configured projects", () => {
@@ -102,5 +102,21 @@ describe("doctor harnessability", () => {
     expect(quality.status).not.toBe("blocked");
     expect(quality.signals.harnessability_score).toBeGreaterThan(70);
     expect(JSON.stringify(quality).length).toBeLessThan(1600);
+  });
+
+  it("reports runtime compatibility from universal capabilities", () => {
+    const report = assessRuntimeCompatibility({
+      ...defaultConfig(),
+      runtime_capabilities: {
+        supports_subagents: true,
+        supports_worktrees: true,
+        max_parallel: 1,
+      },
+    });
+    expect(report.mode).toBe("parallel_candidate");
+    expect(report.capabilities.supports_subagents).toBe(true);
+    expect(report.warnings.join("\n")).toContain("max_parallel");
+    expect(report.warnings.join("\n")).toContain("does not create automatic sandboxes");
+    expect(report.next_actions).toEqual(["use dispatch next --batch"]);
   });
 });

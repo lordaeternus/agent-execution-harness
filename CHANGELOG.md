@@ -1,3 +1,10 @@
+## 0.17.0
+
+- Added universal `runtime_capabilities` config for agent environments without creating separate Codex, Claude, OpenCode or Antigravity builds.
+- Added `doctor --runtime` to show the active runtime capability snapshot and guide serial vs subagent execution.
+- Updated dispatch so config-driven subagent support can enable safe batch planning while preserving explicit `--runtime serial_only|subagents` overrides.
+- Kept worktree and sandbox behavior advisory only; no automatic sandbox is promised or created by this release.
+
 ## 0.16.0
 
 - Added read-only `finish --check` so agents can prove a run is finalizable before writing the final report.

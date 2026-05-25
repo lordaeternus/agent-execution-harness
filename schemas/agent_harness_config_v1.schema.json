@@ -65,6 +65,51 @@
         }
       }
     },
+    "runtime_capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "runtime_name": {
+          "type": "string"
+        },
+        "instruction_files": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "supports_subagents": {
+          "type": "boolean"
+        },
+        "supports_worktrees": {
+          "type": "boolean"
+        },
+        "supports_json_output": {
+          "type": "boolean"
+        },
+        "shell_permission_model": {
+          "enum": [
+            "ask",
+            "allow",
+            "deny",
+            "unknown"
+          ]
+        },
+        "preferred_output_format": {
+          "enum": [
+            "ultra_compact",
+            "compact",
+            "standard",
+            "full"
+          ]
+        },
+        "max_parallel": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
     "token_budget": {
       "type": "object",
       "additionalProperties": false,
