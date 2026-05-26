@@ -1,3 +1,11 @@
+## 0.17.1
+
+- Reduced compact executor-loop token overhead by routing weak/serial guidance toward `next --exact --micro`.
+- Shortened `handoff --compact` prompts while preserving worker validation for evidence, allowed files and allowed commands.
+- Tightened token benchmarks and budgets so compact output regressions fail early.
+- Clarified that the harness does not create or switch branches; agents must stay on the current branch unless the user asks.
+- Fixed release-readiness version checks to tolerate Windows CRLF line endings.
+
 ## 0.17.0
 
 - Added universal `runtime_capabilities` config for agent environments without creating separate Codex, Claude, OpenCode or Antigravity builds.

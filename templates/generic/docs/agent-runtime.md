@@ -5,6 +5,7 @@ Use this file for execution. Use `README.md` only for human learning.
 - Harness command for this project: `agent-harness`.
 - If approved atomic backlog is Markdown-only, run `agent-harness plan import --from backlog.md --out plan.json --plan-id <id> --risk L2 --rollback "<rollback>"`, then `agent-harness plan-lint --plan plan.json`.
 - For L2/L3, multi-step, delegated or risky work, run the harness automatically; user should not need to ask.
+- Stay on the current branch. Do not create or switch branches unless the user asks.
 - If the plan has `depends_on`, run `agent-harness plan waves --plan <plan>` and follow only unblocked tasks from `next --exact --micro`.
 - Start with `agent-harness session start`, then use `agent-harness next --exact --micro` for weak agents.
 - If `session start` returns `learning_health=needs_audit`, run `agent-harness learn audit --compact`; do not delete lessons automatically.

@@ -88,6 +88,7 @@ export function verifyCommand(args: string[], cwd = process.cwd()): void {
   const learningActions = learningHint
     ? [`learn query --surface ${surfaceForTask(state, taskId)} --top-k 3 --compact`, "learn capture after proven fix"]
     : [];
+  const continueAction = profile.observationFormat === "ultra_compact" ? "next --exact --micro" : "next";
   writeCompactJson({
     status: exitCode === 0 ? "success" : "warning",
     summary: `${state.phase} evidence=${evidenceId} exit=${exitCode}`,
@@ -95,7 +96,7 @@ export function verifyCommand(args: string[], cwd = process.cwd()): void {
       { type: "run_state", path: path.relative(cwd, artifactPath) },
       { type: "evidence_log", path: outputRef },
     ],
-    next_actions: [...(state.phase === "report" ? ["claim auto", "finish"] : ["next"]), ...learningActions],
+    next_actions: [...(state.phase === "report" ? ["claim auto", "finish"] : [continueAction]), ...learningActions],
     errors: state.errors,
     data: {
       evidence_id: evidenceId,

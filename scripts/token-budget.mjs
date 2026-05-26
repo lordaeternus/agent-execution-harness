@@ -30,7 +30,9 @@ if (fs.existsSync("dist/cli/index.js")) {
   const dynamicLimits = [
     ["next_micro_chars", 280],
     ["learn_query_compact_chars", 500],
-    ["handoff_compact_chars", 1200],
+    ["handoff_compact_chars", 1000],
+    ["verify_next_action_chars", 120],
+    ["dispatch_serial_next_action_chars", 64],
     ["map_query_compact_chars", 600],
     ["validate_output_chars", 400],
     ["repeated_failure_hint_chars", 180],

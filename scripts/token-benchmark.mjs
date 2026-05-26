@@ -140,6 +140,8 @@ const weakNextExact = run(["next", "--plan", "plan.json", "--run-id", "weak-next
 const nextMicro = run(["next", "--plan", "plan.json", "--run-id", "weak-next", "--mode", "weak", "--exact", "--micro"]);
 const handoff = run(["handoff", "--plan", "plan.json", "--task-id", "bench-task"]);
 const handoffCompact = run(["handoff", "--plan", "plan.json", "--task-id", "bench-task", "--compact"]);
+const dispatchSerial = run(["dispatch", "plan", "--plan", "plan.json"]);
+const dispatchSerialNextActions = JSON.parse(dispatchSerial.output).next_actions ?? [];
 run(["session", "start", "--plan", "plan.json", "--run-id", "repeat-bench", "--mode", "weak"]);
 run(["files", "declare", "--files", "created.txt"]);
 run(["task", "start", "--task-id", "bench-task", "--files", "created.txt"]);
@@ -156,14 +158,14 @@ fs.writeFileSync(repeatedRunFile, `${JSON.stringify(repeatedState, null, 2)}\n`)
 fs.writeFileSync(path.join(tmp, ".agent-harness/runs/repeat-bench.json"), `${JSON.stringify(repeatedState, null, 2)}\n`);
 const repeatedFailure = run(["verify", "--task-id", "bench-task", "--type", "focused_tests", "--cmd", failingVerifyCommand]);
 const repeatedFailureHint = JSON.parse(repeatedFailure.output).data.learning_hint ?? "";
-const compactRun = total([
-  run(["session", "start", "--plan", "plan.json", "--run-id", "new", "--mode", "constrained"]),
-  run(["files", "declare", "--files", "created.txt"]),
-  run(["task", "start", "--task-id", "bench-task", "--files", "created.txt"]),
-  run(["verify", "--task-id", "bench-task", "--type", "focused_tests", "--cmd", verifyCommand]),
-  run(["claim", "auto"]),
-  run(["finish", "--summary", "validated"]),
-]);
+const verifyFailureNextActions = JSON.parse(repeatedFailure.output).next_actions ?? [];
+const compactStart = run(["session", "start", "--plan", "plan.json", "--run-id", "new", "--mode", "constrained"]);
+const compactFiles = run(["files", "declare", "--files", "created.txt"]);
+const compactTask = run(["task", "start", "--task-id", "bench-task", "--files", "created.txt"]);
+const compactVerify = run(["verify", "--task-id", "bench-task", "--type", "focused_tests", "--cmd", verifyCommand]);
+const compactClaim = run(["claim", "auto"]);
+const compactFinish = run(["finish", "--summary", "validated"]);
+const compactRun = total([compactStart, compactFiles, compactTask, compactVerify, compactClaim, compactFinish]);
 run([
   "learn",
   "capture",
@@ -194,7 +196,13 @@ const mapCompactReduction = Math.round(((mapQuery.totalChars - mapQueryCompact.t
 const nextMicroReduction = Math.round(((weakNextExact.totalChars - nextMicro.totalChars) / weakNextExact.totalChars) * 100);
 const handoffCompactReduction = Math.round(((handoff.totalChars - handoffCompact.totalChars) / handoff.totalChars) * 100);
 const smokeBenchmark = execFileSync(process.execPath, [cli, "benchmark", "--mode", "smoke"], { cwd: root, encoding: "utf8" });
-console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} validate_output_chars=${validateOutput.totalChars} repeated_failure_hint_chars=${repeatedFailureHint.length} learn_query_chars=${learnQuery.totalChars} learn_query_compact_chars=${learnQueryCompact.totalChars} learn_health_compact_chars=${learnHealthCompact.totalChars} learn_audit_compact_chars=${learnAuditCompact.totalChars} doctor_coverage_chars=${doctorCoverage.totalChars} doctor_architecture_chars=${doctorArchitecture.totalChars} learn_query_compact_reduction_pct=${learnCompactReduction} map_query_chars=${mapQuery.totalChars} map_query_compact_chars=${mapQueryCompact.totalChars} map_query_compact_reduction_pct=${mapCompactReduction} standard_next_chars=${standardNext.totalChars} weak_next_chars=${weakNext.totalChars} weak_reduction_pct=${weakReduction} weak_next_exact_chars=${weakNextExact.totalChars} next_micro_chars=${nextMicro.totalChars} next_micro_reduction_pct=${nextMicroReduction} handoff_chars=${handoff.totalChars} handoff_compact_chars=${handoffCompact.totalChars} handoff_compact_reduction_pct=${handoffCompactReduction} smoke_benchmark_chars=${smokeBenchmark.length}`);
+const verifyNextActionChars = JSON.stringify(verifyFailureNextActions).length;
+const dispatchSerialNextActionChars = JSON.stringify(dispatchSerialNextActions).length;
+console.log(`token-benchmark old_chars=${oldRun} compact_chars=${compactRun} reduction_pct=${reduction} validate_output_chars=${validateOutput.totalChars} repeated_failure_hint_chars=${repeatedFailureHint.length} learn_query_chars=${learnQuery.totalChars} learn_query_compact_chars=${learnQueryCompact.totalChars} learn_health_compact_chars=${learnHealthCompact.totalChars} learn_audit_compact_chars=${learnAuditCompact.totalChars} doctor_coverage_chars=${doctorCoverage.totalChars} doctor_architecture_chars=${doctorArchitecture.totalChars} learn_query_compact_reduction_pct=${learnCompactReduction} map_query_chars=${mapQuery.totalChars} map_query_compact_chars=${mapQueryCompact.totalChars} map_query_compact_reduction_pct=${mapCompactReduction} standard_next_chars=${standardNext.totalChars} weak_next_chars=${weakNext.totalChars} weak_reduction_pct=${weakReduction} weak_next_exact_chars=${weakNextExact.totalChars} next_micro_chars=${nextMicro.totalChars} next_micro_reduction_pct=${nextMicroReduction} handoff_chars=${handoff.totalChars} handoff_compact_chars=${handoffCompact.totalChars} handoff_compact_reduction_pct=${handoffCompactReduction} verify_next_action_chars=${verifyNextActionChars} dispatch_serial_next_action_chars=${dispatchSerialNextActionChars} smoke_benchmark_chars=${smokeBenchmark.length}`);
+if (!dispatchSerialNextActions.includes("next --exact --micro")) {
+  console.error("serial dispatch loops must point to next --exact --micro");
+  process.exitCode = 1;
+}
 if (weakReduction < 10) {
   console.error("weak next benchmark requires at least 10% output reduction");
   process.exitCode = 1;

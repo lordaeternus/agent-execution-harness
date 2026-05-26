@@ -4,24 +4,24 @@ import { dependenciesForTask } from "./task-graph.js";
 
 const FORBIDDEN_ACTIONS = [
   "decide architecture",
-  "edit undeclared files",
-  "invent APIs, file paths, IDs, versions, dates or commands",
-  "claim success without evidence",
-  "paste long logs instead of short excerpts",
+  "edit outside allowed_files",
+  "invent facts/paths/cmds",
+  "claim without evidence",
+  "paste logs",
 ];
 
 const BLOCKED_IF = [
-  "required file is missing",
-  "verification command is unavailable",
-  "task needs an extra file",
-  "security, auth, database or destructive behavior is unclear",
+  "missing file",
+  "no verification cmd",
+  "extra file needed",
+  "security/auth/db/destructive risk",
 ];
 
 const EXACT_STEPS = [
-  "Read only allowed files.",
-  "Make the smallest patch.",
-  "Run only allowed commands.",
-  "Return JSON only.",
+  "Read allowed only.",
+  "Smallest patch.",
+  "Run allowed cmds.",
+  "JSON only.",
 ];
 
 const PLACEHOLDER_PATTERN = /\b(TODO|FIXME|TBD|placeholder|resto do c[oó]digo|rest of code|continue here|implement later)\b/i;
@@ -52,9 +52,8 @@ export function buildHandoffPacket(plan: AgentHarnessPlan, taskId: string): Hand
 
 export function buildHandoffPrompt(packet: HandoffPacket): string {
   return [
-    "You are an implementation worker only.",
-    "Do not decide architecture. Do not invent facts. Do not edit files outside allowed_files.",
-    "If blocked, return status=blocked. Return JSON only.",
+    "Worker only. No architecture/invention/out-of-scope files.",
+    "Blocked => status=blocked. Return JSON only.",
     JSON.stringify(packet),
   ].join("\n");
 }

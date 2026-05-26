@@ -27,7 +27,7 @@ for (const packageFile of ["docs", "SECURITY.md", "CONTRIBUTING.md"]) {
   }
 }
 
-const readme = fs.existsSync("README.md") ? fs.readFileSync("README.md", "utf8") : "";
+const readme = fs.existsSync("README.md") ? fs.readFileSync("README.md", "utf8").replace(/\r\n/g, "\n") : "";
 if (!readme.includes(`Current version:\n\n\`\`\`txt\n${pkg.version}\n\`\`\``)) {
   findings.push({ severity: "P1", file: "README.md", message: "README current version must match package.json" });
 }
@@ -37,7 +37,7 @@ if (!readme.includes(`docs/release-notes/v${pkg.version}.md`)) {
 if (!fs.existsSync(`docs/release-notes/v${pkg.version}.md`)) {
   findings.push({ severity: "P1", file: "docs/release-notes", message: `release note for v${pkg.version} missing` });
 }
-const changelog = fs.existsSync("CHANGELOG.md") ? fs.readFileSync("CHANGELOG.md", "utf8") : "";
+const changelog = fs.existsSync("CHANGELOG.md") ? fs.readFileSync("CHANGELOG.md", "utf8").replace(/\r\n/g, "\n") : "";
 if (!changelog.includes(`## ${pkg.version}`)) {
   findings.push({ severity: "P1", file: "CHANGELOG.md", message: "CHANGELOG missing current package version" });
 }

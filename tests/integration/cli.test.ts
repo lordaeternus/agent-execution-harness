@@ -677,7 +677,7 @@ describe("cli integration", () => {
     const active = JSON.parse(execFileSync("node", [bin, "dispatch", "next", "--batch", "--runtime", "subagents"], { cwd: tmp, encoding: "utf8" }));
     expect(active.status).toBe("warning");
     expect(active.summary).toContain("task already in progress");
-    expect(active.next_actions).toEqual(["next --exact"]);
+    expect(active.next_actions).toEqual(["next --exact --micro"]);
     expect(active.data.batch).toBeNull();
   });
 

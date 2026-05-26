@@ -47,7 +47,7 @@ function nextCommand(args: string[], cwd: string): void {
       status: "warning",
       summary: activeBlock,
       artifacts: [{ type: "run_state", run_id: context.runId }],
-      next_actions: ["next --exact"],
+      next_actions: ["next --exact --micro"],
       errors: [],
       data: { batch: null, blocked_tasks: [], phase: context.state?.phase, current_task_id: context.state?.current_task_id, pending_gate: context.state?.pending_gate },
     });
@@ -92,7 +92,7 @@ function nextActionsForBatch(mode: "serial" | "parallel" | undefined, planPath: 
   if (mode === "parallel") {
     return ["spawn_subagents", "collect worker JSON", `handoff validate --plan ${quoteArg(planPath)} --task-id <task-id> --input <worker-output.json>`];
   }
-  return ["run serial task", "next --exact"];
+  return ["run serial task", "next --exact --micro"];
 }
 
 function activeDispatchBlock(state: AgentHarnessRunState | null): string | undefined {

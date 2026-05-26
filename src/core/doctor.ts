@@ -135,7 +135,7 @@ export function assessRuntimeCompatibility(config: AgentHarnessConfig): RuntimeC
     warnings.push("supports_subagents is true but max_parallel is below 2");
   }
   if (capabilities.supports_worktrees) {
-    warnings.push("worktree support is a runtime capability; the harness does not create automatic sandboxes");
+    warnings.push("worktree support is a runtime capability; the harness does not create automatic sandboxes or branches");
   }
   return {
     capabilities,

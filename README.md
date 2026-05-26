@@ -13,6 +13,17 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.17.1
+
+This patch reduces routine agent-token overhead without weakening evidence or safety controls.
+
+- `verify` and serial dispatch guidance now prefer `next --exact --micro` for compact executor loops
+- `handoff --compact` is shorter while worker validation still rejects missing evidence, out-of-scope files and disallowed commands
+- token benchmarks now guard the compact loop, handoff size and branch-safe runtime guidance
+- runtime docs and templates now say agents must stay on the current branch unless the user asks otherwise
+
+In plain language: agents get less chat noise, but the harness still requires proof before completion and no longer nudges branch changes.
+
 ## What's New In v0.17.0
 
 This release makes the harness universal across agent runtimes without creating separate app-specific packages.
@@ -20,7 +31,7 @@ This release makes the harness universal across agent runtimes without creating 
 - added `runtime_capabilities` to describe what the current agent/runtime can do
 - added `doctor --runtime` to show whether the runtime should use serial flow or subagent dispatch
 - dispatch can now use config capabilities while preserving explicit `--runtime` overrides
-- worktree/sandbox support remains advisory unless a command explicitly implements it
+- worktree/sandbox support remains advisory; the harness does not create or switch branches
 
 In plain language: there is still one harness. Codex, Claude, OpenCode, Antigravity and other agents are handled by capabilities, not separate versions.
 
@@ -381,7 +392,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.17.0.md)
+- [Release notes](docs/release-notes/v0.17.1.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -512,7 +523,7 @@ agent-harness doctor --runtime --cwd .
 agent-harness doctor --json --runtime --cwd .
 ```
 
-When `supports_subagents` is false or absent, dispatch falls back to the serial `next --exact` path. `dispatch --runtime serial_only|subagents` still works as a manual override. `supports_worktrees` describes what the runtime can do; the harness does not create automatic worktrees, forked workspaces or sandboxes unless a command explicitly implements that behavior.
+When `supports_subagents` is false or absent, dispatch falls back to the serial `next --exact` path. `dispatch --runtime serial_only|subagents` still works as a manual override. `supports_worktrees` describes what the runtime can do; the harness does not create automatic worktrees, forked workspaces, sandboxes or branches unless a command explicitly implements that behavior.
 
 ## Coverage And Architecture
 
@@ -625,7 +636,7 @@ Token-light flow for agents:
 
 ```bash
 agent-harness session start --plan plan.json --run-id fix-id --summary "ctx"
-agent-harness next
+agent-harness next --exact --micro
 agent-harness files declare --files src/file.ts
 agent-harness task start --task-id task-id --files src/file.ts
 agent-harness verify --task-id task-id --type focused_tests --cmd "pnpm test"
@@ -645,7 +656,7 @@ agent-harness map query --surface auth --compact
 agent-harness learn query --surface auth --top-k 3 --compact
 ```
 
-These commands remove duplicate transport metadata from the chat output while preserving the full audit trail in artifacts and full commands. Use the normal output when a human needs to debug; use compact output when an agent only needs the next action.
+These commands remove duplicate transport metadata from chat while preserving the full audit trail in artifacts, `output_ref` logs and full commands. Use normal output for human debugging; use compact output when an agent only needs the next action.
 
 For strict execution, prefer structured commands instead of shell strings:
 
@@ -660,7 +671,7 @@ In `weak` mode, `claim auto` automatically batches claims when a plan has many t
 
 For low-context agents, use `next --exact --micro`. It returns the exact next harness command plus the stop condition, reducing ordering mistakes such as claiming early, skipping file declaration, or forgetting the active task.
 
-For multi-step plans, tasks can declare `depends_on`. Run `agent-harness plan waves --plan plan.json` to preview safe execution order. `next --exact` then guides the agent only to tasks whose dependencies already passed evidence.
+For multi-step plans, tasks can declare `depends_on`. Run `agent-harness plan waves --plan plan.json` to preview safe execution order. `next --exact --micro` then guides the agent only to tasks whose dependencies already passed evidence.
 
 The scope guard also checks the real git diff before `finish`. If the agent changed a product/source file outside the plan, the run stops with a `repair_hint` instead of pretending success. In plain language: the agent can only finish if the files it touched match the files it declared.
 
@@ -674,7 +685,7 @@ agent-harness dispatch plan --plan plan.json --runtime subagents
 agent-harness dispatch next --batch --runtime subagents
 ```
 
-Dispatch does not spawn workers itself. It inspects the plan, dependencies, runtime capabilities and task metadata, then returns either a safe parallel batch with handoff packets or a serial fallback task. If the runtime has no subagents, omit `--runtime subagents` and continue with the normal serial `next --exact` flow.
+Dispatch does not spawn workers itself. It inspects the plan, dependencies, runtime capabilities and task metadata, then returns either a safe parallel batch with handoff packets or a serial fallback task. If the runtime has no subagents, omit `--runtime subagents` and continue with the serial `next --exact --micro` flow.
 
 After a worker returns JSON, validate that output with the existing handoff validator:
 
@@ -689,7 +700,7 @@ agent-harness patch intake --plan plan.json --task-id task-id --patch worker.pat
 agent-harness patch intake --plan plan.json --task-id task-id --patch worker.patch --worker-output worker-output.json --apply
 ```
 
-The optional task `isolation` field is advisory metadata in this version. It documents the intended worker isolation model, but the harness does not automatically create worktrees, fork workspaces, or sandboxes for dispatch.
+The optional task `isolation` field is advisory metadata in this version. It documents the intended worker isolation model, but the harness does not automatically create worktrees, fork workspaces, sandboxes or branches for dispatch.
 
 ### Weak Worker Handoff
 
@@ -1815,7 +1826,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.17.0
+0.17.1
 ```
 
 Package:

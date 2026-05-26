@@ -217,7 +217,7 @@ agent-harness patch intake --plan plan.json --task-id task-id --patch worker.pat
 agent-harness patch intake --plan plan.json --task-id task-id --patch worker.patch --worker-output worker-output.json --apply
 ```
 
-The optional task `isolation` field is advisory metadata in this version. It records the intended isolation model, but dispatch does not automatically create worktrees, forked workspaces, or sandboxes.
+The optional task `isolation` field is advisory metadata in this version. It records the intended isolation model, but dispatch does not automatically create worktrees, forked workspaces, sandboxes or branches.
 
 Optional cheap project readiness and steering checks:
 
