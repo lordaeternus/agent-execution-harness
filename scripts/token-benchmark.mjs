@@ -89,6 +89,7 @@ const oldRun = total([
         { claim_id: "old-gate", kind: "gate_passed", value: "node --version", evidence_id: "old-ev" },
         { claim_id: "old-accept", kind: "acceptance_criteria_met", value: "bench-task", evidence_id: "old-ev" },
         { claim_id: "old-rollback", kind: "rollback_defined", value: "Remove generated files.", evidence_id: "old-ev" },
+        { claim_id: "old-task-reconciled", kind: "task_reconciled", value: "bench-task", evidence_id: "old-ev" },
       ],
     }),
   ]),

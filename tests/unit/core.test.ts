@@ -9,6 +9,7 @@ import { evaluateCommandPolicy } from "../../src/core/command-policy.js";
 import { calculateBenchmark } from "../../src/core/benchmark.js";
 import { processHarnessAction } from "../../src/core/runner.js";
 import { buildReport } from "../../src/core/report.js";
+import { buildAutoClaims } from "../../src/core/auto-claims.js";
 import type { AgentHarnessPlan } from "../../src/core/plan-types.js";
 import { buildExactNextCommand } from "../../src/core/next-command.js";
 
@@ -114,6 +115,7 @@ describe("core harness", () => {
             check: "node --version",
             result: "pass",
             exit_code: 0,
+            evidence_type: "focused_tests",
             output_excerpt: "v20",
             scope_covered: "test contract",
           },
@@ -131,8 +133,9 @@ describe("core harness", () => {
           claims: [
             { claim_id: "c-file", kind: "file_exists", value: "created.txt", evidence_id: "ev-green" },
             { claim_id: "c-gate", kind: "gate_passed", value: "node --version", evidence_id: "ev-green" },
+            { claim_id: "c-task", kind: "task_reconciled", value: "unit-task", evidence_id: "ev-green" },
             { claim_id: "c-accept", kind: "acceptance_criteria_met", value: "unit-task", evidence_id: "ev-green" },
-            { claim_id: "c-rollback", kind: "rollback_defined", value: "rollback", evidence_id: "ev-green" },
+            { claim_id: "c-rollback", kind: "rollback_defined", value: "Delete temp files.", evidence_id: "ev-green" },
           ],
         },
       }).state;
@@ -148,6 +151,80 @@ describe("core harness", () => {
       expect(buildReport(state)).toContain("Agent Harness Final Report");
     } finally {
       process.chdir(oldCwd);
+    }
+  });
+
+  it("rejects strict low-level evidence without output_ref and sha256", () => {
+    const config = defaultConfig();
+    const strictPlan: AgentHarnessPlan = {
+      ...plan(),
+      tasks: [{ ...plan().tasks[0], allowed_commands: ["node --version"] }],
+    };
+    let state = processHarnessAction({
+      plan: strictPlan,
+      previousState: null,
+      runId: "strict-raw-evidence-run",
+      mode: "strict",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "read_context", summary: "ctx" },
+    }).state;
+    state = processHarnessAction({
+      plan: strictPlan,
+      previousState: state,
+      runId: "strict-raw-evidence-run",
+      mode: "strict",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "declare_files", files: ["created.txt"] },
+    }).state;
+    state = processHarnessAction({
+      plan: strictPlan,
+      previousState: state,
+      runId: "strict-raw-evidence-run",
+      mode: "strict",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "edit_file_ready", task_id: "unit-task", files: ["created.txt"] },
+    }).state;
+    state = processHarnessAction({
+      plan: strictPlan,
+      previousState: state,
+      runId: "strict-raw-evidence-run",
+      mode: "strict",
+      config,
+      action: { schema_version: ACTION_SCHEMA_VERSION, type: "run_gate", command: "node --version" },
+    }).state;
+
+    const baseEvidence = {
+      check: "node --version",
+      result: "pass" as const,
+      exit_code: 0,
+      evidence_type: "focused_tests",
+      output_excerpt: "v20",
+      scope_covered: "strict raw evidence",
+    };
+    const strictEvidenceCases = [
+      { evidence_id: "strict-raw-ev", evidence: baseEvidence },
+      { evidence_id: "strict-missing-output-ref-ev", evidence: { ...baseEvidence, sha256: "a".repeat(64) } },
+      { evidence_id: "strict-missing-sha256-ev", evidence: { ...baseEvidence, output_ref: "artifacts/strict.log" } },
+    ];
+
+    for (const { evidence_id, evidence } of strictEvidenceCases) {
+      expect(() =>
+        processHarnessAction({
+          plan: strictPlan,
+          previousState: state,
+          runId: "strict-raw-evidence-run",
+          mode: "strict",
+          config,
+          action: {
+            schema_version: ACTION_SCHEMA_VERSION,
+            type: "record_evidence",
+            evidence: {
+              evidence_id,
+              ...evidence,
+            },
+          },
+        }),
+      ).toThrow("strict evidence requires output_ref and sha256");
     }
   });
 
@@ -260,7 +337,7 @@ describe("core harness", () => {
     expect(buildExactNextCommand(state).command).toBe('agent-harness files declare --files "one.txt,two.txt"');
   });
 
-  it("marks UI work partial_validated when required visual evidence is missing", () => {
+  it("rejects direct final_report when required auto claims are missing", () => {
     const config = defaultConfig();
     let state = processHarnessAction({
       plan: uiPlan(),
@@ -305,13 +382,12 @@ describe("core harness", () => {
         type: "record_evidence",
         evidence: {
           evidence_id: "ui-ev-partial",
-          evidence_types: ["focused_tests", "scoped_lint", "scoped_typecheck"],
+          evidence_types: ["focused_tests", "scoped_lint", "scoped_typecheck", "browser_smoke"],
           check: "pnpm agent:verify:ui",
           result: "pass",
           exit_code: 0,
-          output_excerpt: "Focused tests, lint and scoped typecheck passed. Browser smoke not run.",
-          scope_covered: "focused tests, scoped lint, scoped typecheck",
-          residual_gap: "browser smoke not run",
+          output_excerpt: "Focused tests, lint, scoped typecheck and browser smoke passed.",
+          scope_covered: "focused tests, scoped lint, scoped typecheck, browser smoke",
         },
       },
     }).state;
@@ -326,21 +402,21 @@ describe("core harness", () => {
         type: "verify_claims",
         claims: [
           { claim_id: "c-ui-gate", kind: "gate_passed", value: "pnpm agent:verify:ui", evidence_id: "ui-ev-partial" },
-          { claim_id: "c-ui-rollback", kind: "rollback_defined", value: "rollback", evidence_id: "ui-ev-partial" },
+          { claim_id: "c-ui-task", kind: "task_reconciled", value: "ui-task", evidence_id: "ui-ev-partial" },
+          { claim_id: "c-ui-rollback", kind: "rollback_defined", value: "Revert UI files.", evidence_id: "ui-ev-partial" },
         ],
       },
     }).state;
-    state = processHarnessAction({
-      plan: uiPlan(),
-      previousState: state,
-      runId: "ui-run",
-      mode: "standard",
-      config,
-      action: { schema_version: ACTION_SCHEMA_VERSION, type: "final_report", summary: "implemented but visual smoke missing" },
-    }).state;
-    expect(state.status).toBe("partial_validated");
-    expect(state.evidence_policy?.missing).toEqual(["browser_smoke|visual_assertion"]);
-    expect(buildReport(state)).toContain("partial_validated");
+    expect(() =>
+      processHarnessAction({
+        plan: uiPlan(),
+        previousState: state,
+        runId: "ui-run",
+        mode: "standard",
+        config,
+        action: { schema_version: ACTION_SCHEMA_VERSION, type: "final_report", summary: "implemented but visual smoke missing" },
+      }),
+    ).toThrow("final_report requires auto claims");
   });
 
   it("completes UI work when all required evidence types are present", () => {
@@ -406,11 +482,7 @@ describe("core harness", () => {
       action: {
         schema_version: ACTION_SCHEMA_VERSION,
         type: "verify_claims",
-        claims: [
-          { claim_id: "c-ui-gate", kind: "gate_passed", value: "pnpm agent:verify:ui", evidence_id: "ui-ev-complete" },
-          { claim_id: "c-ui-accept", kind: "acceptance_criteria_met", value: "ui-task", evidence_id: "ui-ev-complete" },
-          { claim_id: "c-ui-rollback", kind: "rollback_defined", value: "rollback", evidence_id: "ui-ev-complete" },
-        ],
+        claims: buildAutoClaims(state),
       },
     }).state;
     state = processHarnessAction({

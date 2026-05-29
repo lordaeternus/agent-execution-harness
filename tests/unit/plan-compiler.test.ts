@@ -144,6 +144,31 @@ describe("plan compiler", () => {
     expect(result.tasks[0].allowed_commands).toEqual(["pnpm test:run tests/unit/plan-compiler.test.ts"]);
   });
 
+  it("prioritizes mixed-surface tasks independent of file order", () => {
+    for (const files of [
+      ["README.md", "supabase/migrations/001.sql"],
+      ["supabase/migrations/001.sql", "README.md"],
+    ]) {
+      const result = compilePlan(
+        basePlan({
+          tasks: [
+            {
+              task_id: "mixed-surface",
+              files,
+              acceptance_criteria: "Run `pnpm test:run tests/unit/plan-compiler.test.ts` and pass mixed-surface compiler coverage.",
+            },
+          ],
+        }),
+      );
+
+      expect(result.status).toBe("success");
+      expect(result.tasks[0]).toMatchObject({
+        surface: "db",
+        required_evidence: ["migration_or_schema_check", "rollback_plan"],
+      });
+    }
+  });
+
   it("rejects invalid dependency graphs", () => {
     const result = compilePlan(
       basePlan({

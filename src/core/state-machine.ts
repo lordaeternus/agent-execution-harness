@@ -10,6 +10,7 @@ import type { AgentHarnessConfig } from "./config-types.js";
 import { evaluateEvidencePolicy } from "./evidence-policy.js";
 import { effectiveExecutionProfile } from "./execution-profile.js";
 import { taskBlockedBy } from "./task-graph.js";
+import { missingAutoClaims } from "./auto-claims.js";
 
 const ALLOWED: Record<string, string[]> = {
   init: ["read_context", "halt_for_risk"],
@@ -114,6 +115,9 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
   }
   if (action.type === "record_evidence") {
     if (!next.pending_gate) throw new Error("record_evidence requires pending gate");
+    if (state.mode === "strict" && (!action.evidence?.output_ref || !action.evidence?.sha256)) {
+      throw new Error("strict evidence requires output_ref and sha256");
+    }
     const evidence = normalizeEvidence(action.evidence);
     const task = next.tasks.find((item) => item.task_id === next.pending_gate?.task_id);
     if (profile.enforceStructuredEvidence && task?.required_evidence?.length && !evidence.evidence_type && !evidence.evidence_types?.length) {
@@ -149,6 +153,8 @@ export function applyAction(state: AgentHarnessRunState, action: AgentHarnessAct
     if (!next.verified_claims.length) throw new Error("final_report requires verified claims");
     if (next.verified_claims.some((claim) => !claim.verified)) throw new Error("final_report requires all claims verified");
     if (next.tasks.some((task) => ["not_started", "in_progress"].includes(task.status))) throw new Error("final_report requires all tasks reconciled");
+    const missingClaims = missingAutoClaims(next);
+    if (missingClaims.length > 0) throw new Error(`final_report requires auto claims: ${missingClaims.length} missing`);
     next.final_report = { summary: action.summary, verified_claim_ids: next.verified_claims.map((claim) => claim.claim_id) };
     next.evidence_policy = evaluateEvidencePolicy(next);
     next.phase = "completed";

@@ -21,6 +21,7 @@ Use this file for execution. Use `README.md` only for human learning.
 - Prefer `agent-harness verify --task-id <id> --type <evidence_type> --exec <bin> --args-json "[...]"`; use `--cmd` only when shell behavior is required.
 - Use `--types a,b` when one command proves multiple evidence types.
 - `verify` stores long logs by `output_ref` + `sha256` and records evidence.
+- Strict manual gate evidence needs `--output-ref` + `--sha256`.
 - Do not say completed unless artifact status is `completed`.
 - UI/layout needs `browser_smoke` or `visual_assertion`; otherwise report `partial_validated`.
 - Evidence needs `evidence_type` or `evidence_types`.

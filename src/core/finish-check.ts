@@ -1,5 +1,5 @@
 import type { AgentHarnessRunState } from "./run-types.js";
-import { buildAutoClaims } from "./auto-claims.js";
+import { missingAutoClaims } from "./auto-claims.js";
 import { evaluateEvidencePolicy } from "./evidence-policy.js";
 import { applyScopeGuardToState, type GitTouchedFilesResult } from "./scope-guard.js";
 
@@ -28,9 +28,7 @@ export function assessFinishReadiness(input: {
   const warnings: string[] = [];
   const pendingTasks = input.state.tasks.filter((task) => ["not_started", "in_progress"].includes(task.status)).map((task) => task.task_id);
   const unverifiedClaims = input.state.verified_claims.filter((claim) => !claim.verified).length;
-  const autoClaims = buildAutoClaims(input.state);
-  const verifiedKeys = new Set(input.state.verified_claims.filter((claim) => claim.verified).map(claimKey));
-  const missingAutoClaims = autoClaims.filter((claim) => !verifiedKeys.has(claimKey(claim))).length;
+  const missingAutoClaimCount = missingAutoClaims(input.state).length;
   const evidencePolicy = evaluateEvidencePolicy(input.state);
   const missingEvidence = evidencePolicy.missing;
   let unexpectedFiles = input.state.unexpected_files ?? [];
@@ -51,7 +49,7 @@ export function assessFinishReadiness(input: {
   if (!input.state.plan.rollback_expectation.trim()) errors.push("rollback_missing");
   if (!input.state.verified_claims.length) errors.push("verified_claims_missing");
   if (unverifiedClaims > 0) errors.push(`unverified_claims: ${unverifiedClaims}`);
-  if (missingAutoClaims > 0) errors.push(`missing_auto_claims: ${missingAutoClaims}`);
+  if (missingAutoClaimCount > 0) errors.push(`missing_auto_claims: ${missingAutoClaimCount}`);
   if (missingEvidence.length) errors.push(`missing_evidence: ${missingEvidence.join(",")}`);
   if (unexpectedFiles.length) errors.push(`unexpected_files: ${unexpectedFiles.join(",")}`);
 
@@ -64,16 +62,12 @@ export function assessFinishReadiness(input: {
     data: {
       pending_tasks: pendingTasks,
       unverified_claims: unverifiedClaims,
-      missing_auto_claims: missingAutoClaims,
+      missing_auto_claims: missingAutoClaimCount,
       missing_evidence: missingEvidence,
       unexpected_files: unexpectedFiles,
       rollback_defined: Boolean(input.state.plan.rollback_expectation.trim()),
     },
   };
-}
-
-function claimKey(claim: { kind: string; value: string; evidence_id: string }): string {
-  return `${claim.kind}:${claim.value}:${claim.evidence_id}`;
 }
 
 function nextActionsForErrors(errors: string[]): string[] {

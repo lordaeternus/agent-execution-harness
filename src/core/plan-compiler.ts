@@ -1,36 +1,14 @@
-import type { AgentHarnessPlan, AgentHarnessTask, RiskLevel, TaskSurface } from "./plan-types.js";
+import type { AgentHarnessPlan, AgentHarnessTask, RiskLevel } from "./plan-types.js";
 import type { CompiledPlan, CompiledTaskContract, PlanCompilerDiagnostic } from "./plan-compiler-types.js";
+import { allowedCommandsForTask, inferTaskSurface, maxFilesForRisk, requiredEvidenceForTask } from "./task-contract.js";
 import { calculateTaskWaves, dependenciesForTask, validateTaskGraph } from "./task-graph.js";
 
-const SURFACE_BY_PATH: Array<[RegExp, TaskSurface]> = [
-  [/^supabase\/migrations\//, "db"],
-  [/^supabase\/functions\//, "api"],
-  [/(^|\/)(auth|permissions|session|rls)(\/|\.|-)/i, "auth"],
-  [/(^|\/)(ai|llm|prompts?)(\/|\.|-)/i, "ai"],
-  [/\.(md|mdx)$/i, "docs"],
-  [/(^src\/(components|pages|features)\/|\.(tsx|jsx|css)$)/i, "ui_layout"],
-  [/^src\//, "backend"],
-];
-
-const EVIDENCE_BY_SURFACE: Record<TaskSurface, string[]> = {
-  ui_layout: ["focused_tests", "scoped_lint", "scoped_typecheck", "browser_smoke|visual_assertion"],
-  ui: ["focused_tests", "scoped_lint", "scoped_typecheck"],
-  backend: ["focused_tests", "scoped_typecheck"],
-  api: ["focused_tests", "scoped_typecheck", "api_contract"],
-  auth: ["focused_tests", "scoped_typecheck", "authz_negative_test"],
-  db: ["migration_or_schema_check", "rollback_plan"],
-  ai: ["golden_case", "schema_validation", "rollback_plan"],
-  docs: [],
-  generic: ["focused_tests"],
-};
-
-const MAX_FILES_BY_RISK: Record<RiskLevel, number> = { L1: 3, L2: 3, L3: 2 };
 const VAGUE_WORDS = /^(fix|adjust|improve|change|update|make it work|works|done|ok|corrigir|ajustar|melhorar|alterar|funcionar)$/i;
 const COMMAND_HINT = /`[^`]+`|\b(pnpm|npm|node|npx|git|tsc|vitest|playwright|deno|cargo|go test|pytest|make)\b/i;
 
 export function compilePlan(plan: AgentHarnessPlan): CompiledPlan {
   const diagnostics: PlanCompilerDiagnostic[] = [];
-  const maxFiles = MAX_FILES_BY_RISK[plan.risk_level] ?? 3;
+  const maxFiles = maxFilesForRisk(plan.risk_level);
 
   if (plan.risk_level === "L3" && plan.rollback_expectation.trim().length < 16) {
     diagnostics.push({ code: "weak_rollback", severity: "error", message: "L3 plan requires explicit rollback expectation." });
@@ -55,9 +33,9 @@ export function compilePlan(plan: AgentHarnessPlan): CompiledPlan {
 function compileTask(task: AgentHarnessTask, riskLevel: RiskLevel, maxFiles: number, planGates: string[], diagnostics: PlanCompilerDiagnostic[], profile?: string): CompiledTaskContract {
   const files = unique(task.files ?? []);
   const forbiddenFiles = unique(task.forbidden_files ?? []);
-  const surface = task.surface ?? inferSurface(files);
-  const requiredEvidence = unique(task.required_evidence?.length ? task.required_evidence : EVIDENCE_BY_SURFACE[surface]);
-  const allowedCommands = unique(task.allowed_commands?.length ? task.allowed_commands : task.required_checks?.length ? task.required_checks : planGates.length === 1 ? planGates : []);
+  const surface = task.surface ?? inferTaskSurface(files);
+  const requiredEvidence = requiredEvidenceForTask({ planTask: { ...task, files, surface } });
+  const allowedCommands = allowedCommandsForTask({ taskAllowedCommands: task.allowed_commands, requiredChecks: task.required_checks, planGates });
   const criteria = task.acceptance_criteria.trim();
 
   if (files.length === 0) diagnostics.push(error(task, "missing_files", "Task must declare exact files before execution."));
@@ -135,15 +113,6 @@ function parallelRiskWarnings(tasks: CompiledTaskContract[], waves: string[][]):
     }
   }
   return diagnostics;
-}
-
-function inferSurface(files: string[]): TaskSurface {
-  for (const file of files) {
-    const normalized = file.replace(/\\/g, "/");
-    const match = SURFACE_BY_PATH.find(([pattern]) => pattern.test(normalized));
-    if (match) return match[1];
-  }
-  return "generic";
 }
 
 function error(task: AgentHarnessTask, code: string, message: string): PlanCompilerDiagnostic {

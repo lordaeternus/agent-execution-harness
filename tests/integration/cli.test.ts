@@ -40,6 +40,38 @@ describe("cli integration", () => {
     expect(report).toContain("status: completed");
   });
 
+  it("blocks strict manual gate evidence without output metadata", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-strict-manual-block-"));
+    fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+    const common = ["--plan", "plan.json", "--run-id", "strict-manual-block", "--mode", "strict"];
+    execFileSync("node", [bin, "start", ...common, "--summary", "ctx"], { cwd: tmp });
+    execFileSync("node", [bin, "files", "declare", ...common, "--files", "created.txt"], { cwd: tmp });
+    execFileSync("node", [bin, "task", "start", ...common, "--task-id", "weak-exact-task", "--files", "created.txt"], { cwd: tmp });
+
+    const blocked = tryCli(["gate", "pass", ...common, "--type", "focused_tests", "--check", "node --version"], tmp);
+
+    expect(blocked.summary).toContain("strict manual evidence requires --output-ref and --sha256");
+  });
+
+  it("allows strict manual gate evidence with output metadata", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-strict-manual-allow-"));
+    fs.copyFileSync("tests/fixtures/plans/weak-exact-plan.json", path.join(tmp, "plan.json"));
+    fs.writeFileSync(path.join(tmp, "created.txt"), "ok");
+    const common = ["--plan", "plan.json", "--run-id", "strict-manual-allow", "--mode", "strict"];
+    const outputRef = "logs/node-version.txt";
+    const sha256 = "a".repeat(64);
+    execFileSync("node", [bin, "start", ...common, "--summary", "ctx"], { cwd: tmp });
+    execFileSync("node", [bin, "files", "declare", ...common, "--files", "created.txt"], { cwd: tmp });
+    execFileSync("node", [bin, "task", "start", ...common, "--task-id", "weak-exact-task", "--files", "created.txt"], { cwd: tmp });
+    execFileSync("node", [bin, "gate", "pass", ...common, "--type", "focused_tests", "--check", "node --version", "--output-ref", outputRef, "--sha256", sha256], { cwd: tmp });
+
+    const state = JSON.parse(fs.readFileSync(path.join(tmp, ".agent-harness/runs/strict-manual-allow.full.json"), "utf8")) as {
+      evidence: Array<{ output_ref?: string; sha256?: string }>;
+    };
+    expect(state.evidence.at(-1)).toMatchObject({ output_ref: outputRef, sha256 });
+  });
+
   it("runs session, next and verify without repeating plan and run id", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agent-harness-session-"));
     fs.copyFileSync("tests/fixtures/plans/basic-plan.json", path.join(tmp, "plan.json"));

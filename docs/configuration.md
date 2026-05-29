@@ -4,6 +4,8 @@
 
 `command_policy.deny` wins over allow.
 
+Strict manual evidence must include `output_ref` and `sha256`; weak agents are steered to `verify` to avoid unexecuted pass claims.
+
 ## Codebase Memory
 
 `codebase_memory` controls selective repository memory.

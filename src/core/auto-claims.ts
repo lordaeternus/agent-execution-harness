@@ -1,5 +1,10 @@
 import type { HarnessClaim } from "./action-types.js";
-import type { AgentHarnessRunState } from "./run-types.js";
+import { isTaskEvidenceComplete } from "./evidence-policy.js";
+import type { AgentHarnessRunState, VerifiedClaim } from "./run-types.js";
+
+export function claimKey(claim: Pick<VerifiedClaim, "kind" | "value" | "evidence_id">): string {
+  return `${claim.kind}:${claim.value}:${claim.evidence_id}`;
+}
 
 export function buildAutoClaims(state: AgentHarnessRunState): HarnessClaim[] {
   const claims: HarnessClaim[] = [];
@@ -20,7 +25,7 @@ export function buildAutoClaims(state: AgentHarnessRunState): HarnessClaim[] {
         value: task.task_id,
         evidence_id: evidence.evidence_id,
       });
-      if (evidence.result === "pass") {
+      if (evidence.result === "pass" && isTaskEvidenceComplete(state, task.task_id)) {
         claims.push({
           claim_id: `${prefix}-acceptance`,
           kind: "acceptance_criteria_met",
@@ -41,10 +46,15 @@ export function buildAutoClaims(state: AgentHarnessRunState): HarnessClaim[] {
   return dedupeClaims(claims);
 }
 
+export function missingAutoClaims(state: AgentHarnessRunState): HarnessClaim[] {
+  const verifiedKeys = new Set(state.verified_claims.filter((claim) => claim.verified).map(claimKey));
+  return buildAutoClaims(state).filter((claim) => !verifiedKeys.has(claimKey(claim)));
+}
+
 function dedupeClaims(claims: HarnessClaim[]): HarnessClaim[] {
   const seen = new Set<string>();
   return claims.filter((claim) => {
-    const key = `${claim.kind}:${claim.value}:${claim.evidence_id}`;
+    const key = claimKey(claim);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

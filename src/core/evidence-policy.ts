@@ -1,23 +1,11 @@
-import type { AgentHarnessTask, TaskSurface } from "./plan-types.js";
-import type { AgentHarnessRunState, Evidence, EvidencePolicySummary, RunTask } from "./run-types.js";
-
-const SURFACE_REQUIREMENTS: Record<TaskSurface, string[]> = {
-  ui_layout: ["focused_tests", "scoped_lint", "scoped_typecheck", "browser_smoke|visual_assertion"],
-  ui: ["focused_tests", "scoped_lint", "scoped_typecheck"],
-  backend: ["focused_tests", "scoped_typecheck"],
-  api: ["focused_tests", "scoped_typecheck", "api_contract"],
-  auth: ["focused_tests", "scoped_typecheck", "authz_negative_test"],
-  db: ["migration_or_schema_check", "rollback_plan"],
-  ai: ["golden_case", "schema_validation", "rollback_plan"],
-  docs: [],
-  generic: [],
-};
+import type { AgentHarnessRunState, Evidence, EvidencePolicySummary } from "./run-types.js";
+import { requiredEvidenceForTask as taskRequiredEvidence } from "./task-contract.js";
 
 export function evaluateEvidencePolicy(state: AgentHarnessRunState): EvidencePolicySummary {
   const planTaskById = new Map(state.plan.tasks.map((task) => [task.task_id, task]));
   const tasks = state.tasks.map((task) => {
     const planTask = planTaskById.get(task.task_id);
-    const required = requiredEvidenceForTask(task, planTask);
+    const required = taskRequiredEvidence({ runTask: task, planTask });
     const taskEvidence = state.evidence.filter((evidence) => task.evidence_ids.includes(evidence.evidence_id));
     const satisfied = required.filter((requirement) => isRequirementSatisfied(requirement, taskEvidence));
     return {
@@ -43,30 +31,6 @@ export function evaluateEvidencePolicy(state: AgentHarnessRunState): EvidencePol
 
 export function isTaskEvidenceComplete(state: AgentHarnessRunState, taskId: string): boolean {
   return evaluateEvidencePolicy(state).tasks.find((task) => task.task_id === taskId)?.missing.length === 0;
-}
-
-function requiredEvidenceForTask(task: RunTask, planTask: AgentHarnessTask | undefined): string[] {
-  if (planTask?.required_evidence?.length) return unique(planTask.required_evidence);
-  if (task.required_evidence?.length) return unique(task.required_evidence);
-  const surface = planTask?.surface ?? inferSurface([...(planTask?.files ?? []), ...(task.files ?? [])]);
-  const baseRequirements = SURFACE_REQUIREMENTS[surface] ?? [];
-  const memoryRequirements = taskNeedsFreshCodebaseMemory(task, surface) ? ["codebase_memory_fresh"] : [];
-  return unique([...baseRequirements, ...memoryRequirements]);
-}
-
-function taskNeedsFreshCodebaseMemory(task: RunTask, surface: TaskSurface): boolean {
-  const highRiskSurfaces: TaskSurface[] = ["auth", "db", "api", "ai"];
-  return highRiskSurfaces.includes(surface) && task.status !== "not_started";
-}
-
-function inferSurface(files: string[]): TaskSurface {
-  if (files.some((file) => /(^|\/)supabase\/migrations\//.test(file))) return "db";
-  if (files.some((file) => /(^|\/)supabase\/functions\//.test(file))) return "api";
-  if (files.some((file) => /(^|\/)(auth|permissions|session|rls)(\/|\.|-)/i.test(file))) return "auth";
-  if (files.some((file) => /(^|\/)(ai|llm|prompts?)\//i.test(file))) return "ai";
-  if (files.some((file) => /\.(md|mdx)$/i.test(file))) return "docs";
-  if (files.some((file) => /(^|\/)(src\/components|src\/pages|src\/features)|\.(tsx|jsx|css)$/i.test(file))) return "ui_layout";
-  return "generic";
 }
 
 function isRequirementSatisfied(requirement: string, evidence: Evidence[]): boolean {

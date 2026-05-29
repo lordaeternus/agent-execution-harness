@@ -2,7 +2,7 @@
 
 - Plan: JSON -> `--plan`; chat/file -> `plan import --from -|file.md`; bullets -> `--kind feature-list`.
 - Flow: `session start --plan plan.json` -> `next --exact --micro`.
-- Weak: `--mode weak`; 1 task, <=2 files, typed evidence; use `verify --exec`.
+- Weak: `--mode weak`; 1 task, <=2 files, typed evidence; prefer `verify --exec`.
 - External: `handoff --compact`; `handoff validate`; patch -> `patch intake`; `--apply` runs `git apply --check`.
 - `claim auto` batches; run once.
 - Finish: `finish --check`; then `finish`. Scope guard blocks out-of-plan diff.

@@ -30,6 +30,9 @@ export function macroCommand(args: string[], cwd = process.cwd()): void {
   if (!runId) throw new Error("--run-id is required when no active session exists");
   const plan = readJson<AgentHarnessPlan>(path.resolve(cwd, planPath));
   const previousState = loadRun(cwd, artifactDir, runId);
+  if (requiresStrictManualGateEvidence(resource, verb, mode, flags)) {
+    throw new Error("strict manual evidence requires --output-ref and --sha256");
+  }
   if (resource === "claim" && verb === "auto") {
     if (!previousState) throw new Error("claim auto requires existing run");
     const profile = effectiveExecutionProfile(mode, config);
@@ -154,6 +157,8 @@ function buildMacroAction(
         result: verb,
         exit_code: Number(stringFlag(flags, "exit-code") ?? (verb === "pass" ? "0" : "1")),
         output_excerpt: stringFlag(flags, "excerpt") ?? (verb === "pass" ? "gate passed" : "gate failed"),
+        output_ref: stringFlag(flags, "output-ref"),
+        sha256: stringFlag(flags, "sha256"),
         scope_covered: stringFlag(flags, "scope") ?? check,
         residual_gap: stringFlag(flags, "residual-gap") ?? "none",
       },
@@ -167,6 +172,16 @@ function buildMacroAction(
     return { schema_version: ACTION_SCHEMA_VERSION, type: "final_report", summary: stringFlag(flags, "summary", true)! };
   }
   throw new Error("unknown macro command");
+}
+
+function requiresStrictManualGateEvidence(
+  resource: string | undefined,
+  verb: string | undefined,
+  mode: string,
+  flags: Record<string, string | boolean>,
+): boolean {
+  if (mode !== "strict" || resource !== "gate" || (verb !== "pass" && verb !== "fail")) return false;
+  return !stringFlag(flags, "output-ref") || !stringFlag(flags, "sha256");
 }
 
 function splitCsv(value: string): string[] {

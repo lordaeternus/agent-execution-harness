@@ -13,6 +13,17 @@ understand -> plan -> read relevant context -> execute one task -> verify -> rec
 
 The goal is simple: **make AI-assisted development more reliable, auditable, and cheaper in tokens.**
 
+## What's New In v0.17.2
+
+This patch hardens completion and strict evidence without adding workers, daemons or token-heavy runtime machinery.
+
+- final reports now require the same auto-claim coverage checked by `finish --check`
+- task surface and required-evidence inference now share one task contract
+- strict manual `gate pass`/`gate fail` evidence requires `--output-ref` and `--sha256`
+- weak-agent guidance remains token-light and steers agents toward `verify --exec`
+
+In plain language: agents get fewer ways to claim success without proof, while the harness stays local and cheap.
+
 ## What's New In v0.17.1
 
 This patch reduces routine agent-token overhead without weakening evidence or safety controls.
@@ -392,7 +403,7 @@ If the agent cannot show evidence, the work is not complete.
 
 - [Quickstart](docs/quickstart.md)
 - [Demo workflow](docs/demo.md)
-- [Release notes](docs/release-notes/v0.17.1.md)
+- [Release notes](docs/release-notes/v0.17.2.md)
 - [Security policy](SECURITY.md)
 - [Contributing guide](CONTRIBUTING.md)
 - [npm package](https://www.npmjs.com/package/agent-execution-harness)
@@ -666,6 +677,8 @@ agent-harness verify --task-id task-id --type focused_tests --exec pnpm --args-j
 ```
 
 `strict` mode blocks shell-style `--cmd` by default and requires the command to match the task `allowed_commands`.
+
+For weak and strict runs, prefer `agent-harness verify` because it executes the command and stores `output_ref` plus `sha256`. Manual `gate pass`/`gate fail` is for externally proven evidence; strict mode requires `--output-ref` and `--sha256` for that path.
 
 In `weak` mode, `claim auto` automatically batches claims when a plan has many tasks. The agent still runs one simple command, while the harness keeps each internal action small enough for low-context executors.
 
@@ -1826,7 +1839,7 @@ pnpm audit:release-readiness
 Current version:
 
 ```txt
-0.17.1
+0.17.2
 ```
 
 Package:

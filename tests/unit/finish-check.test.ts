@@ -33,6 +33,17 @@ describe("finish readiness check", () => {
     expect(result.next_actions).toEqual(['finish --summary "validated"']);
   });
 
+  it("fails when required auto claims are missing", () => {
+    const state = readyState();
+    state.verified_claims = state.verified_claims.filter((claim) => claim.kind !== "task_reconciled");
+    const result = assessFinishReadiness({ state, touchedFiles: { ok: true, files: ["created.txt"] } });
+
+    expect(result.ready).toBe(false);
+    expect(result.errors).toContain("missing_auto_claims: 1");
+    expect(result.data.missing_auto_claims).toBe(1);
+    expect(result.next_actions).toEqual(["claim auto"]);
+  });
+
   it("fails for pending tasks without mutating the run", () => {
     const state = startState();
     const before = JSON.stringify(state);

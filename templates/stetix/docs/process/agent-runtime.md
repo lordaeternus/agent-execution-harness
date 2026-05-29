@@ -24,6 +24,7 @@ Use this file for routine harness execution in Stetix. Do not load long docs unl
 - Declare files before editing. Keep task scope local.
 - Record structured evidence with `evidence_type` or `evidence_types`.
 - `verify` stores long logs by `output_ref` + `sha256`; do not paste long logs.
+- Strict manual gate evidence needs `--output-ref` + `--sha256`.
 - UI/layout requires `browser_smoke` or `visual_assertion`; otherwise status is `partial_validated`.
 - Do not claim `completed` without completed artifact, evidence policy score, verified claims and rollback.
 - Lessons are hints, not truth. Source, tests, docs and runtime evidence win.

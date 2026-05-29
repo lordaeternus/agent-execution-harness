@@ -1,3 +1,11 @@
+## [Unreleased]
+
+## 0.17.2
+
+- Hardened completion so final reports require the same auto-claim coverage checked by `finish --check`.
+- Centralized task surface and required-evidence inference in one task contract.
+- Tightened strict manual gate evidence by requiring external proof metadata.
+
 ## 0.17.1
 
 - Reduced compact executor-loop token overhead by routing weak/serial guidance toward `next --exact --micro`.
